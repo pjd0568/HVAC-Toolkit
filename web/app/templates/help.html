@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% block page_title %}Help &amp; User Guide{% endblock %}
+{% block content %}
+
+<div class="help-layout">
+
+  {# ── Sidebar: search + grouped index ─────────────────────────────── #}
+  <aside class="help-index" id="help-index">
+    <div class="help-search-wrap">
+      <input type="search" id="help-search" class="help-search"
+             placeholder="Search help…" autocomplete="off" aria-label="Search help">
+    </div>
+    <nav class="help-nav">
+      {% for grp in help_nav %}
+      <div class="help-nav-group" data-nav-group>
+        <div class="help-nav-label">{{ grp.group }}</div>
+        {% for s in grp.sections %}
+        <a class="help-nav-item" href="#{{ s.id }}" data-nav-for="{{ s.id }}">{{ s.title }}</a>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  {# ── Content ─────────────────────────────────────────────────────── #}
+  <div class="help-content" id="help-content">
+
+    <div class="page-title">Help &amp; User Guide</div>
+    <div class="page-sub">What each tool is for, the inputs it takes, and how to use it. Use the search box or the index on the left. The <span class="help-inline-mark">?</span> Help button in the top bar of any tool jumps straight to that tool's section here.</div>
+
+    <div class="help-noresults" id="help-noresults" style="display:none;">
+      No help sections match your search. Try a shorter or different term.
+    </div>
+
+    <!-- ═══════════════ OVERVIEW ═══════════════ -->
+    <section class="help-section" id="overview" data-help-section
+             data-keywords="getting started units si ip imperial metric memory slots pdf report png export shareable url link save print">
+      <h2 class="help-h">How the app works</h2>
+      <p class="help-lead">A toolkit of independent HVAC design calculators. Pick a tool from the left-hand navigation, enter your design figures, and read the results. A few things work the same way across every tool — worth knowing once.</p>
+
+      <h3 class="help-sub">Units — SI or Imperial, everywhere at once</h3>
+      <p>The <strong>SI · Metric / IP · Imperial</strong> toggle in the top bar sets the unit system for the whole app in one click. Every input label, every result and every chart axis switches with it. Imperial conventions used here: duty in Btu/h, humidity ratio in grains/lb, pressure in inHg, plus °F, CFM, lb/h and ft³/lb. Set it before you start typing so you enter values in the units you're thinking in.</p>
+
+      <h3 class="help-sub">Memory Slots — carry a condition between tools</h3>
+      <p>The three <strong>Memory Slots</strong> in the bar below the top bar are shown on every page. Copy a design condition into a slot from the Weather tool (a Summer/Winter design point or a record extreme), then <strong>Paste from Slot</strong> drops that exact air state straight into any psychrometric tool's airstream — so the outdoor-air condition you looked up is the outdoor-air condition you design against, with no re-typing. Clear a slot with the <strong>×</strong> on its chip.</p>
+
+      <h3 class="help-sub">Every result is a shareable link</h3>
+      <p>Tool results live in the page's web address. Copy the URL after a calculation and it reopens with the same inputs and answer — handy for saving a case, sending it to a colleague, or bookmarking a standard scenario.</p>
+
+      <h3 class="help-sub">PDF report &amp; PNG chart export</h3>
+      <p>Once a psychrometric or duct calculation succeeds, a <strong>Download PDF Report</strong> panel appears under the results. Fill in the Project / System / Revision / Author fields and download a formatted report with the inputs, results and chart. Where there's a chart, an <strong>Export Chart (PNG)</strong> button gives you just the image. Reports are generated from the same calculation as the screen, so they can never disagree with it.</p>
+
+      <div class="help-tip">New here? Start with the <a href="#weather">Weather &amp; Design Conditions</a> tool to establish your site's design temperatures, copy them into a Memory Slot, then move to the <a href="#single-point">Psychrometrics</a> tools.</div>
+    </section>
+
+    <!-- ═══════════════ WEATHER ═══════════════ -->
+    <section class="help-section" id="weather" data-help-section
+             data-keywords="weather design conditions ashrae percentile cooling heating dry bulb wet bulb location map elevation altitude era5 open-meteo on this day record extremes 0.4% 99.6% mcwb">
+      <h2 class="help-h">Weather &amp; Design Conditions</h2>
+      <p class="help-lead"><span class="help-badge site">Site Data</span> Look up the design outdoor conditions for any site on a map, computed from decades of historical hourly weather at that exact coordinate. Replaces manually digging design temperatures out of an ASHRAE or CIBSE table.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>At the start of a job, to establish the summer (cooling) and winter (heating) design temperatures a system must cope with, plus the site elevation that sets the design air pressure. Feed the result into the psychrometric tools via a Memory Slot.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Search Location</dt><dd>Type a town, city or postcode and pick from the dropdown. Multiple matches (e.g. two towns of the same name) are listed with region and country so you can pick the right one.</dd>
+        <dt>Map</dt><dd>Or click anywhere on the map to drop a pin — useful for a site with no named address. The pin resolves to a coordinate and elevation automatically.</dd>
+        <dt>Years of Record</dt><dd>How many years of hourly history to average the design percentiles over. More years is more stable; fewer is faster. Years with incomplete data are excluded automatically.</dd>
+        <dt>Design Percentile</dt><dd>How extreme a condition to design to, as one choice covering both ends: 0.4% cooling / 99.6% heating (most extreme, the default), 1% / 99%, or 2% / 98%. The figure in brackets is the hours per year a typical year spends at or beyond that condition.</dd>
+        <dt>Pick a Date (On This Day)</dt><dd>Optional. Choose any historical calendar date to pull the hour-by-hour dry-bulb / wet-bulb / RH / dew point for that day at the selected location.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Search for your site or click its location on the map.</li>
+        <li>Set Years of Record (the default is a sensible starting point).</li>
+        <li>Read the three columns: <strong>Summer</strong> (cooling design), <strong>Winter</strong> (heating design) and <strong>Absolute Max / Min</strong> (the record extremes, with the date they occurred).</li>
+        <li>Switch the Design Percentile radio to see a more or less extreme tier — Summer and Winter update together.</li>
+        <li>Under any column, use <strong>Copy to Slot</strong> to store that full condition (dry-bulb, wet-bulb, RH, dew point, moisture ratio) in a Memory Slot for use in the other tools.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <p>Each column shows a full psychrometric state, not just a temperature. The <strong>mean coincident wet-bulb</strong> is the wet-bulb that typically occurs alongside the design dry-bulb — use the pair together for coil sizing.</p>
+
+      <div class="help-note">Figures are estimated from ERA5 reanalysis data, not an official ASHRAE/CIBSE published table. Reanalysis extremes run slightly damped versus a real station thermometer — for business-critical plant, cross-check against the nearest station's published design data.</div>
+    </section>
+
+    <!-- ═══════════════ SINGLE POINT ═══════════════ -->
+    <section class="help-section" id="single-point" data-help-section
+             data-keywords="psychrometrics single point state moist air dry bulb wet bulb dew point relative humidity moisture ratio enthalpy specific volume density vapour pressure altitude barometric pressure">
+      <h2 class="help-h">Psychrometrics — Single Point</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Resolve the complete state of moist air from any two of its properties. Enter a dry-bulb temperature and one more property; get every other property back.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>Any time you have a partial description of an air condition and need the rest — for example you know dry-bulb and RH and want the wet-bulb, dew point, enthalpy or moisture content. It's the building block behind the other psychrometric tools.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Altitude</dt><dd>Site elevation. The <strong>Barometric Pressure</strong> beside it is derived automatically (standard atmosphere) and is read-only — psychrometric properties depend on pressure, so this keeps them correct for the site. At sea level leave it at 0.</dd>
+        <dt>State Dry Bulb</dt><dd>The dry-bulb (ordinary thermometer) temperature.</dd>
+        <dt>State Second Property</dt><dd>Which second property you're providing: Relative humidity (%), Wet bulb, Moisture ratio, or Dew point.</dd>
+        <dt>State Second Value</dt><dd>The value of whichever second property you selected.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Set the site Altitude (or leave 0 for sea level).</li>
+        <li>Enter the Dry Bulb temperature.</li>
+        <li>Choose the Second Property and enter its value.</li>
+        <li>Press <strong>Calculate</strong>. The full state is listed and plotted on the psychrometric chart.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <p>You get dry-bulb, wet-bulb, dew point, relative humidity, humidity ratio, specific enthalpy, specific volume, density and vapour pressure — plus the point marked on the chart. "— (dry air)" for dew point means the air is so dry the dew point is below the model's floor.</p>
+    </section>
+
+    <!-- ═══════════════ MIXED AIR ═══════════════ -->
+    <section class="help-section" id="mixed-air" data-help-section
+             data-keywords="mixed air mixing two airstreams fresh return recirculation adiabatic mix fog saturation condensate mass flow proportion blend">
+      <h2 class="help-h">Psychrometrics — Mixed Air</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Mix two airstreams and find the resulting condition. The classic case is blending fresh outdoor air with recirculated return air ahead of a coil.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>To find the on-coil condition after outdoor and return air combine, or any time two flows at different conditions meet. The mix is weighted by the mass flow of each stream.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure, as in Single Point.</dd>
+        <dt>Stream A / Stream B — Dry Bulb, Second Property, Second Value</dt><dd>The condition of each airstream, entered the same way as a single point.</dd>
+        <dt>Stream A / Stream B — Flow</dt><dd>The volume flow rate of each stream. The proportions set the weighting of the mix.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Set the site Altitude.</li>
+        <li>Enter Stream A's condition and flow (e.g. outdoor air).</li>
+        <li>Enter Stream B's condition and flow (e.g. return air).</li>
+        <li>Press <strong>Calculate</strong> — the mixed condition appears as a third row and on the chart between the two inputs.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <p>The table shows both inputs and the mixed state, with each stream's dry-air mass flow. If the mix would fall in the <strong>fog region</strong> (super-saturated), the tool settles it onto the saturation curve and reports the resulting condensate — a warning banner flags this.</p>
+    </section>
+
+    <!-- ═══════════════ COOLING COIL ═══════════════ -->
+    <section class="help-section" id="cooling-coil" data-help-section
+             data-keywords="cooling coil dehumidification chilled water dx on coil off coil duty sensible latent shr sensible heat ratio apparatus dew point adp contact factor bypass factor condensate frost face velocity">
+      <h2 class="help-h">Psychrometrics — Cooling Coil</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Enter the air on and off a cooling coil and get its full duty: total, sensible and latent cooling, sensible heat ratio, condensate, apparatus dew point and contact/bypass factor.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>To size or check a chilled-water or DX cooling coil once you know (or have chosen) the air condition entering and leaving it.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure.</dd>
+        <dt>On-coil — Dry Bulb, Second Property, Second Value</dt><dd>The air condition entering the coil (often the mixed-air result).</dd>
+        <dt>On-coil Flow</dt><dd>The volume flow through the coil.</dd>
+        <dt>Off-coil — Dry Bulb, Second Property, Second Value</dt><dd>The air condition leaving the coil. For a dehumidifying coil, a common design assumption is around 90% RH off-coil.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Set the site Altitude.</li>
+        <li>Enter the On-coil condition and flow.</li>
+        <li>Enter the Off-coil condition.</li>
+        <li>Press <strong>Calculate</strong>. Read the duty table and the process line on the chart, and expand <strong>Coil application notes</strong> for selection guidance.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <dl class="help-io">
+        <dt>Total / sensible / latent cooling</dt><dd>The heat removed, split into the part that lowers temperature (sensible) and the part that removes moisture (latent).</dd>
+        <dt>Sensible heat ratio (SHR)</dt><dd>Sensible ÷ total. Near 1.0 means little dehumidification; lower means a wetter duty.</dd>
+        <dt>Apparatus dew point (ADP)</dt><dd>Where the process line, extended, meets saturation — effectively the mean coil surface temperature.</dd>
+        <dt>Contact / bypass factor</dt><dd>The fraction of air brought to the ADP versus the fraction passing through unchanged. Deep coils have a high contact factor.</dd>
+        <dt>Condensate</dt><dd>The rate of water wrung out — size the drain and trap for it.</dd>
+      </dl>
+
+      <div class="help-note">A <strong>frost risk</strong> banner appears if the ADP is at or below freezing (the coil surface could ice up) — options are glycol protection, a DX defrost strategy or face-and-bypass control.</div>
+    </section>
+
+    <!-- ═══════════════ AHU DESIGN ═══════════════ -->
+    <section class="help-section" id="ahu" data-help-section
+             data-keywords="ahu air handling unit supply condition off-unit outdoor return mix on-coil off-coil reheat preheat coil duty fan gain blow through draw through sfp specific fan power reachability frost stages">
+      <h2 class="help-h">Psychrometrics — AHU Design</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Work backwards from the condition you need to deliver into the room. Give the required supply (off-unit) air; the tool mixes outdoor and return air, then derives the cooling and reheat needed to get there.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>When you know the supply condition the space needs and want the coil duties that produce it — the inverse of specifying the off-coil condition and reading the result. It chains mixing → cooling → reheat into one staged process.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure.</dd>
+        <dt>Outdoor Air — condition + Outdoor Air Fraction (%)</dt><dd>The fresh-air state and how much of the supply is fresh air (the rest is return air).</dd>
+        <dt>Return Air — condition</dt><dd>The air coming back from the space.</dd>
+        <dt>Required Supply — condition + Supply Flow</dt><dd>The off-unit condition to deliver into the room, and the total supply volume flow.</dd>
+        <dt>Supply Fan — Position, SFP, Power</dt><dd>Optional fan heat gain. <em>Blow-through</em> sits before the coil (adds to coil duty); <em>draw-through</em> sits after reheat. Give the fan power directly (kW) or let it be estimated from Specific Fan Power (W per l/s). Leave Position on "No fan gain" to ignore it.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Set the site Altitude.</li>
+        <li>Enter the Outdoor Air condition and the fresh-air fraction.</li>
+        <li>Enter the Return Air condition.</li>
+        <li>Enter the Required Supply condition and supply flow.</li>
+        <li>Optionally set the fan position and power/SFP.</li>
+        <li>Press <strong>Design</strong>. The derived stages, total cooling and total heating are listed and drawn on the chart; expand <strong>Design method &amp; notes</strong> for the assumptions.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <p>Each stage (mix, cool, reheat) is a row with its state and the duty/moisture change at that step. Totals give the coil (cooling) duty and reheat/preheat (heating) duty. An idealised coil is assumed — off-coil is taken as saturated, so reheat is a conservative upper bound.</p>
+
+      <div class="help-note">A cooling coil can only remove moisture: a supply moisture content above the on-coil value is <strong>rejected as unreachable</strong> (that duty needs humidification). Equal moisture collapses the duty to a purely sensible cool or heat. Frost is flagged when the off-coil temperature is at or below 0 °C.</div>
+    </section>
+
+    <!-- ═══════════════ DUCT SIZING ═══════════════ -->
+    <section class="help-section" id="duct" data-help-section
+             data-keywords="duct sizing circular rectangular flat oval velocity friction rate pressure drop lindab stock size equivalent diameter aspect ratio index leg fitting k-factor straight run accessory safety margin csv traffic light">
+      <h2 class="help-h">Duct Sizing</h2>
+      <p class="help-lead"><span class="help-badge duct">Air Distribution</span> Size a duct in all three shapes at once — circular, rectangular and flat oval — from one air volume and target, then build an index-leg pressure-drop run below. Updates are instant, no page reload.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>To pick a duct size for a given airflow to a velocity or friction-rate target, compare the three shapes side by side, and total the pressure drop along the worst-case (index) leg of a system.</p>
+
+      <h3 class="help-sub">Design Inputs (top panel)</h3>
+      <dl class="help-io">
+        <dt>Air Volume</dt><dd>The flow the duct must carry.</dd>
+        <dt>Size By</dt><dd>The basis for the initial size: <strong>Velocity</strong> or <strong>Friction Rate (Pa/m)</strong>.</dd>
+        <dt>Target Value</dt><dd>The target velocity or friction rate to size to. All three shape columns are sized from these top inputs together.</dd>
+      </dl>
+
+      <h3 class="help-sub">Per-shape controls</h3>
+      <dl class="help-io">
+        <dt>Circular — Stock Size</dt><dd>Leave on "Auto" for the true calculated diameter, or pick a real Lindab stock diameter (its gauge and whether it's standard or special-order are shown).</dd>
+        <dt>Rectangular — Width / Height</dt><dd>Fully independent — change either with the +/− steppers and watch velocity, aspect ratio and friction rate respond. The <strong>padlock</strong> beside a dimension keeps it fixed when the top inputs change (e.g. a shallow ceiling void). <strong>Round to 25mm</strong> snaps both sides to a 25 mm grid.</dd>
+        <dt>Flat Oval — Major / Minor Axis</dt><dd>Step independently through Lindab's real stocked combinations only, so you can never land on an unmanufactured size (the fields are read-only; use the steppers).</dd>
+      </dl>
+
+      <h3 class="help-sub">Reading the shape results</h3>
+      <p>Each column shows velocity, velocity pressure, friction rate and (for rectangular/flat oval) equivalent diameter. The <strong>traffic-light dots</strong> flag each figure: green in range, amber borderline, red out of range — the legend is above the columns. Rectangular also warns if the aspect ratio exceeds the 4:1 guide limit.</p>
+
+      <h3 class="help-sub">Index Leg — Pressure Drop (lower panel)</h3>
+      <p>A spreadsheet-style builder for totalling the pressure drop along a run. Each row is sized independently — its own volume, shape and size — so a leg that steps down, changes shape and ends at a grille can be built piece by piece.</p>
+      <ol class="help-steps">
+        <li>Fill in the tinted top row (the composer): choose a <strong>Type</strong> — Straight, Fitting, Flex or Accessory — then its shape, volume, size and the type-specific field.</li>
+        <li>A live preview (velocity / velocity pressure / friction-or-K / pressure drop) shows in that row before you commit it.</li>
+        <li>Press <strong>+ Add</strong> to commit it as a numbered row below. Repeat for each piece of the run.</li>
+        <li>Edit any committed row's cells in place — the row's pressure drop and the running total update immediately.</li>
+        <li>Optionally set a <strong>Safety Margin %</strong> to add a percentage to the total.</li>
+        <li><strong>Clear Table</strong> empties it; <strong>Export CSV</strong> downloads the run; the PDF report captures the leg table when rows exist.</li>
+      </ol>
+      <dl class="help-io">
+        <dt>Straight / Flex</dt><dd>Take a Length — pressure drop is length × friction rate (Flex adds a derating factor).</dd>
+        <dt>Fitting</dt><dd>Takes a Fitting from the dropdown; pressure drop is its K-factor × velocity pressure.</dd>
+        <dt>Accessory</dt><dd>Takes a free-text Description and a Manual ΔP you enter directly from your own manufacturer data (louvers, attenuators, dampers, grilles).</dd>
+      </dl>
+
+      <div class="help-note">Fitting K-factors are representative single-point values, not the full multi-parameter ASHRAE Ch.32 / CIBSE Guide C correlations — treat as first-pass planning figures. The flat-oval equivalent-diameter correlation is provisional; circular and rectangular sizing are standard published forms.</div>
+    </section>
+
+    <!-- ═══════════════ CONVERTER ═══════════════ -->
+    <section class="help-section" id="converter" data-help-section
+             data-keywords="unit converter length area volume mass force pressure temperature speed flow power energy time angle density humidity ratio enthalpy metric imperial conversion factor">
+      <h2 class="help-h">Unit Converter</h2>
+      <p class="help-lead"><span class="help-badge util">Utilities</span> Enter one value in one unit and see it in every other unit of its category at once — metric and imperial — with the conversion relationship shown beside each.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>Quick conversions across the 17 quantity categories an HVAC job throws up: length, area, volume, mass, force, pressure, temperature, speed, volume flow, mass flow, power, energy, time, angle, density, humidity ratio and enthalpy.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Category</dt><dd>The quantity you're converting (changing it refreshes the unit list).</dd>
+        <dt>Value</dt><dd>The number to convert.</dd>
+        <dt>From unit</dt><dd>The unit your value is in, grouped Metric / Imperial / Other.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Pick the Category.</li>
+        <li>Type the Value and choose the From unit — the results refresh automatically.</li>
+        <li>Read the grouped table; your input row is highlighted, and each row shows the value plus the factor or formula (e.g. 1 mm = 0.0393701 in, or °F = °C × 9/5 + 32).</li>
+      </ol>
+
+      <div class="help-note">Temperature shows a below-absolute-zero warning if you enter an impossible value.</div>
+    </section>
+
+    <!-- ═══════════════ GUIDES ═══════════════ -->
+    <section class="help-section" id="guides" data-help-section
+             data-keywords="design guides reference articles cooling coil design explainer knowledge base theory background ashrae cibse">
+      <h2 class="help-h">Design Guides</h2>
+      <p class="help-lead"><span class="help-badge util">Reference</span> Short explainer articles behind the calculators — the reasoning, not just the number.</p>
+      <h3 class="help-sub">When to use it</h3>
+      <p>Read alongside a tool when you want the background: what the process actually is and why the selection choices follow from it. The first article covers cooling coil design — the psychrometric process and selection basics — and cross-links to the Cooling Coil and AHU Design tools.</p>
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Open <strong>Design Guides</strong> from the Reference group in the navigation.</li>
+        <li>Pick an article card to read it, with its own diagrams and formulae.</li>
+      </ol>
+      <div class="help-tip">More guides (duct sizing practice, pipe/pump curves, a psychrometrics primer) are planned.</div>
+    </section>
+
+    <!-- ═══════════════ PIPE SIZING ═══════════════ -->
+    <section class="help-section" id="pipe" data-help-section
+             data-keywords="pipe sizing hydronics lthw chw load flow delta t lwt glycol dtx epg ppg velocity pressure gradient dn carbon steel copper stainless dairy cibse darcy weisbach system fittings valves k-factor safety margin">
+      <h2 class="help-h">Pipe Sizing</h2>
+      <p class="help-lead"><span class="help-badge water">Hydronics</span> Flow from load or known flow; DN catalogue with traffic lights; circuit pressure-drop schedule with fittings and devices.</p>
+
+      <div class="help-sub">When to use</div>
+      <p>Size LTHW or CHW pipework: derive flow from a heating or cooling duty, or check a known flow against standard DN sizes. Then total the index-circuit pressure drop with straight runs, fittings/valves (K-factors), and manufacturer devices entered as direct Pa.</p>
+
+      <div class="help-sub">Inputs — Design (sizer)</div>
+      <dl class="help-io">
+        <dt>Flow mode</dt><dd><strong>Calculate from load</strong> — duty, ΔT and LWT give mass and volumetric flow. <strong>Flow known</strong> — enter flow directly in l/s (both l/s and m³/h are always shown).</dd>
+        <dt>Application</dt><dd>LTHW or CHW — duty context (traffic-light bands are the same for both).</dd>
+        <dt>Fluid</dt><dd>Water, or Hydratech Coolflow DTX / IGE (EG) / NTP (PPG) at a fixed catalogue % v/v.</dd>
+        <dt>LWT</dt><dd>Leaving water temperature; with ΔT this gives mean water temperature for fluid properties.</dd>
+        <dt>Material</dt><dd>Carbon steel (BS EN 10255), copper (BS EN 1057), or thin-wall stainless dairy tube (DIN 11850).</dd>
+      </dl>
+
+      <div class="help-sub">How to use — sizer</div>
+      <ol class="help-steps">
+        <li>Choose flow mode, application, fluid and pipe material.</li>
+        <li>Enter load (or flow), ΔT and LWT, then click <strong>Calculate</strong>.</li>
+        <li>Review the size table — green = ideal band (ΔP/L 200–300 Pa/m and per-DN velocity ideal); amber = CAPEX-heavy or CAPEX-light; red = out of range.</li>
+        <li>Click a size row — pipe dimensions appear in the centre panel; flow and fluid data on the right.</li>
+      </ol>
+
+      <h3 class="help-sub">Pipe System — Pressure Drop</h3>
+      <p>Spreadsheet-style builder for the dynamic ΔP along a circuit. Fluid, material and duty flow come from Design Inputs above; each row can override DN and flow.</p>
+      <dl class="help-io">
+        <dt>Straight pipe</dt><dd>Length × friction rate (Pa/m) from Darcy–Weisbach at that row’s DN and flow.</dd>
+        <dt>Fitting / valve</dt><dd>Pick from the catalogue; ΔP = K × velocity pressure (½ρV²). K values are representative planning figures — not full CIBSE/Crane geometry tables.</dd>
+        <dt>Device (manual ΔP)</dt><dd>Enter a manufacturer pressure drop (coil, HX, etc.) directly in Pa.</dd>
+        <dt>Safety Margin %</dt><dd>Optional uplift on the running total (fitting uncertainty, future extensions).</dd>
+      </dl>
+      <ol class="help-steps">
+        <li>Fill the tinted top row (type, DN, length or fitting or device ΔP) and click <strong>+ Add</strong>.</li>
+        <li>Edit committed rows in place — totals update immediately.</li>
+        <li>Use Clear table / Export CSV / Download PDF Report as needed.</li>
+      </ol>
+      <div class="help-note">Lift / static head and system volume are planned for later stages — this panel is dynamic pressure drop only.</div>
+    </section>
+
+    <!-- ═══════════════ PROJECTS ═══════════════ -->
+    <section class="help-section" id="projects" data-help-section
+             data-keywords="projects pro save calculation organise placeholder future subscription">
+      <h2 class="help-h">Projects <span class="pro-chip">Pro</span></h2>
+      <p class="help-lead"><span class="help-badge util">Reference</span> A place to group saved calculations under a named project.</p>
+      <div class="help-note">Projects is a preview of a planned <strong>Pro</strong> feature. The page currently shows an example layout — saving live calculations into a project isn't wired up yet. For now, save a result by copying its page URL (see <a href="#overview">How the app works</a>).</div>
+    </section>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  var search = document.getElementById('help-search');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('[data-help-section]'));
+  var navItems = Array.prototype.slice.call(document.querySelectorAll('.help-nav-item'));
+  var navGroups = Array.prototype.slice.call(document.querySelectorAll('[data-nav-group]'));
+  var noResults = document.getElementById('help-noresults');
+
+  // Pre-index each section's searchable text once.
+  var index = sections.map(function (sec) {
+    return {
+      el: sec,
+      id: sec.id,
+      text: (sec.textContent + ' ' + (sec.getAttribute('data-keywords') || '')).toLowerCase()
+    };
+  });
+
+  function apply(q) {
+    q = (q || '').trim().toLowerCase();
+    var anyVisible = false;
+    var visibleIds = {};
+
+    index.forEach(function (item) {
+      var match = q === '' || item.text.indexOf(q) !== -1;
+      item.el.style.display = match ? '' : 'none';
+      if (match) { anyVisible = true; visibleIds[item.id] = true; }
+    });
+
+    // Sidebar items follow their section; hide a group with no visible items.
+    navItems.forEach(function (a) {
+      var id = a.getAttribute('data-nav-for');
+      a.style.display = (q === '' || visibleIds[id]) ? '' : 'none';
+    });
+    navGroups.forEach(function (g) {
+      var links = g.querySelectorAll('.help-nav-item');
+      var shown = Array.prototype.some.call(links, function (l) { return l.style.display !== 'none'; });
+      g.style.display = shown ? '' : 'none';
+    });
+
+    noResults.style.display = anyVisible ? 'none' : '';
+  }
+
+  if (search) {
+    search.addEventListener('input', function () { apply(search.value); });
+    // Support ?q=term deep links and Esc to clear.
+    search.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { search.value = ''; apply(''); }
+    });
+  }
+
+  // Highlight the sidebar item for the section currently at the top / hash.
+  function highlight(id) {
+    navItems.forEach(function (a) {
+      a.classList.toggle('active', a.getAttribute('data-nav-for') === id);
+    });
+  }
+  navItems.forEach(function (a) {
+    a.addEventListener('click', function () { highlight(a.getAttribute('data-nav-for')); });
+  });
+  if (location.hash) { highlight(location.hash.slice(1)); }
+})();
+</script>
+{% endblock %}

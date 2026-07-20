@@ -1,0 +1,13 @@
+{# Shared pieces for the single Duct Sizing tool -- see blueprints/duct.py. #}
+
+{% macro status_dot(status) -%}
+<span class="tl"><span class="dot {{ status }}"></span></span>
+{%- endmacro %}
+
+{% macro status_legend() -%}
+<div class="status-legend">
+  <span class="tl"><span class="dot green"></span><span class="tl-text">In range</span></span>
+  <span class="tl"><span class="dot amber"></span><span class="tl-text">Borderline (&ge;85% of limit)</span></span>
+  <span class="tl"><span class="dot red"></span><span class="tl-text">At or over limit</span></span>
+</div>
+{%- endmacro %}

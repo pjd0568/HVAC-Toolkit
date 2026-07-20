@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block page_title %}Reference - Design Guides{% endblock %}
+{% block content %}
+
+<div class="page-title">Design Guides</div>
+<div class="page-sub">Short explainers behind the calculators — read alongside a tool when you want the reasoning, not just the number.</div>
+
+<div class="guide-grid">
+  {% for g in guides %}
+  <a class="guide-card tile-{{ g.disc }}" href="{{ url_for('guides.article', slug=g.slug) }}">
+    <div class="guide-card-head">
+      <span class="disc-chip {{ g.disc }}">{{ g.disc | capitalize }}</span>
+      <span class="guide-read">{{ g.read_mins }} min read</span>
+    </div>
+    <div class="guide-card-title">{{ g.title }}</div>
+    <div class="guide-card-summary">{{ g.summary }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,19 @@
+{# Shared "Site Conditions" input group: altitude in, barometric pressure derived
+   out (standard atmosphere, ASHRAE HOF Ch.1 eqn 3 — see hvac_engine.psychrometrics.
+   pressure_from_altitude). Always the first group on a psychrometric form, own
+   heading + own row so it never shares a line with an airstream group. Uses the
+   same "form-grid four" template as every airstream group on the page (with the
+   trailing columns left empty) so every group's field columns — and therefore
+   every text box — line up vertically down the form.
+   `pressure` is the SI kPa value the blueprint already resolved for this request
+   (None if the altitude entered failed validation). #}
+{% macro site_conditions(form, pressure) -%}
+<div class="section-label" style="margin-top:0;">Site Conditions</div>
+<div class="form-grid four">
+  <div><label>Altitude ({{ U.sym('altitude') }})</label><input name="altitude" value="{{ form.altitude }}"></div>
+  <div>
+    <label>Barometric Pressure ({{ U.sym('pressure') }}) — derived from altitude</label>
+    <input value="{% if pressure is not none %}{{ U.fmt('pressure', pressure, 3) }}{% else %}—{% endif %}" disabled>
+  </div>
+</div>
+{%- endmacro %}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ brand_name }}{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">{{ brand_name[0] }}</div>
+    <div>
+      <div class="logo-name">{{ brand_name }}</div>
+      <div class="logo-tag">{{ brand_tag }}</div>
+    </div>
+  </div>
+
+  <nav>
+    <div class="nav-group">
+      <a class="nav-item {{ 'active' if active == 'dashboard' }}" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+      <a class="nav-item {{ 'active' if active == 'projects' }}" href="{{ url_for('projects.index') }}">Projects <span class="pro-chip">Pro</span></a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Site Data</div>
+      <a class="nav-item {{ 'active' if active == 'weather' }}" href="{{ url_for('weather.index') }}">Weather &amp; Design Conditions</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Psychrometrics</div>
+      <a class="nav-item {{ 'active' if active == 'psychro' }}" href="{{ url_for('psychro.single_point') }}">Single Point</a>
+      <a class="nav-item {{ 'active' if active == 'psychro_mix' }}" href="{{ url_for('psychro.mixed_air') }}">Mixed Air</a>
+      <a class="nav-item {{ 'active' if active == 'psychro_coil' }}" href="{{ url_for('psychro.cooling_coil') }}">Cooling Coil</a>
+      <a class="nav-item {{ 'active' if active == 'psychro_ahu' }}" href="{{ url_for('psychro.ahu') }}">AHU Design</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Air Distribution</div>
+      <a class="nav-item {{ 'active' if active == 'duct' }}" href="{{ url_for('duct.index') }}">Duct Sizing</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Hydronics</div>
+      <a class="nav-item {{ 'active' if active == 'pipe' }}" href="{{ url_for('pipe.index') }}">Pipe Sizing</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Utilities</div>
+      <a class="nav-item {{ 'active' if active == 'converter' }}" href="{{ url_for('converter.index') }}">Unit Converter</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Reference</div>
+      <a class="nav-item {{ 'active' if active == 'guides' }}" href="{{ url_for('guides.index') }}">Design Guides</a>
+    </div>
+  </nav>
+
+  <div class="sidebar-foot">
+    <div class="avatar">·</div>
+    <div class="foot-text">Signed out</div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+    <div class="topbar-actions">
+      <form method="post" action="{{ url_for('main.set_units') }}" class="unit-toggle" title="Units — applies across every tool">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}">SI · Metric</button>
+        <button type="submit" name="system" value="IP" class="unit-pill {{ 'on' if units == 'IP' }}">IP · Imperial</button>
+      </form>
+      {% set help_anchor = help_anchor_for.get(active) %}
+      <a class="help-btn" href="{{ url_for('help.index') }}{% if help_anchor %}#{{ help_anchor }}{% endif %}"
+         title="Help for this tool">
+        <span class="help-btn-mark">?</span> Help
+      </a>
+    </div>
+  </div>
+
+  {# Memory Slots -- global, on every page (see app/climate_slots.py): copied
+     in from the Weather tool's Summer/Winter/Max-Min columns or an On This
+     Day hour, named by the user at copy time (e.g. "Pudsey summer"), and
+     readable from any future module (a psychrometric tool's "paste into
+     on-coil" flow is the driving use case) -- the whole point of a slot is
+     that it outlives the page it was filled in on. #}
+  <div class="global-slot-bar">
+    <span class="global-slot-bar-label">Memory Slots</span>
+    {% for i in range(3) %}
+    {% set slot = climate_slots[i] %}
+    <div class="slot-chip {{ 'filled' if slot else 'empty' }}">
+      <span class="slot-chip-index">{{ i + 1 }}</span>
+      {% if slot %}
+        <span class="slot-chip-label">{{ slot.label }}</span>
+        <span class="slot-chip-values">
+          {{ U.fmt('temperature', slot.db, 1) }}{{ U.sym('temperature') }} DB{% if slot.rh is not none %} · {{ '%.0f'|format(slot.rh * 100) }}% RH{% endif %}
+        </span>
+        <form method="post" action="{{ url_for('weather.clear_slot_route') }}" class="slot-chip-clear-form">
+          <input type="hidden" name="index" value="{{ i }}">
+          <input type="hidden" name="next" value="{{ request.full_path }}">
+          <button type="submit" class="slot-chip-clear" title="Clear slot">×</button>
+        </form>
+      {% else %}
+        <span class="slot-chip-empty">Empty</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="content">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

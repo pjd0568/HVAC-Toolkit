@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% from "_report_form.html" import report_form with context %}
+{% block page_title %}Site Data - Weather &amp; Design Conditions{% endblock %}
+
+{# -- Shared fragments -----------------------------------------------------
+   state_table: the DB/WB/RH/Dew Point/Moisture Ratio vertical stack used by
+   every Summer/Winter percentile block and the Max/Min column. `db_fallback`
+   is the raw design-point dry-bulb (always available) so a condition still
+   shows a dry-bulb value even in the rare case its full state couldn't be
+   resolved (see WeatherResult.max_state/min_state's docstring) -- the other
+   rows fall back to U.html's own "—" for a None value.
+   copy_form: the "copy this condition into a memory slot" mini-form. Values
+   travel as hidden SI fields taken straight from the same state this block
+   just displayed, so a slot can never disagree with what was on screen. #}
+{% macro state_table(state, db_fallback) %}
+<table class="results state-stack">
+  <tr><td>Dry Bulb</td><td class="num">{{ U.html('temperature', state.t_db if state else db_fallback, 1) }}</td></tr>
+  <tr><td>Wet Bulb</td><td class="num">{{ U.html('temperature', state.t_wb if state else None, 1) }}</td></tr>
+  <tr><td>Relative Humidity</td><td class="num">
+    {% if state %}<span class="valunit"><span class="v">{{ '%.0f'|format(state.rh * 100) }}</span><span class="u">%</span></span>{% else %}<span class="valunit"><span class="v">—</span></span>{% endif %}
+  </td></tr>
+  <tr><td>Dew Point</td><td class="num">{{ U.html('temperature', state.t_dp if state else None, 1) }}</td></tr>
+  <tr><td>Moisture Ratio</td><td class="num">{{ U.html('humidity_ratio', state.w if state else None) }}</td></tr>
+</table>
+{% endmacro %}
+
+{% macro copy_form(state, db_fallback, default_label, source) %}
+<form method="post" action="{{ url_for('weather.save_slot_route') }}" class="copy-form">
+  <input type="hidden" name="db" value="{{ state.t_db if state else db_fallback }}">
+  <input type="hidden" name="wb" value="{{ state.t_wb if state else '' }}">
+  <input type="hidden" name="rh" value="{{ state.rh if state else '' }}">
+  <input type="hidden" name="dp" value="{{ state.t_dp if state else '' }}">
+  <input type="hidden" name="w" value="{{ state.w if state else '' }}">
+  <input type="hidden" name="source" value="{{ source }}">
+  <input type="hidden" name="next" value="{{ request.full_path }}">
+  <div class="copy-row">
+    <input type="text" name="label" value="{{ default_label }}" placeholder="Label (e.g. Summer ambient)">
+    <select name="slot">
+      <option value="0">Slot 1</option>
+      <option value="1">Slot 2</option>
+      <option value="2">Slot 3</option>
+    </select>
+    <button type="submit" class="btn-ghost">Copy to Slot</button>
+  </div>
+</form>
+{% endmacro %}
+
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+{# Two workflows: derive design conditions from the ERA5-Land reanalysis (map /
+   search), or type in authoritative values by hand (e.g. from an ASHRAE or CIBSE
+   table). One tab strip switches ?mode; each mode keeps its own inputs. #}
+<div class="mode-tabs">
+  <a class="mode-tab {{ 'active' if mode == 'era5' }}" href="{{ url_for('weather.index') }}?mode=era5">Site Lookup (ERA5-Land)</a>
+  <a class="mode-tab {{ 'active' if mode == 'manual' }}" href="{{ url_for('weather.index') }}?mode=manual">Manual Entry (ASHRAE / CIBSE)</a>
+</div>
+
+{% if mode == 'era5' %}
+
+<div id="weather-loading" class="loading-overlay">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Analysing weather data…</div>
+  </div>
+</div>
+
+<div class="panel" style="max-width:960px;">
+  <div class="panel-head">Find a Location</div>
+  <div class="panel-body">
+    <div id="weather-map" style="height:380px;border-radius:12px;margin-bottom:10px;"></div>
+    <div id="map-status" style="font-size:11.5px;color:var(--muted);margin-bottom:12px;"></div>
+
+    <form method="get" id="weather-form" action="{{ url_for('weather.index') }}">
+      <input type="hidden" name="lat" id="field-lat" value="{{ lat if lat is not none else '' }}">
+      <input type="hidden" name="lon" id="field-lon" value="{{ lon if lon is not none else '' }}">
+      <input type="hidden" name="elevation" id="field-elevation" value="{{ elevation if elevation is not none else '' }}">
+      <input type="hidden" name="place" id="field-place" value="{{ place }}">
+
+      <div class="form-grid three">
+        <div class="search-field">
+          <label for="location-search">Search Location</label>
+          <input type="text" id="location-search" autocomplete="off"
+                 placeholder="Town, city or postcode" value="{{ place }}">
+          <div id="location-results" class="location-dropdown"></div>
+        </div>
+        <div>
+          <label for="years">Years of Record</label>
+          <select id="years" name="years" onchange="submitWeatherForm()">
+            {% for y in year_options %}
+            <option value="{{ y }}" {{ 'selected' if y == years }}>{{ y }} years</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="coord-display">Selected Coordinates</label>
+          <input type="text" id="coord-display" disabled
+                 value="{% if lat is not none %}{{ '%.4f'|format(lat) }}, {{ '%.4f'|format(lon) }}{% else %}Search or click the map{% endif %}">
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if dc %}
+<div class="note-banner">
+  <span>Estimated from ERA5-Land (~9&nbsp;km) reanalysis via Open-Meteo — <strong>not</strong> an
+  official ASHRAE/CIBSE design-condition table. A reanalysis grid cell is an area average, so its
+  extremes run damped compared with a real station thermometer; expect these to read a little low.
+  For anything you'll sign off, cross-check against the nearest station's published ASHRAE/CIBSE
+  design data — or enter it directly under <strong>Manual Entry</strong> above.</span>
+</div>
+
+{% if dc.warnings %}
+<div class="warn-banner">
+  {% for w in dc.warnings %}<div>{{ w }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<div class="section-label">Design Conditions{% if place %} — {{ place }}{% endif %}</div>
+
+{# One shared control drives both Summer and Winter together -- 0.4% cooling
+   and 99.6% heating are the same "how extreme" tier (the tail fraction is
+   identical, just hot end vs cold end), so picking a tier here is one
+   decision, not two independent ones. Radio buttons (not a <select>) so the
+   choice -- and that there IS a choice -- is visible without opening
+   anything; default is the most extreme tier, 0.4%/99.6%. #}
+<div class="tier-select">
+  <span class="tier-select-label">Design Percentile</span>
+  {% for pair in [('0.4', '99.6'), ('1.0', '99'), ('2.0', '98')] %}
+  <label class="tier-option">
+    <input type="radio" name="pct-tier" value="{{ pair[0] }}" {{ 'checked' if pair[0] == '0.4' }} onchange="setPctTier(this)">
+    {{ pair[0] }}% cooling / {{ pair[1] }}% heating <span class="suffix">(~{{ cooling_hours[pair[0]] }} h/yr)</span>
+  </label>
+  {% endfor %}
+</div>
+
+<div class="condition-columns">
+
+  <div class="col-panel tile-air">
+    <div class="col-head"><span>Summer</span></div>
+    {% for label in ['0.4', '1.0', '2.0'] %}
+    <div class="pct-block" data-tier="{{ label }}" {% if label != '0.4' %}style="display:none;"{% endif %}>
+      {{ state_table(cooling_states[label], dc.cooling[label].db) }}
+      {{ copy_form(cooling_states[label], dc.cooling[label].db,
+                    "Summer " ~ label ~ "% design",
+                    "Summer " ~ label ~ "% design — " ~ (place or "site")) }}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="col-panel tile-water">
+    <div class="col-head"><span>Winter</span></div>
+    {% set heating_tier = {'99.6': '0.4', '99': '1.0', '98': '2.0'} %}
+    {% for label in ['99.6', '99', '98'] %}
+    <div class="pct-block" data-tier="{{ heating_tier[label] }}" {% if label != '99.6' %}style="display:none;"{% endif %}>
+      {{ state_table(heating_states[label], dc.heating[label].db) }}
+      {{ copy_form(heating_states[label], dc.heating[label].db,
+                    "Winter " ~ label ~ "% design",
+                    "Winter " ~ label ~ "% design — " ~ (place or "site")) }}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="col-panel tile-duct">
+    <div class="col-head"><span>Return Period Extremes</span></div>
+    {% if extreme_annual %}
+    {# n-year return-period values (ASHRAE HOF Ch.14 extreme-annual / Gumbel).
+       DB and WB here are INDEPENDENT extremes (the year's hottest hour and its
+       most-humid hour are generally different hours), so they are shown as bare
+       temperatures -- pairing them into one RH/dew-point state would falsely
+       imply they occur together. One selector picks the return period n; blocks
+       are pre-rendered and toggled by setReturnPeriod (same pattern as the
+       Design Percentile tier). #}
+    <div class="rp-select">
+      <span class="rp-select-label">Return period</span>
+      {% for n in return_periods %}
+      <label class="rp-option">
+        <input type="radio" name="return-period" value="{{ n }}" {{ 'checked' if n == default_period }} onchange="setReturnPeriod(this)">
+        {{ n }}-yr
+      </label>
+      {% endfor %}
+    </div>
+    {% for n in return_periods %}
+    <div class="rp-block" data-period="{{ n }}" {% if n != default_period %}style="display:none;"{% endif %}>
+      <div class="mm-block">
+        <div class="mm-label">{{ n }}-Year Maximum</div>
+        <table class="results state-stack">
+          <tr><td>Dry Bulb</td><td class="num">{{ U.html('temperature', extreme_annual.db.return_max[n], 1) }}</td></tr>
+          <tr><td>Wet Bulb</td><td class="num">{{ U.html('temperature', extreme_annual.wb.return_max[n], 1) }}</td></tr>
+        </table>
+        {{ copy_form(None, extreme_annual.db.return_max[n],
+                      n ~ "-yr max DB — " ~ (place or "site"),
+                      n ~ "-year return max dry-bulb — " ~ (place or "site")) }}
+      </div>
+      <div class="mm-block">
+        <div class="mm-label">{{ n }}-Year Minimum</div>
+        <table class="results state-stack">
+          <tr><td>Dry Bulb</td><td class="num">{{ U.html('temperature', extreme_annual.db.return_min[n], 1) }}</td></tr>
+          <tr><td>Wet Bulb</td><td class="num">{{ U.html('temperature', extreme_annual.wb.return_min[n], 1) }}</td></tr>
+        </table>
+        {{ copy_form(None, extreme_annual.db.return_min[n],
+                      n ~ "-yr min DB — " ~ (place or "site"),
+                      n ~ "-year return min dry-bulb — " ~ (place or "site")) }}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="font-size:12px;color:var(--muted);">Not enough complete years of record to
+    compute return-period extremes (needs at least two). Try a longer years-of-record range.</p>
+    {% endif %}
+  </div>
+
+</div>
+<p style="font-size:11.5px;color:var(--muted);max-width:900px;margin:12px 0 22px;">
+  "h/yr" next to each Summer/Winter percentage is the number of hours a typical year spends
+  at or beyond that condition, not a rare "1-in-N-year" event — it recurs to that degree most
+  years. The Return Period Extremes column IS a return-period estimate (ASHRAE HOF Ch.14
+  extreme-annual / Gumbel method): the mean and standard deviation of each year's extreme,
+  extrapolated to the 5/10/20/50-year value. Its dry-bulb and wet-bulb figures are
+  <em>independent</em> extremes — the hottest and the most-humid hour of a year are usually
+  different hours — so no combined RH/dew-point is shown for them. The single absolute record
+  max/min (and when it occurred) is in <strong>Extended data</strong> below.
+</p>
+
+<details class="notes">
+  <summary>Extended data</summary>
+  <div class="notes-body">
+    <p>Years of record used: {{ dc.years_used }} of {{ dc.years_requested }} requested.
+    {% if dc.rejected_years %}Excluded for incomplete data: {{ dc.rejected_years|join(', ') }}.{% endif %}</p>
+
+    <p><strong>Absolute record extremes</strong> (the single hottest / coldest hour in the
+    record, not a return-period value):</p>
+    <table class="results" style="max-width:520px;">
+      <tr><th></th><th>Dry Bulb</th><th>When</th></tr>
+      <tr><td>Record maximum</td>
+        <td class="num">{{ U.html('temperature', dc.extreme_max_db, 1) }}</td>
+        <td>{{ extreme_max_at }}</td></tr>
+      <tr><td>Record minimum</td>
+        <td class="num">{{ U.html('temperature', dc.extreme_min_db, 1) }}</td>
+        <td>{{ extreme_min_at }}</td></tr>
+    </table>
+
+    {% if extreme_annual %}
+    <p style="margin-top:14px;"><strong>Extreme-annual statistics</strong> — mean and sample
+    standard deviation of each year's extreme, over {{ extreme_annual.n_years }} qualifying
+    years (these underpin the return-period column):</p>
+    <table class="results" style="max-width:620px;">
+      <tr><th></th><th>Mean</th><th>Std Dev</th></tr>
+      <tr><td>Annual max dry-bulb</td>
+        <td class="num">{{ U.html('temperature', extreme_annual.db.mean_max, 1) }}</td>
+        <td class="num">{{ U.html('temperature', extreme_annual.db.std_max, 1) }}</td></tr>
+      <tr><td>Annual min dry-bulb</td>
+        <td class="num">{{ U.html('temperature', extreme_annual.db.mean_min, 1) }}</td>
+        <td class="num">{{ U.html('temperature', extreme_annual.db.std_min, 1) }}</td></tr>
+      <tr><td>Annual max wet-bulb</td>
+        <td class="num">{{ U.html('temperature', extreme_annual.wb.mean_max, 1) }}</td>
+        <td class="num">{{ U.html('temperature', extreme_annual.wb.std_max, 1) }}</td></tr>
+      <tr><td>Annual min wet-bulb</td>
+        <td class="num">{{ U.html('temperature', extreme_annual.wb.mean_min, 1) }}</td>
+        <td class="num">{{ U.html('temperature', extreme_annual.wb.std_min, 1) }}</td></tr>
+    </table>
+    {% endif %}
+
+    <p style="margin-top:14px;">Site elevation: {{ U.html('altitude', elevation, 0) }} — used to derive the design
+    barometric pressure behind every wet-bulb/humidity figure above, the same
+    standard-atmosphere calculation every psychrometric tool in this app uses.</p>
+  </div>
+</details>
+
+{{ report_form(url_for('weather.report'), {'lat': lat, 'lon': lon, 'elevation': elevation, 'place': place, 'years': years}) }}
+{% endif %}
+
+<div class="section-label">On This Day</div>
+<div class="panel" style="max-width:960px;">
+  <div class="panel-body">
+    <form method="get" id="day-form" action="{{ url_for('weather.index') }}">
+      <input type="hidden" name="lat" value="{{ lat if lat is not none else '' }}">
+      <input type="hidden" name="lon" value="{{ lon if lon is not none else '' }}">
+      <input type="hidden" name="elevation" value="{{ elevation if elevation is not none else '' }}">
+      <input type="hidden" name="place" value="{{ place }}">
+      <input type="hidden" name="years" value="{{ years }}">
+      <div class="day-field">
+        <label for="on-date">Pick a Date{% if place %} — {{ place }}{% endif %}</label>
+        <input type="date" id="on-date" name="date" value="{{ selected_day }}"
+               min="{{ day_min }}" max="{{ day_max }}"
+               {% if lat is none %}disabled{% endif %}
+               onchange="submitDayForm()">
+      </div>
+    </form>
+
+    {% if lat is none %}
+    <p style="font-size:12.5px;color:var(--muted);margin-top:12px;">Pick a location above first.</p>
+    {% elif day_error %}
+    <div class="warn-banner">{{ day_error }}</div>
+    {% elif day_readings %}
+    <table class="results" style="margin-top:14px;">
+      <tr><th>Hour</th><th>Dry Bulb</th><th>Wet Bulb</th><th>RH</th><th>Dew Point</th><th>Moisture Ratio</th></tr>
+      {% for r in day_readings %}
+      <tr>
+        <td>{{ '%02d:00'|format(r.hour) }}</td>
+        <td class="num">{{ U.html('temperature', r.state.t_db if r.state else None, 1) }}</td>
+        <td class="num">{{ U.html('temperature', r.state.t_wb if r.state else None, 1) }}</td>
+        <td class="num">
+          {% if r.state %}<span class="valunit"><span class="v">{{ '%.0f'|format(r.state.rh * 100) }}</span><span class="u">%</span></span>{% else %}<span class="valunit"><span class="v">—</span></span>{% endif %}
+        </td>
+        <td class="num">{{ U.html('temperature', r.state.t_dp if r.state else None, 1) }}</td>
+        <td class="num">{{ U.html('humidity_ratio', r.state.w if r.state else None) }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% elif selected_day %}
+    <p style="font-size:12.5px;color:var(--muted);margin-top:12px;">No data returned for this date.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+{# --- Manual entry mode ------------------------------------------------------
+   Type authoritative design conditions (e.g. from an ASHRAE or CIBSE table).
+   Everything is a GET, so a filled-in set is a shareable URL like the rest of
+   the app. Values are in the active unit system; the blueprint converts to SI
+   and derives the humidity properties at the site pressure. #}
+<div class="note-banner">
+  <span>Manual entry — these are the values <em>you</em> provide (e.g. from an ASHRAE or CIBSE
+  design-condition table). Nothing is fetched or estimated; the tool only derives the humidity
+  properties (RH, dew point, moisture ratio) from your dry-bulb + wet-bulb at the site pressure,
+  so you can carry a defensible design condition straight into copy-to-slot and the PDF.</span>
+</div>
+
+{% if manual_error %}<div class="error">{{ manual_error }}</div>{% endif %}
+
+<div class="panel" style="max-width:760px;">
+  <div class="panel-head">Enter Design Conditions</div>
+  <div class="panel-body">
+    <form method="get" action="{{ url_for('weather.index') }}">
+      <input type="hidden" name="mode" value="manual">
+      <div class="manual-grid">
+        <div class="manual-group">
+          <div class="manual-group-title">Summer (cooling)</div>
+          <label>Dry Bulb ({{ U.sym('temperature') }})</label>
+          <input type="text" name="m_su_db" value="{{ manual_raw['m_su_db'] }}" inputmode="decimal">
+          <label>Wet Bulb ({{ U.sym('temperature') }})</label>
+          <input type="text" name="m_su_wb" value="{{ manual_raw['m_su_wb'] }}" inputmode="decimal">
+        </div>
+        <div class="manual-group">
+          <div class="manual-group-title">Winter (heating)</div>
+          <label>Dry Bulb ({{ U.sym('temperature') }})</label>
+          <input type="text" name="m_wi_db" value="{{ manual_raw['m_wi_db'] }}" inputmode="decimal">
+          <label>Wet Bulb ({{ U.sym('temperature') }}) <span class="suffix">optional</span></label>
+          <input type="text" name="m_wi_wb" value="{{ manual_raw['m_wi_wb'] }}" inputmode="decimal">
+        </div>
+        <div class="manual-group">
+          <div class="manual-group-title">Site</div>
+          <label>Elevation ({{ U.sym('altitude') }}) <span class="suffix">for pressure</span></label>
+          <input type="text" name="m_elev" value="{{ manual_raw['m_elev'] }}" inputmode="decimal">
+          <label>Source / note</label>
+          <input type="text" name="m_label" value="{{ manual_raw['m_label'] }}" placeholder="e.g. ASHRAE 0.4%/99.6%, Heathrow">
+        </div>
+      </div>
+      <button type="submit" class="btn-accent">Show Conditions</button>
+    </form>
+  </div>
+</div>
+
+{% if manual %}
+<div class="section-label">Design Conditions{% if manual_raw['m_label'] %} — {{ manual_raw['m_label'] }}{% endif %}</div>
+{% if manual.summer_db is not none or manual.winter_db is not none %}
+<div class="condition-columns" style="grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 740px;">
+  {% if manual.summer_db is not none %}
+  <div class="col-panel tile-air">
+    <div class="col-head"><span>Summer (cooling)</span></div>
+    {{ state_table(manual.summer, manual.summer_db) }}
+    {{ copy_form(manual.summer, manual.summer_db,
+                  "Summer design" ~ (" — " ~ manual_raw['m_label'] if manual_raw['m_label'] else ""),
+                  "Summer design (manual)" ~ (" — " ~ manual_raw['m_label'] if manual_raw['m_label'] else "")) }}
+  </div>
+  {% endif %}
+  {% if manual.winter_db is not none %}
+  <div class="col-panel tile-water">
+    <div class="col-head"><span>Winter (heating)</span></div>
+    {{ state_table(manual.winter, manual.winter_db) }}
+    {{ copy_form(manual.winter, manual.winter_db,
+                  "Winter design" ~ (" — " ~ manual_raw['m_label'] if manual_raw['m_label'] else ""),
+                  "Winter design (manual)" ~ (" — " ~ manual_raw['m_label'] if manual_raw['m_label'] else "")) }}
+  </div>
+  {% endif %}
+</div>
+<p style="font-size:11.5px;color:var(--muted);max-width:740px;margin:12px 0 22px;">
+  Humidity properties are derived from your dry-bulb + wet-bulb at the site design pressure
+  ({{ U.html('pressure', manual.pressure) }}). Winter shows dry-bulb alone if no wet-bulb was entered.
+</p>
+{{ report_form(url_for('weather.report'), {'mode': 'manual', 'm_su_db': manual_raw['m_su_db'], 'm_su_wb': manual_raw['m_su_wb'], 'm_wi_db': manual_raw['m_wi_db'], 'm_wi_wb': manual_raw['m_wi_wb'], 'm_elev': manual_raw['m_elev'], 'm_label': manual_raw['m_label']}) }}
+{% else %}
+<p style="color:var(--muted);">Enter at least a dry-bulb value for Summer or Winter.</p>
+{% endif %}
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  const WEATHER_MAP = {
+    lat: {{ lat if lat is not none else 54.0 }},
+    lon: {{ lon if lon is not none else -2.5 }},
+    hasLocation: {{ 'true' if lat is not none else 'false' }},
+    searchUrl: {{ url_for('weather.search')|tojson }},
+    elevationUrl: {{ url_for('weather.elevation')|tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/weathermap.js') }}"></script>
+{% endblock %}

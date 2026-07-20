@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "_state_row.html" import state_cells with context %}
+{% from "_state_input.html" import state_input with context %}
+{% from "_site_conditions.html" import site_conditions with context %}
+{% from "_report_form.html" import report_form with context %}
+{% block page_title %}Psychrometrics - Cooling Coil{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="panel" style="max-width:920px;">
+  <div class="panel-head">Coil conditions</div>
+  <div class="panel-body">
+    <form method="post">
+      {{ site_conditions(form, pressure) }}
+
+      <div class="section-label">On-coil</div>
+      <div class="form-grid four">
+        {{ state_input("on", "On-coil", form, second_properties) }}
+        <div><label>On-coil Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
+      </div>
+
+      <div class="section-label">Off-coil</div>
+      <div class="form-grid four">
+        {{ state_input("off", "Off-coil", form, second_properties) }}
+      </div>
+
+      <div style="margin-top:16px;"><button class="btn-accent" type="submit">Calculate</button></div>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+{% if result.frost_risk %}
+<div class="warn-banner">Frost risk: apparatus dew point {{ U.html('temperature', result.t_adp) }} is at or
+below freezing. Consider glycol protection, DX defrost strategy or face-and-bypass control.</div>
+{% endif %}
+
+<div class="section-label">Coil duty</div>
+<div class="panel" style="max-width:720px;">
+  <table class="results">
+    <tr><th></th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th></tr>
+    <tr><td>On coil</td>{{ state_cells(on) }}</tr>
+    <tr><td>Off coil</td>{{ state_cells(result.state) }}</tr>
+  </table>
+  <table class="results">
+    <tr><td>Total cooling</td><td class="num"><strong>{{ U.html('power', -result.q_total) }}</strong></td></tr>
+    <tr><td>Sensible / latent</td><td class="num"><span class="valunit"><span class="v">{{ U.fmt('power', -result.q_sensible) }} / {{ U.fmt('power', -result.q_latent) }}</span><span class="u">{{ U.sym('power') }}</span></span></td></tr>
+    <tr><td>Sensible heat ratio</td><td class="num">{{ '%.2f'|format(result.shr) }}</td></tr>
+    <tr><td>Condensate</td><td class="num">{{ U.html('moisture_rate', result.condensate) }}</td></tr>
+    {% if result.t_adp is not none %}
+    <tr><td>Apparatus dew point</td><td class="num">{{ U.html('temperature', result.t_adp) }}</td></tr>
+    <tr><td>Contact / bypass factor</td><td class="num">{{ '%.2f'|format(result.contact_factor) }} / {{ '%.2f'|format(result.bypass_factor) }}</td></tr>
+    {% endif %}
+    <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', m_da) }}</td></tr>
+  </table>
+</div>
+
+{% include "_chart.html" %}
+
+<details class="notes">
+  <summary>Coil application notes</summary>
+  <div class="notes-body">
+    <p><strong>Off-coil RH.</strong> A wet (dehumidifying) coil typically leaves air at 90–95% RH;
+    0.90 is a reasonable design assumption for 4–6 row coils. A higher value implies more coil
+    surface (more rows / closer fins) for the same duty.</p>
+    <p><strong>ADP, contact and bypass factor.</strong> The apparatus dew point is where the extended
+    process line meets the saturation curve — effectively the mean coil surface temperature. The
+    contact factor is the fraction of air treated to the ADP; the bypass factor is the fraction
+    passing through unchanged. Deep coils have high contact factors; shallow high-velocity coils
+    bypass more.</p>
+    <p><strong>Frost risk.</strong> An ADP at or below 0 °C means the coil surface can freeze
+    condensate. Options: raise the chilled water temperature or off-coil target, glycol, a defrost
+    strategy on DX, or face-and-bypass control.</p>
+    <p><strong>Face velocity.</strong> Keep coil face velocity in the region of 2–2.5 m/s;
+    above ~2.75 m/s condensate carry-over from the fins becomes likely and an eliminator or
+    larger coil face is needed.</p>
+    <p><strong>Condensate.</strong> Size the drain and trap for the calculated rate; the trap depth
+    must exceed the fan pressure at the drain pan.</p>
+  </div>
+</details>
+
+{{ report_form(url_for('psychro.cooling_coil_report'), form, url_for('psychro.cooling_coil_chart_png')) }}
+{% endif %}
+
+{% endblock %}

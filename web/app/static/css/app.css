@@ -1,0 +1,821 @@
+/* Style v2 — light theme, blue primary / green secondary. Adopted 3 Jul 2026. */
+
+:root {
+  --bg: #E8EDF5;
+  --panel: #FFFFFF;
+  --ink: #16202E;
+  --muted: #697687;
+  --line: #E1E7F0;
+
+  --blue: #2E6FB2;
+  --blue-ink: #1E5488;
+  --blue-soft: #E9F1FA;
+  --green: #2AA36B;
+  --green-ink: #1C7A4E;
+  --green-soft: #E5F5EC;
+
+  /* traffic-light status */
+  --tl-green: #22A366;
+  --tl-amber: #E0A419;
+  --tl-red: #D6484A;
+
+  /* light sidebar */
+  --side: #FFFFFF;
+  --side-ink: #4A5666;
+
+  /* pastel discipline tints */
+  --air: #EAF2FB;   --air-bd: #CDDFF3;   --air-ink: #1E5488;
+  --water: #E7F6EE; --water-bd: #C4E6D3; --water-ink: #1C7A4E;
+  --duct: #FBE9F4;  --duct-bd: #EFCBE2;  --duct-ink: #9E3B80;
+  --util: #EEF0F5;  --util-bd: #DBE0EA;  --util-ink: #54607A;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar (light) ── */
+.sidebar {
+  width: 236px; background: var(--side); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0;
+}
+.logo { display: flex; align-items: center; gap: 10px; padding: 20px 18px 16px; }
+.logo-mark {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--blue), var(--green));
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 800; font-size: 15px;
+}
+.logo-name { color: var(--ink); font-weight: 700; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; }
+.logo-tag { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+
+.nav-group { padding: 12px 12px 2px; }
+.nav-group-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--muted); padding: 0 10px 6px; font-weight: 700;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; margin-bottom: 3px; border-radius: 10px;
+  color: var(--side-ink); text-decoration: none; font-size: 13px;
+  border-left: 3px solid transparent; border-bottom: 2px solid transparent;
+  transition: background .15s, border-color .15s, color .15s, transform .1s;
+}
+.nav-item:hover {
+  background: var(--blue-soft); color: var(--blue-ink);
+  border-left-color: var(--blue); border-bottom-color: var(--green);
+  transform: translateX(1px);
+}
+.nav-item.active {
+  background: var(--blue-soft); color: var(--blue-ink); font-weight: 600;
+  border-left-color: var(--blue); border-bottom-color: var(--green);
+}
+.nav-item.disabled { opacity: .5; cursor: default; }
+.nav-item.disabled:hover { background: none; color: var(--side-ink); border-color: transparent; transform: none; }
+.nav-item .pro-chip, .nav-item .soon { margin-left: auto; }
+.soon {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+  border: 1px solid var(--line); border-radius: 10px; padding: 1px 7px; color: var(--muted);
+}
+
+.sidebar-foot {
+  margin-top: auto; padding: 14px 18px; border-top: 1px solid var(--line);
+  display: flex; align-items: center; gap: 10px; font-size: 12px;
+}
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--green)); color: white;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;
+}
+.foot-text { color: var(--muted); }
+
+/* ── Main ── */
+.main { margin-left: 236px; flex: 1; }
+.topbar {
+  height: 58px; background: var(--panel); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; padding: 0 28px; gap: 14px;
+  position: sticky; top: 0; z-index: 20;
+}
+.topbar-title { font-weight: 650; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+.topbar-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+
+.unit-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.unit-pill { padding: 7px 12px; border: none; background: white; cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 600; font-family: inherit; }
+.unit-pill + .unit-pill { border-left: 1px solid var(--line); }
+.unit-pill:hover { background: var(--blue-soft); color: var(--blue-ink); }
+.unit-pill.on { background: var(--blue); color: white; }
+.unit-pill.on:hover { background: var(--blue-ink); }
+
+.content { padding: 26px 32px 60px; max-width: 1160px; }
+.greeting { font-size: 21px; font-weight: 700; margin-bottom: 3px; }
+.greeting-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.section-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--muted); font-weight: 700; margin: 26px 0 12px;
+}
+
+/* chips */
+.pro-chip {
+  font-size: 9px; font-weight: 800; letter-spacing: .5px; color: var(--green-ink);
+  background: var(--green-soft); border: 1px solid #BFE6D0; padding: 1px 6px;
+  border-radius: 10px; text-transform: uppercase;
+}
+.disc-chip {
+  font-size: 10px; font-weight: 700; letter-spacing: .4px; padding: 2px 9px;
+  border-radius: 20px; background: var(--util); color: var(--util-ink); border: 1px solid var(--util-bd);
+}
+.disc-chip.air { background: var(--air); color: var(--air-ink); border-color: var(--air-bd); }
+.disc-chip.water { background: var(--water); color: var(--water-ink); border-color: var(--water-bd); }
+.disc-chip.duct { background: var(--duct); color: var(--duct-ink); border-color: var(--duct-bd); }
+
+/* ── Tool cards ── */
+.tool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.tool {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px; text-decoration: none; color: var(--ink); display: block;
+  box-shadow: 0 1px 3px rgba(22,32,46,.06);
+  transition: box-shadow .15s, transform .15s, border-color .15s;
+}
+.tool:hover { box-shadow: 0 10px 24px rgba(22,32,46,.13); transform: translateY(-2px); }
+.tool.disabled { opacity: .6; box-shadow: none; }
+.tool.disabled:hover { box-shadow: none; transform: none; }
+.tool-ico {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--blue-soft); color: var(--blue-ink);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px;
+}
+.tool-name { font-weight: 650; font-size: 13.5px; margin-bottom: 4px; }
+.tool-desc { font-size: 11.5px; color: var(--muted); line-height: 1.55; }
+
+/* pastel discipline tints (tool cards + continue cards) */
+.tile-air { background: var(--air); border-color: var(--air-bd); }
+.tile-air .tool-ico { background: #DBEAF8; color: var(--air-ink); }
+.tile-water { background: var(--water); border-color: var(--water-bd); }
+.tile-water .tool-ico { background: #D2EEDD; color: var(--water-ink); }
+.tile-duct { background: var(--duct); border-color: var(--duct-bd); }
+.tile-duct .tool-ico { background: #F5D8EC; color: var(--duct-ink); }
+.tile-util { background: var(--util); border-color: var(--util-bd); }
+.tile-util .tool-ico { background: #E3E7EF; color: var(--util-ink); }
+
+/* ── Panels, forms, results ── */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 1px 3px rgba(22,32,46,.06); }
+.panel-head { padding: 14px 18px; border-bottom: 1px solid var(--line); font-weight: 650; font-size: 13px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.panel-body { padding: 18px; }
+
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 560px; margin-bottom: 20px; }
+.form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
+.form-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: none; }
+.form-grid:last-child { margin-bottom: 0; }
+
+/* _state_input.html's "Paste from Slot" row: `order: 999` pushes it after
+   every normal (order: 0, the default) grid item regardless of where it
+   actually sits in the DOM -- so it always lands on its own full-width row
+   below a state_input() group, even when the calling template adds its own
+   4th field right after (e.g. Mixed Air's "Stream A Flow"), which needs to
+   stay visually in that group's original 4th column, not get bumped by this. */
+.paste-slot-row { grid-column: 1 / -1; order: 999; min-height: 0; }
+.paste-slot-row label { min-height: 0; margin-bottom: 6px; }
+.paste-slot-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.paste-slot-btn { padding: 6px 12px; font-size: 11.5px; text-decoration: none; display: inline-block; }
+/* Fixed two-line reserve on every label: a short label ("Altitude (m)") and a
+   long one that wraps ("Barometric Pressure (kPa) — derived from altitude")
+   sit in the same-height box, so their inputs start at the same y position
+   across a form-grid row regardless of label length -- otherwise a row with
+   one short and one wrapped label leaves that row's inputs visibly offset
+   from each other. */
+label { display: block; font-size: 11.5px; font-weight: 650; color: var(--muted); margin-bottom: 5px; line-height: 1.3; min-height: 2.6em; }
+input, select {
+  width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
+  font-size: 13px; font-family: inherit; background: white; color: var(--ink);
+}
+input:focus, select:focus { outline: 2px solid var(--blue-soft); border-color: var(--blue); }
+input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; }
+/* Flat oval's major/minor steppers (Correction #5): the number itself is
+   display-only -- only the +/- buttons move it, since a typed value could
+   otherwise invite a size that isn't in the real Lindab catalogue. */
+input[readonly] { background: var(--bg); cursor: default; }
+.btn-accent {
+  padding: 9px 18px; border: none; background: var(--blue); border-radius: 8px;
+  font-size: 13px; color: white; font-weight: 600; cursor: pointer;
+}
+.btn-accent:hover { background: var(--blue-ink); }
+.btn-green { padding: 9px 18px; border: none; background: var(--green); border-radius: 8px; font-size: 13px; color: white; font-weight: 600; cursor: pointer; }
+.btn-green:hover { background: var(--green-ink); }
+.btn-ghost { padding: 8px 14px; border: 1px solid var(--line); background: white; border-radius: 8px; font-size: 12.5px; color: var(--ink); cursor: pointer; }
+
+table.results { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.results td, table.results th { padding: 10px 18px; text-align: left; border-bottom: 1px solid #EEF1F5; }
+table.results th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+table.results tr:last-child td { border-bottom: none; }
+td.num { font-family: Consolas, monospace; text-align: right; }
+
+/* Value + unit pairing (see app/units.py UnitView.html) -- a fixed, CSS-driven
+   gap between the number and its unit, and a distinct muted/smaller style for
+   the unit itself, so every result row reads consistently whether the number
+   is short or long, and in either unit system. */
+.valunit { display: inline-flex; align-items: baseline; gap: 0.4em; white-space: nowrap; }
+.valunit .v { font-variant-numeric: tabular-nums; }
+.valunit .u { color: var(--muted); font-size: 0.86em; font-weight: 600; }
+.suffix { color: var(--muted); font-size: 0.86em; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+/* ── Traffic-light status dots (for sizing tools) ── */
+.tl { display: inline-flex; align-items: center; gap: 8px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; flex: none; display: inline-block; }
+.dot.green { background: var(--tl-green); box-shadow: 0 0 0 3px rgba(34,163,102,.16); }
+.dot.amber { background: var(--tl-amber); box-shadow: 0 0 0 3px rgba(224,164,25,.16); }
+.dot.red { background: var(--tl-red); box-shadow: 0 0 0 3px rgba(214,72,74,.16); }
+.tl-text { font-size: 11.5px; color: var(--muted); }
+.status-legend { display: flex; gap: 20px; font-size: 11.5px; color: var(--muted); margin: 4px 0 16px; padding: 10px 14px; }
+.status-legend .tl { gap: 7px; }
+
+/* ── Messages ── */
+.error { background: #FBEAEA; border: 1px solid #EFC6C6; color: #8F2C2C; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 14px; }
+.warn-banner { background: #FDF3DC; border: 1px solid #EBD9A8; color: #79600F; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin: 14px 0; max-width: 820px; }
+.note-banner { display: flex; gap: 11px; align-items: flex-start; background: var(--blue-soft); border: 1px solid #CADFF4; color: var(--blue-ink); border-radius: 12px; padding: 13px 16px; font-size: 12.5px; line-height: 1.55; margin-bottom: 20px; max-width: 900px; }
+
+.note-flag { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: #FDF3DC; color: #79600F; font-weight: 700; font-size: 11px; text-align: center; line-height: 16px; cursor: help; }
+
+details.notes { max-width: 820px; margin-top: 18px; }
+details.notes summary { cursor: pointer; font-weight: 650; font-size: 13px; color: var(--blue-ink); padding: 10px 0; }
+details.notes .notes-body { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; font-size: 12.5px; line-height: 1.6; color: var(--ink); }
+details.notes .notes-body p { margin-bottom: 10px; }
+details.notes .notes-body p:last-child { margin-bottom: 0; }
+
+/* ── Unit Converter ── */
+.conv-group-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--blue-ink); font-weight: 700; margin: 18px 0 6px; }
+.conv-panel { max-width: 720px; overflow: hidden; }
+.conv-table td { vertical-align: baseline; }
+.conv-table .conv-val { text-align: right; font-weight: 650; width: 24%; white-space: nowrap; }
+.conv-table .conv-sym { color: var(--ink); width: 12%; font-family: Consolas, monospace; }
+.conv-table .conv-name { color: var(--muted); width: 28%; }
+.conv-table .conv-note { color: var(--muted); font-family: Consolas, monospace; font-size: 12px; text-align: right; white-space: nowrap; }
+.conv-table tr.conv-input { background: var(--blue-soft); }
+.conv-table tr.conv-input .conv-val, .conv-table tr.conv-input .conv-sym { color: var(--blue-ink); }
+.conv-form select, .conv-form input { width: 100%; }
+
+/* ── Design Guides ── */
+.guide-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.guide-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px; text-decoration: none; color: var(--ink); display: block;
+  box-shadow: 0 1px 3px rgba(22,32,46,.06);
+  transition: box-shadow .15s, transform .15s;
+}
+.guide-card:hover { box-shadow: 0 10px 24px rgba(22,32,46,.13); transform: translateY(-2px); }
+.guide-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.guide-read { font-size: 11px; color: var(--muted); }
+.guide-card-title { font-weight: 650; font-size: 14.5px; margin-bottom: 6px; line-height: 1.35; }
+.guide-card-summary { font-size: 12px; color: var(--muted); line-height: 1.55; }
+
+.article { max-width: 820px; font-size: 13.5px; line-height: 1.7; margin-top: 18px; }
+.article h2 { font-size: 16px; margin: 28px 0 10px; color: var(--ink); }
+.article p { margin-bottom: 14px; }
+.article a { color: var(--blue-ink); }
+.article strong { color: var(--ink); }
+.article .formula {
+  font-family: Consolas, monospace; background: var(--blue-soft); border: 1px solid #CADFF4;
+  color: var(--blue-ink); border-radius: 8px; padding: 10px 14px; margin: 8px 0 16px; font-size: 13px;
+}
+.article .fig { margin: 18px 0 22px; }
+.article .fig svg { width: 100%; height: auto; display: block; }
+.article .fig-caption { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+.article .callout {
+  background: var(--green-soft); border: 1px solid #BFE6D0; color: var(--green-ink);
+  border-radius: 12px; padding: 14px 16px; font-size: 12.5px; line-height: 1.6; margin-top: 8px;
+}
+
+/* ── Projects (placeholder) ── */
+.page-title { font-size: 21px; font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 10px; }
+.page-sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+.project { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(22,32,46,.06); }
+.project-head { display: flex; align-items: center; gap: 11px; padding: 15px 18px; border-bottom: 1px solid var(--line); }
+.project-badge { width: 30px; height: 30px; border-radius: 9px; background: var(--blue-soft); color: var(--blue-ink); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.project-name { font-weight: 700; font-size: 14px; }
+.project-meta { margin-left: auto; font-size: 11.5px; color: var(--muted); }
+.cell-title { font-weight: 600; }
+.cell-type { font-size: 10.5px; color: var(--muted); }
+.type-chip { font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 20px; display: inline-block; }
+.type-chip.air { background: var(--air); color: var(--air-ink); border: 1px solid var(--air-bd); }
+.type-chip.duct { background: var(--duct); color: var(--duct-ink); border: 1px solid var(--duct-bd); }
+.type-chip.water { background: var(--water); color: var(--water-ink); border: 1px solid var(--water-bd); }
+.row-link { font-size: 11.5px; color: var(--blue-ink); font-weight: 600; text-decoration: none; }
+
+/* ── Site Data - Weather & Design Conditions ── */
+.search-field { position: relative; }
+.location-dropdown {
+  /* z-index must clear Leaflet's own panes (tile/marker/popup panes run up to
+     ~700 by Leaflet's default CSS) or the map repaints over this on zoom/pan --
+     1000 is the standard safe value for UI overlaid on a Leaflet map. */
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1000;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(22,32,46,.13); max-height: 260px; overflow-y: auto;
+}
+.location-dropdown.open { display: block; }
+.location-hint {
+  padding: 7px 13px; font-size: 10px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--muted); border-bottom: 1px solid var(--line); background: var(--bg);
+}
+.location-option { padding: 9px 13px; font-size: 12.5px; cursor: pointer; border-bottom: 1px solid var(--line); }
+.location-option:last-child { border-bottom: none; }
+.location-option:hover, .location-option.active { background: var(--blue-soft); color: var(--blue-ink); }
+.location-empty { padding: 9px 13px; font-size: 12px; color: var(--muted); }
+
+#weather-map { width: 100%; border: 1px solid var(--line); }
+/* Leaflet's own CSS sizes tiles off its container's pixel height, so this map
+   needs an explicit height (set inline in weather.html) rather than the usual
+   fluid panel sizing -- otherwise the tile layer collapses to 0px tall. */
+
+/* Selecting a location triggers a full page reload while the server fetches
+   several years of hourly history and runs the percentile calc (a few
+   seconds) -- this covers that wait. Shown on #weather-form's submit event;
+   never explicitly hidden in JS because the whole page (this overlay
+   included) gets replaced the moment the new page with results arrives, so
+   "clears when the data displays" happens for free. */
+.loading-overlay {
+  display: none; position: fixed; inset: 0; z-index: 2000;
+  background: rgba(22, 32, 46, .45); align-items: center; justify-content: center;
+}
+.loading-overlay.open { display: flex; }
+.loading-card {
+  background: var(--panel); border-radius: 14px; padding: 28px 40px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  box-shadow: 0 20px 50px rgba(22,32,46,.3);
+}
+.loading-spinner {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 3px solid var(--line); border-top-color: var(--blue);
+  animation: loading-spin .8s linear infinite;
+}
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; font-weight: 650; color: var(--ink); }
+
+/* Memory Slots -- global top banner, rendered once in base.html so it's on
+   every page (Dashboard, every tool), not just Weather (see
+   app/climate_slots.py + app/__init__.py::inject_climate_slots). Slots are
+   filled from the Weather tool today; the point of putting this at the top
+   of every page is that a slot is meant to outlive the page that filled it
+   -- e.g. reading one back into a psychrometric tool's "paste into on-coil"
+   input once that side is built. Deliberately compact (a single-line strip
+   of chips), since this now competes for space with every tool's own
+   topbar, not just Weather's results. */
+.global-slot-bar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  padding: 8px 24px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.global-slot-bar-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-right: 4px; }
+.slot-chip {
+  display: flex; align-items: center; gap: 7px; padding: 5px 10px;
+  border-radius: 20px; border: 1px solid var(--line); background: var(--bg);
+  font-size: 11.5px;
+}
+.slot-chip.filled { border-color: var(--blue-bd, var(--line)); background: var(--blue-soft); }
+.slot-chip-index {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; background: var(--panel);
+  font-size: 9.5px; font-weight: 700; color: var(--muted);
+}
+.slot-chip-label { font-weight: 700; }
+.slot-chip-values { color: var(--muted); }
+.slot-chip-empty { color: var(--muted); font-style: italic; }
+.slot-chip-clear-form { display: inline-flex; line-height: 0; }
+.slot-chip-clear {
+  border: none; background: none; cursor: pointer; color: var(--muted);
+  font-size: 14px; line-height: 1; padding: 0 0 0 2px;
+}
+.slot-chip-clear:hover { color: var(--ink); }
+
+/* Design Conditions -- Summer / Winter / Max-Min three-column layout. Each
+   column is tinted with the same discipline colours used elsewhere in the
+   app (.tile-air/.tile-water/.tile-duct) purely as a visual mnemonic to tell
+   the three columns apart at a glance, not because Summer "is" air treatment
+   etc. */
+.condition-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 1100px; margin-bottom: 8px; }
+.col-panel { border-radius: 14px; border: 1px solid var(--line); padding: 16px; }
+.col-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; font-size: 13.5px; margin-bottom: 12px; }
+
+/* Design Percentile -- one shared radio group above the columns, replacing
+   what used to be two separate per-column <select>s. Radio buttons rather
+   than a dropdown so the choice (and that there IS a choice) is visible
+   without opening anything. */
+.tier-select {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+  max-width: 1100px; margin: 10px 0 16px; padding: 12px 16px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+}
+.tier-select-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.tier-option { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.tier-option input[type="radio"] { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
+
+.state-stack { background: var(--panel); border-radius: 10px; }
+.state-stack td { padding: 7px 12px; font-size: 12.5px; }
+.copy-form { margin-top: 10px; }
+.copy-row { display: flex; gap: 6px; align-items: center; }
+.copy-row input[type="text"] { flex: 1; min-width: 0; font-size: 11.5px; padding: 6px 9px; border-radius: 7px; border: 1px solid var(--line); }
+.copy-row select { font-size: 11.5px; padding: 6px; border-radius: 7px; border: 1px solid var(--line); background: white; }
+.copy-row .btn-ghost { padding: 6px 10px; font-size: 11.5px; white-space: nowrap; }
+.mm-block { margin-bottom: 16px; }
+.mm-block:last-child { margin-bottom: 0; }
+.mm-label { font-weight: 650; font-size: 12.5px; margin-bottom: 6px; }
+
+/* Return Period Extremes -- a compact in-column radio group picking the return
+   period n (5/10/20/50), styled like the page's other selectors but scaled to
+   sit inside the column rather than span the page like the Design Percentile
+   tier group. */
+.rp-select {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line);
+}
+.rp-select-label {
+  width: 100%; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--muted); margin-bottom: 2px;
+}
+.rp-option { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.rp-option input[type="radio"] { width: 14px; height: 14px; accent-color: var(--blue); cursor: pointer; }
+
+/* ERA5-lookup vs Manual-entry mode tabs. */
+.mode-tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+.mode-tab {
+  padding: 9px 16px; font-size: 13px; font-weight: 650; text-decoration: none;
+  color: var(--muted); border: 1px solid transparent; border-bottom: none;
+  border-radius: 8px 8px 0 0; margin-bottom: -1px;
+}
+.mode-tab:hover { color: var(--ink); background: var(--panel); }
+.mode-tab.active {
+  color: var(--blue); background: var(--panel);
+  border-color: var(--line); border-bottom: 2px solid var(--blue);
+}
+
+/* Manual design-condition entry form: Summer / Winter / Site groups. */
+.manual-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-bottom: 14px; }
+.manual-group { display: flex; flex-direction: column; gap: 4px; }
+.manual-group-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--muted); margin-bottom: 4px; padding-bottom: 5px; border-bottom: 1px solid var(--line);
+}
+.manual-group label { min-height: 0; line-height: 1.3; font-size: 12px; margin-top: 4px; }
+.manual-group input[type="text"] {
+  font-size: 13px; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--line);
+}
+@media (max-width: 720px) { .manual-grid { grid-template-columns: 1fr; } }
+
+/* On This Day -- single date-picker field, styled like the rest of the
+   form-grid inputs but standalone (only one field, no multi-column grid). */
+.day-field { max-width: 280px; }
+.day-field input[type="date"] { width: 100%; }
+
+/* Duct Sizing -- three shape columns (circular/rectangular/flat oval) shown
+   side by side, all driven live off the top inputs (Correction #2: "all
+   three update with changes in primary input values"). Reuses .col-panel's
+   card look but its own grid class since the column count/labelling differs
+   from the weather tool's Summer/Winter/Extremes layout. */
+.duct-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 8px; max-width: 1100px; }
+.duct-columns .col-panel {
+  background: var(--panel); box-shadow: 0 1px 3px rgba(22,32,46,.06);
+}
+.duct-columns .col-panel.is-loading { opacity: .55; pointer-events: none; transition: opacity .12s; }
+
+/* Rectangular column's round-to-25mm toggle -- its own left-justified row
+   above the width/height rows (Correction #4: quantises whichever dimension
+   is being set to the nearest 25mm grid; no longer paired with a solve). */
+.rect-round25-row { margin-bottom: 14px; font-size: 11px; }
+.rect-round25-row label { display: flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.rect-round25-row input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--blue); cursor: pointer; }
+
+/* Each rectangular dimension's own row: label, stepper, and a lock toggle
+   pushed to the right, level with that row's input (Correction #4 -- lock
+   is now per-dimension, not a 3-way Free/Width/Height choice). */
+.rect-dim-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.rect-dim-label { font-size: 11.5px; font-weight: 600; width: 42px; flex-shrink: 0; }
+
+.lock-toggle {
+  display: flex; align-items: center; gap: 6px; margin-left: auto;
+  border: 1px solid var(--line); background: white; border-radius: 7px;
+  padding: 5px 10px; font-size: 11px; font-weight: 600; color: var(--muted);
+  cursor: pointer; font-family: inherit;
+}
+.lock-toggle:hover { border-color: var(--blue); color: var(--blue-ink); }
+.lock-toggle .lock-icon { display: none; }
+.lock-toggle[data-locked="false"] .lock-icon.lock-open { display: block; }
+.lock-toggle[data-locked="true"] .lock-icon.lock-closed { display: block; }
+.lock-toggle[data-locked="true"] { border-color: var(--blue); color: var(--blue-ink); background: var(--blue-soft); }
+.lock-label { white-space: nowrap; }
+
+/* A "nudge" control: a directly-editable number field plus small up/down
+   steppers, for the rectangular width/height and flat-oval major/minor
+   fields that "can be adjusted up/down, and the alternate dimension changes
+   to maintain equivalence" (Paul's own wording). */
+.stepper { display: inline-flex; align-items: center; gap: 5px; }
+.stepper input[type="number"] {
+  width: 72px; text-align: right; padding: 5px 7px; font-size: 12.5px;
+  border: 1px solid var(--line); border-radius: 7px;
+}
+.stepper button {
+  width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line);
+  background: white; color: var(--ink); cursor: pointer; font-size: 12px;
+  line-height: 1; display: flex; align-items: center; justify-content: center;
+  font-family: inherit; padding: 0;
+}
+.stepper button:hover { background: var(--blue-soft); border-color: var(--blue); color: var(--blue-ink); }
+.stepper-unit { font-size: 11.5px; color: var(--muted); margin-left: 2px; }
+
+.col-reset { font-size: 11px; color: var(--blue-ink); background: none; border: none; cursor: pointer;
+  font-family: inherit; padding: 0; text-decoration: underline; }
+.col-reset:hover { color: var(--blue); }
+
+.col-subhead { font-size: 11px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+
+/* Index Leg pressure-drop builder (Correction #7 -- spreadsheet-style data
+   grid) -- extends the duct-sizing page below the three shape columns, but
+   is fully independent of them: every row (and the "Add an Item" entry row)
+   carries its own volume/shape/size, since a real index leg is a sequence
+   of different pieces, not one shared duty. See blueprints/duct.py's module
+   docstring.
+
+   Paul's direct feedback on the previous layout (Correction #6): a
+   label-above-input grid per row took too much vertical space/padding and
+   wrapped onto a second line once more than ~4 fields were visible at once
+   (a straight/fitting row needs 5+). Replaced with a genuine HTML table --
+   header row printed once, one <td> per column per row (see the
+   `leg_row_cells` macro / `buildRowCellsHtml()`), fixed column widths via
+   <colgroup> so they never drift row to row the way free-flowing grid
+   columns could. A field that doesn't apply to a row's current type/shape
+   still gets its cell -- its candidate input(s) are just hidden (see
+   `updateFieldVisibility` in ductsizer.js), leaving a blank cell, exactly
+   like an empty cell in a real spreadsheet -- never a hidden/removed <td>,
+   which would shift every following cell in that row out of alignment with
+   the header. */
+.leg-table-scroll { overflow-x: auto; }
+table.leg-rows-table { table-layout: fixed; width: 100%; min-width: 0; }
+table.leg-rows-table th, table.leg-rows-table td { padding: 5px 6px; }
+table.leg-rows-table td.leg-cell { overflow: hidden; }
+table.leg-rows-table th { line-height: 1.35; }
+table.leg-rows-table .th-unit { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
+
+/* Column widths as percentages of the table width so the table always
+   fills the panel body (width:100% above) without overflowing or
+   producing a scrollbar regardless of screen size or DPI scaling.
+   Two col-size elements (Size 1 and Size 2) both match col.col-size.
+   Total = 3+11+9+8+8+8+7+13+9+7+10+7 = 100%.
+   NB: col-action is 7% (not a token 4%) because the stage row's "+ Add"
+   button lives in that column; a too-narrow action column let the button
+   overflow its cell (the action <td> doesn't clip) and spill ~16px past
+   the table's right edge, which is what produced the horizontal scrollbar
+   even though the table itself fits the panel. */
+table.leg-rows-table col.col-num { width: 3%; }
+table.leg-rows-table col.col-type { width: 11%; }
+table.leg-rows-table col.col-shape { width: 9%; }
+table.leg-rows-table col.col-volume { width: 8%; }
+table.leg-rows-table col.col-size { width: 8%; }
+table.leg-rows-table col.col-length { width: 7%; }
+table.leg-rows-table col.col-fitting { width: 13%; }
+table.leg-rows-table col.col-desc { width: 9%; }
+table.leg-rows-table col.col-manual-dp { width: 7%; }
+table.leg-rows-table col.col-dp { width: 10%; }
+table.leg-rows-table col.col-action { width: 7%; }
+
+.leg-cell input, .leg-cell select {
+  width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; padding: 5px 6px;
+  border: 1px solid var(--line); border-radius: 6px;
+  font-size: 11.5px; font-family: inherit; background: white;
+}
+/* A cell can hold more than one candidate input (Size 1/2 -- diameter vs.
+   width vs. major, etc.) -- updateFieldVisibility() (ductsizer.js) sets
+   inline display:none on every candidate but the current shape/type's, so
+   at most one is ever visible per cell; the rest take up no space. */
+
+table.leg-rows-table td { vertical-align: middle; }
+table.leg-rows-table td.leg-row-num { color: var(--muted); font-size: 12px; text-align: center; }
+table.leg-rows-table tr.row-error { background: #FCEEED; }
+table.leg-rows-table tfoot td { border-top: 2px solid var(--line); border-bottom: none; }
+.leg-row-error-text { color: #b3261e; margin-top: 4px; }
+
+/* The "Add an Item" composer is the table's own first row (tinted), not a
+   separate panel above it -- adding an item is adding a row, the same way
+   a spreadsheet works. Its Pressure Drop cell doubles as the live preview
+   (velocity/velocity pressure/friction-or-K, then the item's own pressure
+   drop) or the stage-level error message, replacing the previous separate
+   "leg-preview-strip" panel. */
+tr.leg-stage-row { background: var(--blue-soft); }
+tr.leg-stage-row td { vertical-align: top; padding-top: 8px; }
+#leg-stage-result-cell { font-size: 11.5px; line-height: 1.5; }
+#leg-stage-result-cell .suffix { display: block; }
+.leg-add-btn { padding: 5px 6px; font-size: 11.5px; white-space: nowrap; }
+
+/* Safety margin rows in tfoot */
+table.leg-rows-table tfoot tr.leg-margin-tr td { border-top: none; font-size: 12px; color: var(--muted); padding-top: 3px; padding-bottom: 3px; }
+
+/* ── Help / User Guide (see blueprints/help.py, templates/help.html) ─────── */
+
+/* Topbar Help button — sits beside the unit toggle */
+.help-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border: 1px solid var(--line); border-radius: 8px;
+  background: white; color: var(--blue-ink); font-size: 12.5px; font-weight: 600;
+  text-decoration: none; white-space: nowrap;
+}
+.help-btn:hover { background: var(--blue-soft); border-color: #CADFF4; }
+.help-btn-mark, .help-inline-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: var(--blue); color: white; font-size: 11px; font-weight: 700;
+}
+.help-inline-mark { vertical-align: middle; }
+
+/* Two-column help layout: sticky index + content */
+.help-layout { display: grid; grid-template-columns: 232px 1fr; gap: 30px; align-items: start; }
+
+.help-index { position: sticky; top: 16px; align-self: start; }
+.help-search-wrap { margin-bottom: 14px; }
+.help-search {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px;
+  font-size: 13px; font-family: inherit; background: white; color: var(--ink);
+}
+.help-search:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+
+.help-nav-group { margin-bottom: 16px; }
+.help-nav-label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted); font-weight: 700; margin-bottom: 6px; padding-left: 10px;
+}
+.help-nav-item {
+  display: block; padding: 6px 10px; border-radius: 7px;
+  font-size: 12.5px; color: var(--side-ink); text-decoration: none; line-height: 1.35;
+}
+.help-nav-item:hover { background: var(--blue-soft); color: var(--blue-ink); }
+.help-nav-item.active { background: var(--blue-soft); color: var(--blue-ink); font-weight: 600; }
+
+/* Content column */
+.help-content { max-width: 780px; min-width: 0; }
+.help-noresults {
+  background: var(--util); border: 1px solid var(--util-bd); color: var(--util-ink);
+  border-radius: 12px; padding: 14px 16px; font-size: 13px; margin-bottom: 20px;
+}
+
+.help-section { padding: 8px 0 26px; border-bottom: 1px solid var(--line); margin-bottom: 22px; scroll-margin-top: 16px; }
+.help-section:last-child { border-bottom: none; }
+.help-h { font-size: 19px; font-weight: 700; color: var(--ink); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.help-lead { font-size: 13.5px; line-height: 1.65; color: var(--ink); margin-bottom: 8px; }
+.help-sub { font-size: 13.5px; font-weight: 650; color: var(--ink); margin: 20px 0 8px; }
+.help-content p { font-size: 13px; line-height: 1.65; margin-bottom: 10px; }
+
+/* Discipline badge on each section lead */
+.help-badge {
+  display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px;
+  border-radius: 999px; margin-right: 4px; vertical-align: middle;
+}
+.help-badge.site { background: var(--util); color: var(--util-ink); }
+.help-badge.air  { background: var(--air); color: var(--air-ink); }
+.help-badge.duct { background: var(--duct); color: var(--duct-ink); }
+.help-badge.water{ background: var(--water); color: var(--water-ink); }
+.help-badge.util { background: var(--util); color: var(--util-ink); }
+
+/* Input / output definition lists */
+.help-io { margin: 4px 0 6px; }
+.help-io dt { font-weight: 650; font-size: 12.5px; color: var(--ink); margin-top: 10px; }
+.help-io dd { margin: 2px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+
+/* Ordered "how to use" steps */
+.help-steps { margin: 4px 0 6px 20px; }
+.help-steps li { font-size: 13px; line-height: 1.6; margin-bottom: 7px; padding-left: 3px; }
+
+/* Callouts */
+.help-tip, .help-note {
+  border-radius: 11px; padding: 11px 14px; font-size: 12.5px; line-height: 1.6;
+  margin: 14px 0 4px;
+}
+.help-tip { background: var(--green-soft); border: 1px solid var(--water-bd); color: var(--green-ink); }
+.help-note { background: var(--blue-soft); border: 1px solid #CADFF4; color: var(--blue-ink); }
+.help-tip a, .help-note a, .help-content a { color: var(--blue-ink); font-weight: 600; }
+
+@media (max-width: 860px) {
+  .help-layout { grid-template-columns: 1fr; }
+  .help-index { position: static; }
+}
+table.leg-rows-table tfoot tr.leg-total-margin-tr td { border-top: 1px solid var(--line); }
+
+/* Safety margin input strip below the table */
+.leg-safety-margin-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; }
+.leg-safety-margin-row label { font-weight: 600; }
+.leg-safety-margin-row input[type=number] { width: 60px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-family: inherit; text-align: right; }
+
+/* ── Pipe sizing (Hydronics) ─────────────────────────────────────────────── */
+.tile-water-border { border-left: 4px solid var(--water-ink); }
+.pipe-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1100px;
+  margin-bottom: 20px;
+}
+.pipe-page-stack > .status-legend { margin: 0; }
+.pipe-page-stack > .panel.tile-water-border,
+.pipe-page-stack .pipe-results-layout .panel.tile-water-border {
+  box-shadow: 0 1px 3px rgba(22,32,46,.06);
+}
+.pipe-flow-strip { display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: baseline; font-size: 14px; }
+.pipe-flow-val { font-size: 22px; font-weight: 700; color: var(--water-ink); margin-right: 4px; }
+.pipe-flow-item.muted { color: var(--muted); font-size: 13px; }
+.legend-note { margin-left: 12px; color: var(--muted); font-size: 12px; }
+.pipe-results-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.72fr) minmax(0, 0.95fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.pipe-table-panel,
+.pipe-spec-panel,
+.pipe-detail-panel {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+.pipe-table-body,
+.pipe-spec-body,
+.pipe-detail-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 18px !important;
+}
+.pipe-table-body { padding-top: 0 !important; padding-bottom: 0 !important; }
+.pipe-sizing-rules .pipe-rules-body { font-size: 13px; line-height: 1.6; }
+.pipe-rules-lead { margin: 0 0 16px; }
+.pipe-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 24px;
+}
+.pipe-rules-block h4 {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--water-ink);
+}
+.pipe-rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.pipe-rules-table th,
+.pipe-rules-table td {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  vertical-align: top;
+  text-align: left;
+}
+.pipe-rules-table th {
+  background: var(--water);
+  font-weight: 650;
+  font-size: 11px;
+}
+.pipe-rules-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pipe-system-placeholder { min-height: 88px; }
+.pipe-system-panel { margin-top: 22px; }
+table.pipe-sys-table col.col-sys-num { width: 4%; }
+table.pipe-sys-table col.col-sys-type { width: 12%; }
+table.pipe-sys-table col.col-sys-dn { width: 9%; }
+table.pipe-sys-table col.col-sys-flow { width: 8%; }
+table.pipe-sys-table col.col-sys-length { width: 8%; }
+table.pipe-sys-table col.col-sys-fitting { width: 18%; }
+table.pipe-sys-table col.col-sys-desc { width: 11%; }
+table.pipe-sys-table col.col-sys-manual-dp { width: 9%; }
+table.pipe-sys-table col.col-sys-dp { width: 14%; }
+table.pipe-sys-table col.col-sys-action { width: 7%; }
+
+.pipe-placeholder-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+@media (max-width: 1000px) {
+  .pipe-results-layout { grid-template-columns: 1fr; }
+  .pipe-rules-grid { grid-template-columns: 1fr; }
+}
+.pipe-size-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.pipe-size-table th, .pipe-size-table td { padding: 8px 10px; vertical-align: middle; }
+.pipe-size-table col.col-pipe-size { width: 16%; }
+.pipe-size-table col.col-pipe-vel { width: 30%; }
+.pipe-size-table col.col-pipe-dp { width: 30%; }
+.pipe-size-table col.col-pipe-vel-dot { width: 12%; }
+.pipe-size-table col.col-pipe-dp-dot { width: 12%; }
+.pipe-size-table th.num, .pipe-size-table td.num { text-align: right; }
+.pipe-size-table td:first-child, .pipe-size-table th:first-child { text-align: left; }
+.pipe-val-cell .valunit { display: inline-flex; justify-content: flex-end; width: 100%; }
+.pipe-dot-cell { text-align: center !important; padding-left: 4px; padding-right: 4px; }
+.pipe-th-dot { font-size: 0; line-height: 0; padding-top: 8px; padding-bottom: 8px; }
+.pipe-row-selected { background: var(--water); }
+.pipe-row-link { color: var(--ink); text-decoration: none; font-weight: 650; }
+.pipe-row-link:hover { color: var(--accent); text-decoration: underline; }
+.pipe-detail-table th { text-align: left; font-weight: 600; width: 46%; padding: 7px 10px 7px 0; }
+.pipe-detail-table td { padding: 7px 0; }
+.pipe-detail-divider { padding-top: 12px !important; color: var(--muted); font-size: 12px; font-weight: 650; }

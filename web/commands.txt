@@ -1,0 +1,78 @@
+====================================================
+ HVAC Toolkit — Web Layer: Terminal Commands
+====================================================
+Run all commands from the hvac-toolkit\web\ directory
+unless otherwise noted.
+
+----------------------------------------------------
+1. CREATE THE VIRTUAL ENVIRONMENT
+----------------------------------------------------
+python -m venv .venv
+
+----------------------------------------------------
+2. ACTIVATE THE VIRTUAL ENVIRONMENT
+----------------------------------------------------
+Windows (Command Prompt / PowerShell):
+  .venv\Scripts\activate
+
+Windows (Git Bash):
+  source .venv/Scripts/activate
+
+----------------------------------------------------
+3. INSTALL / UPDATE DEPENDENCIES
+----------------------------------------------------
+Install everything (first time, or after a pull
+that changes requirements.txt):
+  pip install -r requirements.txt
+
+The engine package is installed in editable mode
+via the -e ../engine line in requirements.txt, so
+no separate engine install step is needed.
+
+Upgrade a specific package:
+  pip install --upgrade <package>
+
+Check what is installed:
+  pip list
+
+----------------------------------------------------
+4. RUN THE DEV SERVER
+----------------------------------------------------
+With venv active:
+  python -m flask --app wsgi run --debug
+
+Or use the double-click shortcut:
+  run.bat
+
+Server runs at http://127.0.0.1:5000
+
+----------------------------------------------------
+5. RUN ENGINE TESTS
+----------------------------------------------------
+From hvac-toolkit\engine\ :
+  pip install -e .          (first time only)
+  pytest
+
+Or from anywhere with the venv active:
+  pytest ../engine
+
+----------------------------------------------------
+6. DEACTIVATE THE VIRTUAL ENVIRONMENT
+----------------------------------------------------
+  deactivate
+
+----------------------------------------------------
+7. COMMON TROUBLESHOOTING
+----------------------------------------------------
+If you see "No module named flask" or similar,
+the venv is not active — run step 2 first.
+
+If packages are missing after a pull:
+  pip install -r requirements.txt
+
+To clear stale bytecode (can cause weird import
+errors if .pyc files are out of date):
+  Windows: for /r . %d in (__pycache__) do @if exist "%d" rd /s /q "%d"
+  Git Bash: find . -name "__pycache__" -exec rm -rf {} +
+
+====================================================

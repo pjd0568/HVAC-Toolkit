@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% from "_state_input.html" import state_input with context %}
+{% from "_site_conditions.html" import site_conditions with context %}
+{% from "_report_form.html" import report_form with context %}
+{% block page_title %}Psychrometrics - AHU Design{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="panel" style="max-width:920px;">
+  <div class="panel-head">Design to a supply condition</div>
+  <div class="panel-body">
+    <form method="post">
+      {{ site_conditions(form, pressure) }}
+
+      <div class="section-label">Outdoor Air</div>
+      <div class="form-grid four">
+        {{ state_input("oa", "Outdoor Air", form, second_properties) }}
+        <div><label>Outdoor Air Fraction (%)</label><input name="oa_frac" value="{{ form.oa_frac }}"></div>
+      </div>
+
+      <div class="section-label">Return Air</div>
+      <div class="form-grid four">
+        {{ state_input("ra", "Return Air", form, second_properties) }}
+      </div>
+
+      <div class="section-label">Required Supply — off-unit, into the room</div>
+      <div class="form-grid four">
+        {{ state_input("sup", "Supply", form, second_properties) }}
+        <div><label>Supply Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
+      </div>
+
+      <div class="section-label">Supply Fan — leave off to ignore fan gain</div>
+      <div class="form-grid four">
+        <div>
+          <label>Fan Position</label>
+          <select name="fan_pos">
+            <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
+            <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before coil</option>
+            <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after reheat</option>
+          </select>
+        </div>
+        <div><label>Fan SFP (W per l/s)</label><input name="fan_sfp" value="{{ form.fan_sfp }}"></div>
+        <div><label>Fan Power (kW) — overrides SFP</label><input name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP"></div>
+      </div>
+      <div style="margin-top:16px;"><button class="btn-accent" type="submit">Design</button></div>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+{% for w in result.warnings %}<div class="warn-banner">{{ w }}</div>{% endfor %}
+
+<div class="section-label">Derived stages</div>
+<div class="panel" style="max-width:820px;">
+  <table class="results">
+    <tr><th></th><th>Stage</th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th><th>Duty {{ U.sym('power') }}</th><th>Moisture {{ U.sym('moisture_rate') }}</th></tr>
+    {% for s in result.stages %}
+    <tr>
+      <td><strong>{{ s.label }}</strong></td>
+      <td>{{ s.name }}{% if s.note %} <span class="note-flag" title="{{ s.note }}">!</span>{% endif %}</td>
+      <td class="num">{{ U.html('temperature', s.state.t_db) }}</td>
+      <td class="num"><span class="valunit"><span class="v">{{ '%.0f'|format(s.state.rh * 100) }}</span><span class="u">%</span></span></td>
+      <td class="num">{{ U.html('humidity_ratio', s.state.w) }}</td>
+      <td class="num">{{ U.html('enthalpy', s.state.h) }}</td>
+      <td class="num">{% if s.q_total %}{{ U.html('power', s.q_total, sign=True) }}{% else %}—{% endif %}</td>
+      <td class="num">{% if s.moisture %}{{ U.html('moisture_rate', s.moisture, sign=True) }}{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <table class="results">
+    <tr><td>Total cooling (coil duty)</td><td class="num"><strong>{{ U.html('power', -result.cooling_total) }}</strong></td></tr>
+    <tr><td>Total heating (reheat + preheat)</td><td class="num"><strong>{{ U.html('power', result.heating_total) }}</strong></td></tr>
+    <tr><td>Moisture added / removed</td><td class="num"><span class="valunit"><span class="v">{{ U.fmt('moisture_rate', result.moisture_added) }} / {{ U.fmt('moisture_rate', result.moisture_removed) }}</span><span class="u">{{ U.sym('moisture_rate') }}</span></span></td></tr>
+    <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', result.m_da) }}</td></tr>
+  </table>
+</div>
+
+{% include "_chart.html" %}
+
+<details class="notes">
+  <summary>Design method &amp; notes</summary>
+  <div class="notes-body">
+    <p><strong>What this does.</strong> You give the condition the unit must deliver into the room
+    (the supply, or off-unit, condition); the tool mixes outdoor and return air to the on-coil
+    condition, checks the supply is reachable, then works out the coil and reheat needed to get
+    there. It is the inverse of specifying the off-coil condition and reading off the result.</p>
+    <p><strong>Idealised coil model.</strong> Where dehumidification is needed, the cooling coil is
+    taken to bring the air down to the supply moisture content <em>on the saturation curve</em> —
+    the off-coil point is the supply dew point, saturated (contact factor 1). The air is cooled at
+    constant moisture to the on-coil dew point (saturation onset), then tracks the saturation curve,
+    wringing out moisture, to the off-coil point. A reheat coil then lifts it sensibly to the supply
+    dry bulb. Real coils leave air a little off saturation (~90–95% RH), so this gives a slightly
+    optimistic off-coil temperature and a conservative (upper-bound) reheat.</p>
+    <p><strong>Reachability.</strong> A cooling coil can only remove moisture, so a supply moisture
+    content above the on-coil value is rejected — that duty needs humidification. If the supply
+    moisture equals the on-coil moisture the duty collapses to a purely sensible cool or heat.</p>
+    <p><strong>Frost.</strong> An off-coil temperature (supply dew point) at or below 0 °C means the
+    coil surface can freeze condensate — consider glycol, a DX defrost strategy or face-and-bypass.</p>
+    <p><strong>Fan position.</strong> A blow-through fan raises the on-coil condition (adding to coil
+    duty); a draw-through fan sits after reheat, so the reheat coil targets the supply dry bulb minus
+    the fan rise and the air reaches the supply temperature after the fan. Absorbed power can be
+    estimated from specific fan power: P (W) = SFP (W per l/s) × flow (l/s). Approved Document L
+    Volume 2 (England, 2021) limits: central balanced with heating and cooling 2.0 W/(l/s);
+    heating only 1.9; other central balanced 1.5; zonal supply 1.1; zonal extract 0.5.</p>
+  </div>
+</details>
+
+{{ report_form(url_for('psychro.ahu_report'), form, url_for('psychro.ahu_chart_png')) }}
+{% endif %}
+
+{% endblock %}

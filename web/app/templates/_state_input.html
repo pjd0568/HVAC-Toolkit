@@ -1,0 +1,44 @@
+{# Shared psychrometric state input: dry-bulb base + selectable second variable.
+   Emits three form controls named "<prefix>_t", "<prefix>_prop", "<prefix>_val".
+   Labelled "<label> Dry Bulb / Second Property / Second Value" consistently, so
+   every stream (Stream A/B, On-coil/Off-coil, Outdoor Air, Return Air, Supply...)
+   reads the same way wherever it appears. Always place inside the calling
+   template's own heading + "form-grid four" block for that stream — never share a
+   grid row with a different stream or with site conditions. Every group on a page
+   uses the same 4-column template (trailing columns left empty for groups with
+   fewer than 4 fields) so text-box widths line up vertically across groups.
+
+   "Paste from Slot" buttons (only rendered when at least one of the 3 global
+   memory slots is filled — see app/climate_slots.py) let a value copied from
+   the Weather tool's Summer/Winter/Max-Min columns be dropped straight into
+   this exact field group: clicking one reloads the page with
+   ?paste_<prefix>=<index>, which app/blueprints/psychro.py's
+   _paste_slot_into() reads to override this group's three fields before the
+   page renders (GET-only — same "GET pre-fills the form" convention every
+   tool already uses, just sourced from a slot instead of the hardcoded
+   defaults). Because this lives in the one shared macro, every state input on
+   every psychrometric tool gets this for free. #}
+{% macro state_input(prefix, label, form, props) -%}
+<div><label>{{ label }} Dry Bulb ({{ U.sym('temperature') }})</label><input name="{{ prefix }}_t" value="{{ form[prefix ~ '_t'] }}"></div>
+<div>
+  <label>{{ label }} Second Property</label>
+  <select name="{{ prefix }}_prop">
+    {% for key, name in props.items() %}
+    <option value="{{ key }}" {{ 'selected' if form[prefix ~ '_prop'] == key }}>{{ name }}</option>
+    {% endfor %}
+  </select>
+</div>
+<div><label>{{ label }} Second Value</label><input name="{{ prefix }}_val" value="{{ form[prefix ~ '_val'] }}"></div>
+{% if climate_slots and (climate_slots[0] or climate_slots[1] or climate_slots[2]) %}
+<div class="paste-slot-row">
+  <label>{{ label }} Paste from Slot</label>
+  <div class="paste-slot-buttons">
+    {% for i in range(3) %}
+    {% if climate_slots[i] %}
+    <a class="btn-ghost paste-slot-btn" href="{{ paste_url(prefix, i) }}">{{ climate_slots[i].label }}</a>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{%- endmacro %}

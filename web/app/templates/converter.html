@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block page_title %}Utilities - Unit Converter{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="panel" style="max-width:720px;">
+  <div class="panel-head">Convert</div>
+  <div class="panel-body">
+    <form method="get" class="conv-form">
+      <div class="form-grid three">
+        <div>
+          <label for="category">Category</label>
+          <select id="category" name="category" onchange="this.form.submit()">
+            {% for cid, cname in categories %}
+            <option value="{{ cid }}" {{ 'selected' if cid == category.id }}>{{ cname }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="value">Value</label>
+          <input id="value" name="value" value="{{ value }}" inputmode="decimal" autofocus>
+        </div>
+        <div>
+          <label for="from_unit">From unit</label>
+          <select id="from_unit" name="from_unit" onchange="this.form.submit()">
+            {% for glabel, units in unit_groups %}
+            <optgroup label="{{ glabel }}">
+              {% for u in units %}
+              <option value="{{ u.id }}" {{ 'selected' if u.id == from_unit }}>{{ u.name }} ({{ u.symbol }})</option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:14px;"><button class="btn-accent" type="submit">Convert</button></div>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+{% if result.warning %}<div class="warn-banner">{{ result.warning }}</div>{% endif %}
+
+<div class="section-label">{{ result.value }} {{ result.from_unit.symbol }} equals</div>
+
+{% for gkey, glabel, rows in grouped %}
+<div class="conv-group-label">{{ glabel }}</div>
+<div class="panel conv-panel">
+  <table class="results conv-table">
+    {% for r in rows %}
+    <tr class="{{ 'conv-input' if r.is_input }}">
+      <td class="conv-val num">{{ r.display }}</td>
+      <td class="conv-sym">{{ r.symbol }}</td>
+      <td class="conv-name">{{ r.name }}</td>
+      <td class="conv-note">{{ r.notation }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}

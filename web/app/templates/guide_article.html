@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block page_title %}Reference - Design Guides{% endblock %}
+{% block content %}
+
+<a class="row-link" href="{{ url_for('guides.index') }}">&larr; Design Guides</a>
+
+<div class="page-title" style="margin-top:10px;">{{ guide.title }}</div>
+<div class="page-sub">
+  <span class="disc-chip {{ guide.disc }}">{{ guide.disc | capitalize }}</span>
+  &nbsp;·&nbsp; {{ guide.read_mins }} min read
+</div>
+
+<div class="article">
+  {% include guide.template %}
+</div>
+
+{% endblock %}

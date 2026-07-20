@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+{% from "_report_form.html" import report_form %}
+{% block page_title %}Hydronics - Pipe Sizing{% endblock %}
+{% block content %}
+
+<div class="note-banner">
+  Pipe sizes and friction loss use Darcy–Weisbach with Colebrook–White (CIBSE Guide C).
+  Traffic lights: <strong>green</strong> = ideal design band; <strong>amber</strong> = border of design limits;
+  <strong>red</strong> = outside acceptable range.
+</div>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="pipe-page-stack">
+<div class="panel tile-water-border">
+  <div class="panel-head">Design Inputs</div>
+  <div class="panel-body">
+    <form method="get" id="pipe-form">
+      <div class="form-grid four">
+        <div style="grid-column:1/-1;">
+          <label>Flow</label>
+          <div class="mode-tabs">
+            <label class="mode-tab">
+              <input type="radio" name="mode" value="from_load" {{ 'checked' if fields.mode == 'from_load' }}>
+              Calculate from load
+            </label>
+            <label class="mode-tab">
+              <input type="radio" name="mode" value="flow_known" {{ 'checked' if fields.mode == 'flow_known' }}>
+              Flow known
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label for="application">Application</label>
+          <select id="application" name="application">
+            {% for key, label in applications.items() %}
+            <option value="{{ key }}" {{ 'selected' if fields.application == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="fluid">Fluid</label>
+          <select id="fluid" name="fluid">
+            {% for key, label in fluids.items() %}
+            <option value="{{ key }}" {{ 'selected' if fields.fluid == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div id="glycol-field" {% if fields.fluid == 'water' %}style="display:none"{% endif %}>
+          <label for="glycol_pct">Glycol concentration (% v/v)</label>
+          <select id="glycol_pct" name="glycol_pct">
+            {% for opt in glycol_options_by_fluid.get(fields.fluid, []) %}
+            <option value="{{ opt.pct }}" {{ 'selected' if fields.glycol_pct == opt.pct|string }}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="material">Pipe material</label>
+          <select id="material" name="material">
+            {% for key, label in materials.items() %}
+            <option value="{{ key }}" {{ 'selected' if fields.material == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div id="load-field" {% if fields.mode != 'from_load' %}style="display:none"{% endif %}>
+          <label for="load">Load ({{ U.sym('power') }})</label>
+          <input id="load" name="load" value="{{ fields.load }}" inputmode="decimal">
+        </div>
+
+        <div id="flow-field" {% if fields.mode != 'flow_known' %}style="display:none"{% endif %}>
+          <label for="flow_ls">Flow (l/s)</label>
+          <input id="flow_ls" name="flow_ls" value="{{ fields.flow_ls }}" inputmode="decimal">
+        </div>
+
+        <div>
+          <label for="delta_t">ΔT ({% if U.system == 'IP' %}°F{% else %}K{% endif %} difference)</label>
+          <input id="delta_t" name="delta_t" value="{{ fields.delta_t }}" inputmode="decimal">
+        </div>
+
+        <div>
+          <label for="lwt">LWT — leaving water temp ({{ U.sym('temperature') }})</label>
+          <input id="lwt" name="lwt" value="{{ fields.lwt }}" inputmode="decimal">
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button class="btn-accent" type="submit">Calculate</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if flow_display %}
+<div class="panel tile-water-border">
+  <div class="panel-head">Required flow</div>
+  <div class="panel-body pipe-flow-strip">
+    <div class="pipe-flow-item"><span class="pipe-flow-val">{{ flow_display.ls }}</span> l/s</div>
+    <div class="pipe-flow-item"><span class="pipe-flow-val">{{ flow_display.m3h }}</span> m³/h</div>
+    <div class="pipe-flow-item muted">Mass flow {{ flow_display.mass_kg_s }} kg/s</div>
+  </div>
+</div>
+
+<div class="status-legend">
+  <span class="dot green"></span> Ideal design band
+  <span class="dot amber"></span> Border of design limits
+  <span class="dot red"></span> Outside limits
+  <span class="legend-note">Velocity: {{ limits.velocity_note }}. ΔP/L ideal {{ limits.friction_ideal }}; lower {{ limits.friction_lower }}; upper {{ limits.friction_upper }}.</span>
+</div>
+
+<div class="pipe-results-layout">
+  <div class="panel pipe-table-panel tile-water-border">
+    <div class="panel-head">Pipe sizes — {{ materials[fields.material] }}</div>
+    <div class="panel-body pipe-table-body">
+      <table class="results pipe-size-table">
+        <colgroup>
+          <col class="col-pipe-size">
+          <col class="col-pipe-vel">
+          <col class="col-pipe-dp">
+          <col class="col-pipe-vel-dot">
+          <col class="col-pipe-dp-dot">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>DN</th>
+            <th class="num">Velocity</th>
+            <th class="num">ΔP/L</th>
+            <th class="num pipe-th-dot" aria-label="Velocity status"></th>
+            <th class="num pipe-th-dot" aria-label="ΔP/L status"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in table_rows %}
+          <tr class="pipe-row {{ 'pipe-row-selected' if row.selected }}">
+            <td><a class="pipe-row-link" href="{{ row.url }}">{{ row.label }}</a></td>
+            <td class="num pipe-val-cell">
+              <span class="valunit"><span class="v">{{ row.velocity }}</span><span class="u">{{ row.velocity_sym }}</span></span>
+            </td>
+            <td class="num pipe-val-cell">
+              <span class="valunit"><span class="v">{{ row.friction }}</span><span class="u">{{ row.friction_sym }}</span></span>
+            </td>
+            <td class="num pipe-dot-cell"><span class="dot {{ row.status_velocity }}" title="Velocity"></span></td>
+            <td class="num pipe-dot-cell"><span class="dot {{ row.status_friction }}" title="ΔP/L"></span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if pipe_spec %}
+  <div class="panel pipe-spec-panel tile-water-border">
+    <div class="panel-head">Pipe — {{ pipe_spec.label }}</div>
+    <div class="panel-body pipe-spec-body">
+      <table class="results pipe-detail-table">
+        <tr><th>Material</th><td>{{ pipe_spec.material }}</td></tr>
+        <tr><th>Internal diameter</th><td class="num">{{ pipe_spec.id }}</td></tr>
+        <tr><th>Outside diameter</th><td class="num">{{ pipe_spec.od }}</td></tr>
+        <tr><th>Wall thickness</th><td class="num">{{ pipe_spec.wall }}</td></tr>
+        <tr><th>Linear mass</th><td class="num">{{ pipe_spec.kg_m }}</td></tr>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if detail %}
+  <div class="panel pipe-detail-panel tile-water-border">
+    <div class="panel-head">Flow &amp; fluid</div>
+    <div class="panel-body pipe-detail-body">
+      <table class="results pipe-detail-table">
+        <tr><th>Volumetric flow</th><td class="num">{{ detail.flow_ls }} · {{ detail.flow_m3h }}</td></tr>
+        <tr><th>Mass flow</th><td class="num">{{ detail.mass_flow }}</td></tr>
+        <tr><th>Velocity</th><td class="num">{{ detail.velocity }} <span class="dot {{ detail.status_velocity }}"></span></td></tr>
+        <tr><th>Pressure gradient</th><td class="num">{{ detail.friction }} <span class="dot {{ detail.status_friction }}"></span></td></tr>
+        <tr><th>Reynolds number</th><td class="num">{{ detail.reynolds }}</td></tr>
+        <tr><th>Flow regime</th><td>{{ detail.regime }}</td></tr>
+        <tr><th>Friction factor</th><td class="num">{{ detail.friction_factor }}</td></tr>
+        <tr><th colspan="2" class="pipe-detail-divider">Fluid at mean temperature</th></tr>
+        <tr><th>Fluid</th><td>{{ detail.fluid }}</td></tr>
+        <tr><th>Concentration</th><td>{{ detail.concentration }}</td></tr>
+        <tr><th>Mean water temp</th><td class="num">{{ detail.mean_temp }}</td></tr>
+        <tr><th>Density</th><td class="num">{{ detail.density }}</td></tr>
+        <tr><th>Dynamic viscosity</th><td class="num">{{ detail.viscosity }}</td></tr>
+        <tr><th>Specific heat</th><td class="num">{{ detail.cp }}</td></tr>
+        <tr><th>Freezing point</th><td class="num">{{ detail.freezing }}</td></tr>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="panel pipe-sizing-rules tile-water-border">
+  <div class="panel-head">Pipe sizing design limits</div>
+  <div class="panel-body pipe-rules-body">
+    <p class="pipe-rules-lead">Traffic lights compare each catalogue size against the bands below. <strong>Green</strong> = ideal mid-band; <strong>amber</strong> = lower/upper limit bands or the transition between them; <strong>red</strong> = outside acceptable range.</p>
+    <div class="pipe-rules-grid">
+      <div class="pipe-rules-block">
+        <h4>Pressure gradient (ΔP/L)</h4>
+        <table class="pipe-rules-table">
+          <thead><tr><th>Scenario</th><th>Range</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Lower limit</td><td>100 – 150 Pa/m</td><td>CAPEX-heavy / OPEX-light — oversized pipework, low pumping energy. Headers and low-loss distribution.</td></tr>
+            <tr><td>Ideal design</td><td>200 – 300 Pa/m</td><td>Industry sweet spot — balanced lifecycle cost between pipe cost and pumping energy.</td></tr>
+            <tr><td>Upper limit</td><td>400 – 500 Pa/m</td><td>CAPEX-light / OPEX-heavy — smaller pipe, higher pump head, energy and acoustic risk.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pipe-rules-block">
+        <h4>Velocity (by DN)</h4>
+        <table class="pipe-rules-table">
+          <thead><tr><th>Pipe size</th><th>Ideal (m/s)</th><th>Maximum (m/s)</th><th>Constraint</th></tr></thead>
+          <tbody>
+            <tr><td>DN 15 – 50</td><td>0.8 – 1.2</td><td>1.5</td><td>Acoustic noise in occupied spaces</td></tr>
+            <tr><td>DN 65 – 150</td><td>1.2 – 1.8</td><td>2.5</td><td>Erosion-corrosion at fittings</td></tr>
+            <tr><td>DN 200+</td><td>1.8 – 2.5</td><td>3.0</td><td>Water hammer and pump head penalties</td></tr>
+          </tbody>
+        </table>
+        <p class="pipe-rules-note">Minimum velocity 0.6 m/s applies to all sizes — below this is outside limits (oversized / stagnant risk).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel pipe-system-panel tile-water-border" id="sys-panel">
+  <div class="panel-head">Pipe System — Pressure Drop</div>
+  <div class="panel-body">
+
+    <div class="note-banner" style="margin-bottom:14px;">
+      Build the circuit schedule below the sizer. Each row uses its own DN and
+      optional flow (blank flow inherits the duty flow from Design Inputs above).
+      Fitting/valve K-factors are representative single-point planning figures
+      (CIBSE Guide C / Crane-style summaries), not geometry-dependent design
+      tables — cross-check for real jobs. Devices take a manually entered ΔP
+      from manufacturer data. Lift / static head and system volume are later stages.
+    </div>
+
+    {% if system.ctx_error and not flow_display %}
+    <div class="error">{{ system.ctx_error }}</div>
+    {% endif %}
+
+    <div class="leg-table-scroll">
+    <table class="results leg-rows-table pipe-sys-table">
+      <colgroup>
+        <col class="col-sys-num">
+        <col class="col-sys-type">
+        <col class="col-sys-dn">
+        <col class="col-sys-flow">
+        <col class="col-sys-length">
+        <col class="col-sys-fitting">
+        <col class="col-sys-desc">
+        <col class="col-sys-manual-dp">
+        <col class="col-sys-dp">
+        <col class="col-sys-action">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Type</th>
+          <th>DN</th>
+          <th>Flow<br><span class="th-unit">(l/s)</span></th>
+          <th>Length<br><span class="th-unit">({{ system.run_length_sym }})</span></th>
+          <th>Fitting / valve</th>
+          <th>Description</th>
+          <th>Manual ΔP<br><span class="th-unit">({{ system.velocity_pressure_sym }})</span></th>
+          <th class="num">Pressure Drop</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="sys-stage-row" class="leg-stage-row">
+          <td class="leg-row-num">+</td>
+          <td class="leg-cell">
+            <select data-row-field="type" name="stage_type" id="stage_type">
+              {% for opt in system.type_options %}
+              <option value="{{ opt.value }}" {{ 'selected' if system.stage_raw.type == opt.value }}>{{ opt.label }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="leg-cell">
+            <select data-row-field="dn" name="stage_dn" id="stage_dn">
+              {% for opt in system.dn_options %}
+              <option value="{{ opt.dn }}" {{ 'selected' if system.stage_raw.dn == opt.dn|string }}>{{ opt.label }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="leg-cell">
+            <input data-row-field="flow_ls" name="stage_flow_ls" id="stage_flow_ls"
+                   value="{{ system.stage_raw.flow_ls }}"
+                   placeholder="{{ system.duty_flow_ls }}" inputmode="decimal">
+          </td>
+          <td class="leg-cell sys-field-length" {% if system.stage_raw.type != 'straight' %}style="visibility:hidden"{% endif %}>
+            <input data-row-field="length" name="stage_length" id="stage_length"
+                   value="{{ system.stage_raw.length }}" inputmode="decimal">
+          </td>
+          <td class="leg-cell sys-field-fitting" {% if system.stage_raw.type != 'fitting' %}style="visibility:hidden"{% endif %}>
+            <select data-row-field="fitting" name="stage_fitting" id="stage_fitting">
+              {% for group in system.fitting_groups %}
+              <optgroup label="{{ group.label }}">
+                {% for f in group.fittings %}
+                <option value="{{ f.key }}" {{ 'selected' if system.stage_raw.fitting == f.key }}>{{ f.label }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="leg-cell sys-field-desc" {% if system.stage_raw.type != 'device' %}style="visibility:hidden"{% endif %}>
+            <input data-row-field="label" name="stage_label" id="stage_label"
+                   value="{{ system.stage_raw.label }}">
+          </td>
+          <td class="leg-cell sys-field-dp" {% if system.stage_raw.type != 'device' %}style="visibility:hidden"{% endif %}>
+            <input data-row-field="dp" name="stage_dp" id="stage_dp"
+                   value="{{ system.stage_raw.dp }}" inputmode="decimal">
+          </td>
+          <td class="num" id="sys-stage-result-cell">
+            {% if system.stage_error %}
+            <div class="error" style="margin:0;">{{ system.stage_error }}</div>
+            {% elif system.stage %}
+            <div class="suffix">V: <span id="stage-sys-velocity">{{ system.stage.velocity_display }}</span>
+              · {{ system.stage.friction_or_k_display }}</div>
+            <div><span id="stage-sys-dp">{{ system.stage.dp_display }}</span>
+              <span class="u">{{ system.velocity_pressure_sym }}</span></div>
+            {% endif %}
+          </td>
+          <td><button type="button" class="btn-accent leg-add-btn" id="sys-add-row">+ Add</button></td>
+        </tr>
+      </tbody>
+      <tbody id="sys-rows-body">
+        {% for row in system.rows %}
+        <tr data-sys-row data-index="{{ row.index }}" class="{{ 'row-error' if row.error else '' }}">
+          <td class="leg-row-num">{{ row.index + 1 }}</td>
+          <td class="leg-cell">
+            <select data-row-field="type" name="sys_type_{{ row.index }}">
+              {% for opt in system.type_options %}
+              <option value="{{ opt.value }}" {{ 'selected' if row.raw.type == opt.value }}>{{ opt.label }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="leg-cell">
+            <select data-row-field="dn" name="sys_dn_{{ row.index }}">
+              {% for opt in system.dn_options %}
+              <option value="{{ opt.dn }}" {{ 'selected' if row.raw.dn == opt.dn|string or (not row.raw.dn and row.dn == opt.dn) }}>{{ opt.label }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="leg-cell">
+            <input data-row-field="flow_ls" name="sys_flow_ls_{{ row.index }}"
+                   value="{{ row.raw.flow_ls }}"
+                   placeholder="{{ system.duty_flow_ls }}" inputmode="decimal">
+          </td>
+          <td class="leg-cell sys-field-length">
+            <input data-row-field="length" name="sys_length_{{ row.index }}"
+                   value="{{ row.raw.length }}" inputmode="decimal">
+          </td>
+          <td class="leg-cell sys-field-fitting">
+            <select data-row-field="fitting" name="sys_fitting_{{ row.index }}">
+              {% for group in system.fitting_groups %}
+              <optgroup label="{{ group.label }}">
+                {% for f in group.fittings %}
+                <option value="{{ f.key }}" {{ 'selected' if row.raw.fitting == f.key or row.fitting_key == f.key }}>{{ f.label }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="leg-cell sys-field-desc">
+            <input data-row-field="label" name="sys_label_{{ row.index }}"
+                   value="{{ row.raw.label }}">
+          </td>
+          <td class="leg-cell sys-field-dp">
+            <input data-row-field="dp" name="sys_dp_{{ row.index }}"
+                   value="{{ row.raw.dp }}" inputmode="decimal">
+          </td>
+          <td class="num">
+            {{ row.dp_display }} <span class="u">{{ system.velocity_pressure_sym }}</span>
+            {% if row.error %}<div class="suffix leg-row-error-text">{{ row.error }}</div>{% endif %}
+          </td>
+          <td><button type="button" class="btn-ghost" data-sys-remove aria-label="Remove row">✕</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="8" style="text-align:right; font-weight:600;">Total Pressure Drop</td>
+          <td class="num" style="font-weight:600;"><span id="sys-total">{{ system.total_display }}</span> <span class="u" id="sys-total-sym">{{ system.total_sym }}</span></td>
+          <td></td>
+        </tr>
+        <tr id="sys-margin-tr" class="leg-margin-tr" style="{{ '' if system.safety_margin else 'display:none;' }}">
+          <td colspan="8" style="text-align:right; font-weight:600;">Safety Margin (<span id="sys-margin-pct">{{ '%.0f'|format(system.safety_margin) }}</span>%)</td>
+          <td class="num" style="font-weight:600;">+ <span id="sys-margin-amount">{{ system.margin_amount_display }}</span> <span class="u">{{ system.total_sym }}</span></td>
+          <td></td>
+        </tr>
+        <tr id="sys-total-margin-tr" class="leg-total-margin-tr" style="{{ '' if system.safety_margin else 'display:none;' }}">
+          <td colspan="8" style="text-align:right; font-weight:700;">Total with Margin</td>
+          <td class="num" style="font-weight:700;"><span id="sys-total-margin">{{ system.total_with_margin_display }}</span> <span class="u">{{ system.total_sym }}</span></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    </div>
+
+    <div class="leg-safety-margin-row">
+      <label for="sys-safety-margin">Safety Margin %</label>
+      <input type="number" id="sys-safety-margin" name="sys_safety_margin"
+             min="0" max="200" step="1" value="{{ '%.0f'|format(system.safety_margin) }}">
+      <span class="suffix">— added to total pressure drop</span>
+      <span style="flex:1;"></span>
+      <button type="button" class="btn-ghost" id="sys-clear">Clear table</button>
+      <a class="btn-ghost" id="sys-export-csv" href="{{ url_for('pipe.system_export_csv') }}">Export CSV</a>
+    </div>
+  </div>
+</div>
+
+{{ report_form(url_for('pipe.report'), report_fields, panel_class='tile-water-border') }}
+{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/pipesystem.js') }}"></script>
+<script>
+(function () {
+  var form = document.getElementById('pipe-form');
+  if (!form) return;
+
+  function syncMode() {
+    var mode = (form.querySelector('input[name="mode"]:checked') || {}).value || 'from_load';
+    var loadField = document.getElementById('load-field');
+    var flowField = document.getElementById('flow-field');
+    if (loadField) loadField.style.display = mode === 'from_load' ? '' : 'none';
+    if (flowField) flowField.style.display = mode === 'flow_known' ? '' : 'none';
+  }
+
+  function syncFluid() {
+    var fluid = document.getElementById('fluid');
+    var glycol = document.getElementById('glycol-field');
+    var glycolSel = document.getElementById('glycol_pct');
+    if (!fluid || !glycol || !glycolSel) return;
+    var isWater = fluid.value === 'water';
+    glycol.style.display = isWater ? 'none' : '';
+    if (isWater) return;
+    var byFluid = {{ glycol_options_by_fluid | tojson }};
+    var opts = byFluid[fluid.value] || [];
+    var current = glycolSel.value;
+    glycolSel.innerHTML = '';
+    opts.forEach(function (opt) {
+      var el = document.createElement('option');
+      el.value = String(opt.pct);
+      el.textContent = opt.label;
+      if (String(opt.pct) === current) el.selected = true;
+      glycolSel.appendChild(el);
+    });
+    if (!glycolSel.value && opts.length) {
+      glycolSel.value = String(opts[Math.floor(opts.length / 2)].pct);
+    }
+  }
+
+  form.querySelectorAll('input[name="mode"]').forEach(function (el) {
+    el.addEventListener('change', syncMode);
+  });
+  var fluidSel = document.getElementById('fluid');
+  if (fluidSel) fluidSel.addEventListener('change', syncFluid);
+  syncFluid();
+
+  document.addEventListener('focus', function (e) {
+    var el = e.target;
+    if (!el || el.tagName !== 'INPUT') return;
+    if (el.type === 'number' || el.inputMode === 'decimal' || el.hasAttribute('data-row-field') ||
+        el.name === 'load' || el.name === 'flow_ls') {
+      el.select();
+    }
+  }, true);
+})();
+</script>
+{% endblock %}
