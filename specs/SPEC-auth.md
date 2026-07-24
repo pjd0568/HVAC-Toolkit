@@ -14,10 +14,13 @@ public marketing / coming-soon / pricing pages stay open.
 
 | Path | Auth |
 |------|------|
-| `/`, `/login`, `/register`, `/subscribe`, `/health`, static | Public |
+| `/`, `/login`, `/subscribe`, `/health`, static | Public |
+| `/register` | Public only when `REGISTRATION_OPEN=true` (default **closed**) |
 | `/app` and all calculator / reference / help routes | Login required |
 
-Anonymous hits on gated routes redirect to `/login?next=…`.
+Anonymous hits on gated routes redirect to `/login?next=…`. Existing accounts
+can always log in; new self-serve signups are blocked until registration is
+opened for launch.
 
 ## User record
 

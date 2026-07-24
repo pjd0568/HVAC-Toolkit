@@ -20,8 +20,12 @@
     <button type="submit" class="btn-accent">Log in</button>
   </form>
   <p class="auth-switch">
+    {% if registration_open %}
     No account yet?
     <a href="{{ url_for('auth.register') }}">Create one</a>
+    {% else %}
+    Accounts are invite-only while we prepare the launch.
+    {% endif %}
   </p>
 </section>
 {% endblock %}

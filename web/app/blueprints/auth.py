@@ -2,13 +2,25 @@ from __future__ import annotations
 
 from datetime import date
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.extensions import db
 from app.models import User
 
 bp = Blueprint("auth", __name__)
+
+
+def _registration_open() -> bool:
+    return bool(current_app.config.get("REGISTRATION_OPEN"))
 
 
 def _safe_next(raw: str | None) -> str:
@@ -45,6 +57,9 @@ def login_post():
 
 @bp.get("/register")
 def register():
+    if not _registration_open():
+        flash("Registration is closed while we prepare the launch.", "info")
+        return redirect(url_for("main.coming_soon"))
     if current_user.is_authenticated:
         return redirect(url_for("main.dashboard"))
     return render_template("auth/register.html")
@@ -52,6 +67,10 @@ def register():
 
 @bp.post("/register")
 def register_post():
+    if not _registration_open():
+        flash("Registration is closed while we prepare the launch.", "info")
+        return redirect(url_for("main.coming_soon"))
+
     email = User.normalize_email(request.form.get("email", ""))
     password = request.form.get("password", "")
     password2 = request.form.get("password2", "")

@@ -22,8 +22,10 @@
     </ul>
     {% if current_user.is_authenticated %}
       <a class="btn-ghost" href="{{ url_for('main.dashboard') }}">Open app</a>
-    {% else %}
+    {% elif registration_open %}
       <a class="btn-ghost" href="{{ url_for('auth.register') }}">Create account</a>
+    {% else %}
+      <a class="btn-ghost" href="{{ url_for('auth.login') }}">Private access</a>
     {% endif %}
   </article>
 

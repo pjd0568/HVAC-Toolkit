@@ -12,11 +12,16 @@
   <div class="coming-actions">
     {% if current_user.is_authenticated %}
       <a class="btn-accent" href="{{ url_for('main.dashboard') }}">Open toolkit</a>
-    {% else %}
+    {% elif registration_open %}
       <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
       <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
+    {% else %}
+      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">See pricing</a>
+      <a class="btn-ghost" href="{{ url_for('auth.login') }}">Private access</a>
     {% endif %}
+    {% if current_user.is_authenticated or registration_open %}
     <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">See pricing</a>
+    {% endif %}
   </div>
 </section>
 

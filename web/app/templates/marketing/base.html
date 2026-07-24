@@ -25,7 +25,9 @@
         </form>
       {% else %}
         <a href="{{ url_for('auth.login') }}">Log in</a>
+        {% if registration_open %}
         <a class="btn-accent marketing-cta" href="{{ url_for('auth.register') }}">Create account</a>
+        {% endif %}
       {% endif %}
     </nav>
   </header>

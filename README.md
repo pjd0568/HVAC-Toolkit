@@ -43,7 +43,8 @@ Open `http://127.0.0.1:5000/` (coming soon), register at `/register`, then use `
    [`web/Dockerfile`](web/Dockerfile).
 2. Add the **Postgres** plugin; Railway injects `DATABASE_URL`.
 3. Set variables: `SECRET_KEY` (long random), `BRAND_NAME` (e.g. `HVAC Calcs`),
-   optional `BRAND_TAG`.
+   optional `BRAND_TAG`. Leave `REGISTRATION_OPEN` unset or `false` until launch
+   (existing accounts can still log in; `/register` stays closed).
 4. Deploy. Release command runs `flask --app wsgi db upgrade`. Health check:
    `GET /health`.
 5. Custom domain: Railway → Domains → `hvac-calcs.app`. Copy the CNAME/ALIAS

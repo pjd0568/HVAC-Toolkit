@@ -23,6 +23,10 @@ _PUBLIC_ENDPOINTS = frozenset(
 def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
+    # Re-read at boot so private networking / plugin URLs are always current.
+    from app.config import database_url_from_env
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url_from_env()
 
     # Cloudflare / Railway terminate TLS and forward the real scheme/host.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
@@ -43,6 +47,16 @@ def create_app(config_class: type = Config) -> Flask:
     @login_manager.user_loader
     def load_user(user_id: str):
         return db.session.get(User, int(user_id))
+
+    # Ensure schema exists even if Railway's releaseCommand was skipped
+    # (e.g. first deploys before DATABASE_URL was attached).
+    with app.app_context():
+        try:
+            from flask_migrate import upgrade
+
+            upgrade()
+        except Exception:
+            app.logger.exception("Database migration failed at startup")
 
     from app.blueprints.auth import bp as auth_bp
     from app.blueprints.billing import bp as billing_bp
@@ -82,6 +96,7 @@ def create_app(config_class: type = Config) -> Flask:
         return {
             "brand_name": app.config["BRAND_NAME"],
             "brand_tag": app.config["BRAND_TAG"],
+            "registration_open": app.config.get("REGISTRATION_OPEN", False),
         }
 
     @app.context_processor
