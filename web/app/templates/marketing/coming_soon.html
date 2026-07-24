@@ -1,0 +1,36 @@
+{% extends "marketing/base.html" %}
+{% block title %}{{ brand_name }} — Coming soon{% endblock %}
+{% block content %}
+<section class="coming-hero">
+  <p class="coming-eyebrow">Coming soon</p>
+  <h1 class="coming-title">{{ brand_name }}</h1>
+  <p class="coming-lead">
+    Professional HVAC calculators for engineers, designers and contractors —
+    psychrometrics, duct and pipe sizing, weather design conditions, and more.
+    SI and imperial. Built for day-to-day design work.
+  </p>
+  <div class="coming-actions">
+    {% if current_user.is_authenticated %}
+      <a class="btn-accent" href="{{ url_for('main.dashboard') }}">Open toolkit</a>
+    {% else %}
+      <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
+      <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
+    {% endif %}
+    <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">See pricing</a>
+  </div>
+</section>
+
+<section class="coming-section">
+  <h2>What’s coming</h2>
+  <p class="coming-section-lead">
+    A focused suite of clean-room engineering tools, with a free tier and a Pro
+    subscription for the full catalogue.
+  </p>
+  <ul class="coming-list">
+    <li>Psychrometrics — single point, mixed air, cooling coil, AHU design</li>
+    <li>Duct and pipe sizing with system / index-leg workflows on Pro</li>
+    <li>Weather &amp; design conditions from location lookup</li>
+    <li>Unit converter, design guides, and PDF reports</li>
+  </ul>
+</section>
+{% endblock %}

@@ -1,11 +1,31 @@
-from flask import Flask
+from flask import Flask, redirect, request, url_for
+from flask_login import current_user
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.config import Config
+from app.extensions import db, login_manager, migrate
+
+# Paths that stay public while the calculator shell requires login.
+_PUBLIC_ENDPOINTS = frozenset(
+    {
+        "main.coming_soon",
+        "main.health",
+        "auth.login",
+        "auth.login_post",
+        "auth.register",
+        "auth.register_post",
+        "billing.subscribe",
+        "static",
+    }
+)
 
 
 def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # Cloudflare / Railway terminate TLS and forward the real scheme/host.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # Dev convenience: stop the browser caching static JS/CSS across edits to
     # them. Without this, "I edited weathermap.js and nothing changed" is
@@ -14,6 +34,18 @@ def create_app(config_class: type = Config) -> Flask:
     if app.debug:
         app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
+
+    from app.models import User
+
+    @login_manager.user_loader
+    def load_user(user_id: str):
+        return db.session.get(User, int(user_id))
+
+    from app.blueprints.auth import bp as auth_bp
+    from app.blueprints.billing import bp as billing_bp
     from app.blueprints.converter import bp as converter_bp
     from app.blueprints.duct import bp as duct_bp
     from app.blueprints.guides import bp as guides_bp
@@ -25,6 +57,8 @@ def create_app(config_class: type = Config) -> Flask:
     from app.blueprints.weather import bp as weather_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(billing_bp)
     app.register_blueprint(weather_bp, url_prefix="/weather")
     app.register_blueprint(psychro_bp, url_prefix="/psychrometrics")
     app.register_blueprint(duct_bp, url_prefix="/duct-sizing")
@@ -33,6 +67,15 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(projects_bp, url_prefix="/projects")
     app.register_blueprint(guides_bp, url_prefix="/reference")
     app.register_blueprint(help_bp, url_prefix="/help")
+
+    @app.before_request
+    def require_login_for_app():
+        endpoint = request.endpoint
+        if endpoint is None or endpoint in _PUBLIC_ENDPOINTS:
+            return None
+        if current_user.is_authenticated:
+            return None
+        return redirect(url_for("auth.login", next=request.full_path))
 
     @app.context_processor
     def inject_brand():
@@ -89,12 +132,12 @@ def create_app(config_class: type = Config) -> Flask:
         # the first paste on the same page load.
         from urllib.parse import urlencode
 
-        from flask import request
+        from flask import request as flask_request
 
         def paste_url(prefix: str, index: int) -> str:
-            args = request.args.to_dict(flat=True)
+            args = flask_request.args.to_dict(flat=True)
             args[f"paste_{prefix}"] = str(index)
-            return f"{request.path}?{urlencode(args)}"
+            return f"{flask_request.path}?{urlencode(args)}"
 
         return {"paste_url": paste_url}
 

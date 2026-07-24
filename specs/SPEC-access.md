@@ -1,7 +1,7 @@
 # Functional Spec — Access Tiers (Free / Trial / Pro)
 
 **Module:** `web/app/access.py` (+ nav / blueprint gates)
-**Status:** v0.1 scaffold — 20 July 2026 (pre-auth MVP)
+**Status:** v0.2 — 24 July 2026 (accounts + durable trial on User)
 **Clean-room note:** Commercial packaging for this product only. No reference to
 any employer tooling or the frozen prototype.
 
@@ -9,15 +9,16 @@ any employer tooling or the frozen prototype.
 
 Define which calculators are available on the Free tier vs Pro, how a 14-day
 full-suite trial works, and a single place every module can ask “may this user
-use me?” so Stripe / accounts can plug in later without rewriting every tool.
+use me?” so Stripe can plug in later without rewriting every tool. Accounts and
+login gating are specified in `SPEC-auth.md`.
 
 ## Tiers
 
 | Tier | Meaning |
 |------|---------|
 | **Free** | Permanent free tools only (see catalogue). |
-| **Trial** | Full suite for 14 days from first visit (clock starts once). |
-| **Pro** | Paid subscriber — full suite (Stripe later). |
+| **Trial** | Full suite for 14 days from account registration. |
+| **Pro** | Paid subscriber — full suite (`subscription_status == active`). |
 
 `can_use_pro` is true for **Trial** and **Pro**. Free after trial expiry cannot
 open Pro modules (soft gate: upgrade panel, not a raw 403).
@@ -43,12 +44,11 @@ pump head), and any future Pro-only modules.
 ## Trial clock
 
 - Duration: **14 days**.
-- Start: first request that touches the access layer (session today).
-- Persistence today: Flask **session** (`trial_started_at` ISO date). Honest
-  limitation until auth: clearing cookies resets the clock — acceptable for
-  pre-launch MVP only; move to user record when accounts land.
+- Start: set on **register** (`User.trial_started_at`).
+- Persistence: Postgres user row (survives cookie clear).
 - While trial active: `tier == "trial"`, `can_use_pro == True`.
 - After expiry without Pro: `tier == "free"`, `can_use_pro == False`.
+- Pro: `User.subscription_status == "active"` (Stripe later).
 
 ## Module flag API
 
@@ -63,17 +63,17 @@ Injected into every template as `access` (same pattern as `U`). Nav shows a
 
 ## Gating
 
-1. **Whole-route Pro tools** (e.g. Weather, Mixed Air): blueprint checks
+1. **Login gate:** calculator shell requires authentication (`SPEC-auth.md`).
+2. **Whole-route Pro tools** (e.g. Weather, Mixed Air): blueprint checks
    `can_access(...)`; if denied, render a shared upgrade panel (HTTP 200) rather
-   than crashing.
-2. **Mixed pages** (Duct, Pipe): Free sizer always available; Pro panels
+   than crashing. Upgrade CTAs link to `/subscribe`.
+3. **Mixed pages** (Duct, Pipe): Free sizer always available; Pro panels
    (Index Leg / Pipe System) replaced by a locked card when `can_use_pro` is
    false.
 
 ## Out of scope for this scaffold
 
-- Stripe Checkout / Customer Portal / Tax.
-- Real user accounts and durable trial binding.
+- Stripe Checkout / Customer Portal / Tax (pricing page is a placeholder).
 - Usage metering (e.g. “N free calcs per month”) — Free is unlimited on the
   three free tools for MVP.
 - Softening Free further (watermarked PDFs, etc.).

@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "web/Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+# Run after each deploy once DATABASE_URL is attached (Railway Postgres plugin).
+releaseCommand = "flask --app wsgi db upgrade"

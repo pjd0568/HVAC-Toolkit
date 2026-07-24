@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+from datetime import date
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required, login_user, logout_user
+
+from app.extensions import db
+from app.models import User
+
+bp = Blueprint("auth", __name__)
+
+
+def _safe_next(raw: str | None) -> str:
+    """Only honour same-app relative paths."""
+    if not raw or not raw.startswith("/") or raw.startswith("//"):
+        return url_for("main.dashboard")
+    return raw
+
+
+@bp.get("/login")
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("main.dashboard"))
+    return render_template(
+        "auth/login.html",
+        next=request.args.get("next", ""),
+    )
+
+
+@bp.post("/login")
+def login_post():
+    email = User.normalize_email(request.form.get("email", ""))
+    password = request.form.get("password", "")
+    nxt = _safe_next(request.form.get("next"))
+
+    user = User.query.filter_by(email=email).first() if email else None
+    if user is None or not user.check_password(password):
+        flash("Invalid email or password.", "error")
+        return render_template("auth/login.html", next=request.form.get("next", "")), 401
+
+    login_user(user, remember=bool(request.form.get("remember")))
+    return redirect(nxt)
+
+
+@bp.get("/register")
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("main.dashboard"))
+    return render_template("auth/register.html")
+
+
+@bp.post("/register")
+def register_post():
+    email = User.normalize_email(request.form.get("email", ""))
+    password = request.form.get("password", "")
+    password2 = request.form.get("password2", "")
+
+    errors: list[str] = []
+    if not email or "@" not in email:
+        errors.append("Enter a valid email address.")
+    if len(password) < 8:
+        errors.append("Password must be at least 8 characters.")
+    if password != password2:
+        errors.append("Passwords do not match.")
+    if email and User.query.filter_by(email=email).first():
+        errors.append("An account with that email already exists.")
+
+    if errors:
+        for msg in errors:
+            flash(msg, "error")
+        return render_template("auth/register.html"), 400
+
+    user = User(
+        email=email,
+        trial_started_at=date.today(),
+        subscription_status="trialing",
+    )
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    login_user(user)
+    flash("Account created. Your 14-day Pro trial has started.", "success")
+    return redirect(url_for("main.dashboard"))
+
+
+@bp.post("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("Signed out.", "info")
+    return redirect(url_for("main.coming_soon"))

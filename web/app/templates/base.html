@@ -11,11 +11,13 @@
 
 <aside class="sidebar">
   <div class="logo">
-    <div class="logo-mark">{{ brand_name[0] }}</div>
-    <div>
-      <div class="logo-name">{{ brand_name }}</div>
-      <div class="logo-tag">{{ brand_tag }}</div>
-    </div>
+    <a class="logo-link" href="{{ url_for('main.dashboard') }}">
+      <div class="logo-mark">{{ brand_name[0] }}</div>
+      <div>
+        <div class="logo-name">{{ brand_name }}</div>
+        <div class="logo-tag">{{ brand_tag }}</div>
+      </div>
+    </a>
   </div>
 
   <nav id="sidebar-nav">
@@ -107,16 +109,24 @@
   </nav>
 
   <div class="sidebar-foot">
-    <div class="avatar">·</div>
+    <div class="avatar">{{ (current_user.email[:1] if current_user.is_authenticated else '·')|upper }}</div>
     <div class="foot-text">
+      {% if current_user.is_authenticated %}
+        <div class="foot-email" title="{{ current_user.email }}">{{ current_user.email }}</div>
+      {% endif %}
       {% if access.tier == 'pro' %}
-        Pro · signed in soon
+        Pro
       {% elif access.tier == 'trial' and access.trial_days_remaining is not none %}
         Trial · {{ access.trial_days_remaining }} day{{ 's' if access.trial_days_remaining != 1 else '' }} left
       {% else %}
         Free tier
       {% endif %}
     </div>
+    {% if current_user.is_authenticated %}
+    <form method="post" action="{{ url_for('auth.logout') }}" class="sidebar-logout">
+      <button type="submit" class="linkish" title="Sign out">Out</button>
+    </form>
+    {% endif %}
   </div>
 </aside>
 
@@ -129,6 +139,7 @@
       {% elif access.tier == 'pro' %}
       <span class="trial-pill pro-on" title="Pro">Pro</span>
       {% endif %}
+      <a class="help-btn" href="{{ url_for('billing.subscribe') }}" title="Pricing">Pricing</a>
       <form method="post" action="{{ url_for('main.set_units') }}" class="unit-toggle" title="Units — applies across every tool">
         <input type="hidden" name="next" value="{{ request.path }}">
         <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}">SI · Metric</button>
@@ -141,6 +152,16 @@
       </a>
     </div>
   </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-stack" style="padding: 12px 32px 0;">
+    {% for category, message in messages %}
+    <div class="flash flash-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
 
   {# Memory Slots -- global, on every page (see app/climate_slots.py): copied
      in from the Weather tool's Summer/Winter/Max-Min columns or an On This

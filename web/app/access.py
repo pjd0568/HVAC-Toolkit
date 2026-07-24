@@ -1,22 +1,22 @@
 """Access tiers — Free / Trial / Pro module flags.
 
-See specs/SPEC-access.md. Session-backed trial clock until auth lands; every
-tool asks can_access(module_id) rather than inventing its own paywall.
+See specs/SPEC-access.md and specs/SPEC-auth.md. Trial / Pro bind to the
+authenticated User row; ACCESS_DEV_TIER still forces tier for local UI testing.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Literal
 
-from flask import current_app, session
+from flask import current_app
+from flask_login import current_user
 
 TierName = Literal["free", "trial", "pro"]
 ModuleTier = Literal["free", "pro"]
 
 TRIAL_DAYS = 14
-SESSION_TRIAL_STARTED = "trial_started_at"
 
 # module_id → catalogue entry. Labels are for nav / upgrade copy.
 MODULES: dict[str, dict[str, str]] = {
@@ -52,30 +52,27 @@ def _today() -> date:
     return date.today()
 
 
-def _parse_iso_date(raw: str | None) -> date | None:
-    if not raw:
-        return None
-    try:
-        return date.fromisoformat(raw[:10])
-    except ValueError:
-        return None
+def _entitlement_from_trial(started: date | None) -> Entitlement:
+    if started is None:
+        return Entitlement("free", False, 0, None, None)
+    ends = started + timedelta(days=TRIAL_DAYS)
+    remaining = (ends - _today()).days
+    if remaining > 0:
+        return Entitlement("trial", True, remaining, started, ends)
+    return Entitlement("free", False, 0, started, ends)
 
 
-def ensure_trial_started() -> date:
-    """Start the 14-day trial clock on first touch (session). Returns start date."""
-    existing = _parse_iso_date(session.get(SESSION_TRIAL_STARTED))
-    if existing is not None:
-        return existing
-    started = _today()
-    session[SESSION_TRIAL_STARTED] = started.isoformat()
-    return started
+def _entitlement_for_user(user) -> Entitlement:
+    status = (user.subscription_status or "none").lower()
+    if status == "active":
+        return Entitlement("pro", True, None, user.trial_started_at, None)
+    return _entitlement_from_trial(user.trial_started_at)
 
 
 def get_entitlement() -> Entitlement:
     """Resolve Free / Trial / Pro for this request.
 
-    Priority: Config.ACCESS_DEV_TIER (dev) → future user.pro flag → trial window
-    → free. Pro subscription is not wired yet (Stripe later).
+    Priority: Config.ACCESS_DEV_TIER (dev) → authenticated user record → free.
     """
     forced = current_app.config.get("ACCESS_DEV_TIER")
     if forced in ("free", "trial", "pro"):
@@ -83,22 +80,16 @@ def get_entitlement() -> Entitlement:
             return Entitlement("pro", True, None, None, None)
         if forced == "free":
             return Entitlement("free", False, 0, None, None)
-        # forced trial: show full remaining days from a synthetic start
-        started = ensure_trial_started()
+        started = _today()
         ends = started + timedelta(days=TRIAL_DAYS)
         remaining = max(0, (ends - _today()).days)
         return Entitlement("trial", remaining > 0, remaining if remaining > 0 else 0, started, ends)
 
-    # Placeholder for auth: session["is_pro"] or user record later.
-    if session.get("is_pro") is True:
-        return Entitlement("pro", True, None, None, None)
+    if current_user.is_authenticated:
+        return _entitlement_for_user(current_user)
 
-    started = ensure_trial_started()
-    ends = started + timedelta(days=TRIAL_DAYS)
-    remaining = (ends - _today()).days
-    if remaining > 0:
-        return Entitlement("trial", True, remaining, started, ends)
-    return Entitlement("free", False, 0, started, ends)
+    # Anonymous visitors are gated out of the app shell; treat as free if asked.
+    return Entitlement("free", False, 0, None, None)
 
 
 def module_tier(module_id: str) -> ModuleTier:
@@ -178,7 +169,6 @@ __all__ = [
     "can_access",
     "current_access",
     "deny_upgrade_context",
-    "ensure_trial_started",
     "get_entitlement",
     "is_pro_module",
     "module_label",

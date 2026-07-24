@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ brand_name }}{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+{% block extra_head %}{% endblock %}
+</head>
+<body class="marketing-body">
+  <header class="marketing-header">
+    <a class="marketing-brand" href="{{ url_for('main.coming_soon') }}">
+      <span class="logo-mark">{{ brand_name[0] }}</span>
+      <span class="marketing-brand-text">
+        <span class="logo-name">{{ brand_name }}</span>
+        <span class="logo-tag">{{ brand_tag }}</span>
+      </span>
+    </a>
+    <nav class="marketing-nav">
+      <a href="{{ url_for('billing.subscribe') }}">Pricing</a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.dashboard') }}">Open app</a>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="marketing-logout">
+          <button type="submit" class="linkish">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">Log in</a>
+        <a class="btn-accent marketing-cta" href="{{ url_for('auth.register') }}">Create account</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-stack marketing-flash">
+    {% for category, message in messages %}
+    <div class="flash flash-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <main class="marketing-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="marketing-footer">
+    <span>{{ brand_name }}</span>
+    <span class="muted">A PJD IT Systems product</span>
+  </footer>
+</body>
+</html>

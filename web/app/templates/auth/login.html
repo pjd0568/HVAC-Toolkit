@@ -1,0 +1,27 @@
+{% extends "marketing/base.html" %}
+{% block title %}Log in — {{ brand_name }}{% endblock %}
+{% block content %}
+<section class="auth-panel">
+  <h1>Log in</h1>
+  <p class="coming-section-lead">Access the {{ brand_name }} toolkit.</p>
+  <form method="post" action="{{ url_for('auth.login_post') }}" class="auth-form">
+    <input type="hidden" name="next" value="{{ next or '' }}">
+    <label>
+      Email
+      <input type="email" name="email" required autocomplete="username" autofocus>
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" required autocomplete="current-password">
+    </label>
+    <label class="auth-check">
+      <input type="checkbox" name="remember" value="1"> Remember me
+    </label>
+    <button type="submit" class="btn-accent">Log in</button>
+  </form>
+  <p class="auth-switch">
+    No account yet?
+    <a href="{{ url_for('auth.register') }}">Create one</a>
+  </p>
+</section>
+{% endblock %}

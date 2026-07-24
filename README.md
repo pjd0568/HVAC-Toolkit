@@ -1,7 +1,9 @@
-# HVAC Toolkit (working title)
+# HVAC Toolkit / HVAC Calcs
 
 Subscription HVAC engineering toolkit for engineers, designers and contractors.
-SI + imperial. Brand name TBC — set via `BRAND_NAME` config, nothing else to change.
+SI + imperial. Brand via `BRAND_NAME` / `BRAND_TAG` (see `.env.example`).
+
+Public site: coming-soon marketing at `/`. Calculators at `/app` (login required).
 
 ## Structure
 
@@ -9,37 +11,61 @@ SI + imperial. Brand name TBC — set via `BRAND_NAME` config, nothing else to c
 specs/      Functional specs per engine module — written from public standards
             (ASHRAE HOF, CIBSE guides) BEFORE implementation. The clean-room trail.
 engine/     hvac_engine — standalone, pure-Python calculation package.
-            No Flask imports. Independently tested against published values.
 web/        Flask application (app factory + blueprints) consuming the engine.
 ```
 
-## Development
+## Local development
 
 ```bash
 # Engine tests
-cd engine && pip install -e .[dev] && pytest
+cd engine && pip install -e ".[dev]" && pytest
 
-# Web app (local)
-cd web && pip install -r requirements.txt && flask --app wsgi run --debug
-
-# Full stack
+# Web app (needs Postgres — easiest via Compose)
+cp .env.example .env   # set SECRET_KEY at minimum
 docker compose up --build
+
+# Or run Flask against Compose Postgres only:
+docker compose up -d db
+cd web && python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+export DATABASE_URL=postgresql://app:app@127.0.0.1:5432/app
+export SECRET_KEY=dev-only-change-me
+flask --app wsgi db upgrade
+flask --app wsgi run --debug
 ```
 
-## First commit (run locally — once)
+Open `http://127.0.0.1:5000/` (coming soon), register at `/register`, then use `/app`.
 
-Git can't run inside the Cowork sandbox, and commits authored on your own machine
-are better evidence of own-time work anyway:
+## Deploy on Railway
 
-```bash
-cd C:\CoWork\hvac-toolkit
-git init -b main
-git add -A
-git commit -m "Clean-room scaffold: psychrometrics engine + Flask shell"
-# then create a PRIVATE repo on your personal GitHub and:
-git remote add origin git@github.com:<you>/<repo>.git
-git push -u origin main
-```
+1. Create a Railway project and link this GitHub repo at the **repository root**
+   (not `web/`). Builder uses Docker via [`railway.toml`](railway.toml) →
+   [`web/Dockerfile`](web/Dockerfile).
+2. Add the **Postgres** plugin; Railway injects `DATABASE_URL`.
+3. Set variables: `SECRET_KEY` (long random), `BRAND_NAME` (e.g. `HVAC Calcs`),
+   optional `BRAND_TAG`.
+4. Deploy. Release command runs `flask --app wsgi db upgrade`. Health check:
+   `GET /health`.
+5. Custom domain: Railway → Domains → `hvac-calcs.app`. Copy the CNAME/ALIAS
+   into Cloudflare DNS. SSL mode on Cloudflare: **Full (strict)** once Railway
+   has issued its certificate.
+
+If the build fails, confirm the service root is the monorepo root and the
+Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.
+
+## Cloudflare + domain
+
+- Domain: `hvac-calcs.app` (product).
+- Parent email/company: Google Workspace on `pjd-it-systems.com` (separate).
+- Point the apex (and `www` if used) at Railway’s target; keep proxy on if you
+  want Cloudflare CDN/WAF in front.
+
+## Auth & billing (current)
+
+- Email/password accounts in Postgres (`specs/SPEC-auth.md`).
+- 14-day Pro trial starts on register; Free/Pro module gates in
+  `specs/SPEC-access.md`.
+- `/subscribe` is a pricing placeholder — Stripe Checkout later.
 
 ## Provenance
 
