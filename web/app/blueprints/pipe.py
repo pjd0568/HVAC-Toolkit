@@ -1,8 +1,8 @@
-"""Pipe Sizing tool — Stage 1 flow/DN table + Stage 2 system pressure-drop builder.
+"""Pipe Sizing tool — Stage 1 sizer + Stage 2 system ΔP + Stage 3 lift/head.
 
 Per specs/SPEC-pipe-sizing.md. GET-driven; system rows use `sys_*` query params
 with an AJAX `/api/system-state` endpoint (same instant-update exception as
-duct Index Leg).
+duct Index Leg). Stage 3 uses `circuit` + `lift` on the same form/API.
 """
 
 from __future__ import annotations
@@ -15,7 +15,9 @@ from flask import Blueprint, Response, jsonify, render_template, request
 
 from hvac_engine import pipe as eng
 from hvac_engine import pipe_fittings as pfit
+from hvac_engine import units as eng_units
 
+from app.access_gate import require_module
 from app.reports.builder import build_pdf
 from app.reports.helpers import pdf_response, report_meta_from_form
 from app.units import current_view
@@ -39,6 +41,7 @@ SYS_ROW_FIELDS = ("type", "dn", "flow_ls", "length", "fitting", "label", "dp")
 DEFAULT_SYS_LENGTH_SI = 5.0  # m
 DEFAULT_SYS_DP_SI = 10.0     # Pa
 DEFAULT_SYS_LABEL = "Device"
+DEFAULT_LIFT_SI = 0.0        # m — no lift until the engineer enters one
 MAX_SYS_ROWS = 60
 
 # PDF column widths (mm) for the system table — sum ≈ 178 mm content width.
@@ -191,9 +194,9 @@ def _compute_state(args, U):
     query_base = {k: v for k, v in fields.items()}
     if selected is not None:
         query_base["selected_dn"] = str(selected.entry.dn)
-    # Preserve Stage 2 system-builder params when clicking a size row.
+    # Preserve Stage 2/3 params when clicking a size row.
     for key, value in args.items():
-        if key.startswith("sys_") or key.startswith("stage_"):
+        if key.startswith("sys_") or key.startswith("stage_") or key in ("circuit", "lift"):
             query_base[key] = value
 
     for row in rows:
@@ -467,6 +470,87 @@ def _blank_sys_row(row_type: str, fitting_key: str) -> dict:
     }
 
 
+def _pressure_triplet(pa: float, density_kg_m3: float, U) -> dict:
+    """SI: Pa·kPa·bar; IP: psi·in.wg·ft fluid — see SPEC Stage 3."""
+    return eng_units.head_pressure_triplet(pa, density_kg_m3, U.system)
+
+
+def _compute_head_state(args, U, *, friction_pa: float, density_kg_m3: float | None) -> dict:
+    """Stage 3 lift / static head / pump duty, using Stage 2 friction total."""
+    circuit = _choice(args.get("circuit", ""), set(eng.CIRCUIT_LABELS), "pressurised")
+    lift_raw = _s(args, "lift", "")
+    fields = {
+        "circuit": circuit,
+        "lift": lift_raw if lift_raw else U.fmt("duct_run_length", DEFAULT_LIFT_SI),
+    }
+
+    blank = {
+        "fields": fields,
+        "circuit_label": eng.CIRCUIT_LABELS[circuit],
+        "lift_sym": U.sym("duct_run_length"),
+        "lift_display": fields["lift"],
+        "lift_visible": circuit == "open",
+        "note": "",
+        "static": None,
+        "friction": None,
+        "pump": None,
+        "static_applies": circuit == "open",
+        "error": None,
+        "fluid_label": None,
+    }
+
+    if density_kg_m3 is None:
+        blank["error"] = "Resolve Design Inputs (fluid / duty) to calculate static head."
+        return blank
+
+    try:
+        if lift_raw in ("", None):
+            lift_m = DEFAULT_LIFT_SI
+        else:
+            lift_m = U.to_si("duct_run_length", _f(lift_raw, "lift"))
+        # Pressurised closed circuits do not use lift for pump duty (return cancels it).
+        lift_for_calc = lift_m if circuit == "open" else 0.0
+        hb = eng.head_breakdown(circuit, lift_for_calc, density_kg_m3, friction_pa)  # type: ignore[arg-type]
+        # Keep the typed lift for the open-tank field even when pressurised (so
+        # switching back to open restores the value); store actual entered height.
+        lift_display = U.fmt("duct_run_length", lift_m)
+    except ValueError as exc:
+        blank["error"] = str(exc)
+        return blank
+
+    note = (
+        "Open tank: required pump head = static lift + friction "
+        "(return does not cancel the lift to the open water surface)."
+        if hb.static_applies_to_pump
+        else (
+            "Pressurised closed circuit: return / gravity cancels physical lift — "
+            "circulating pump head = friction only. Static lift is not used."
+        )
+    )
+    static_triplet = (
+        _pressure_triplet(hb.static_head_pa, density_kg_m3, U)
+        if hb.static_applies_to_pump
+        else {"parts": [], "summary": "Not applicable (closed circuit)"}
+    )
+    return {
+        "fields": fields,
+        "circuit_label": eng.CIRCUIT_LABELS[circuit],
+        "lift_sym": U.sym("duct_run_length"),
+        "lift_display": lift_display,
+        "lift_visible": circuit == "open",
+        "note": note,
+        "static": static_triplet,
+        "friction": _pressure_triplet(hb.friction_pa, density_kg_m3, U),
+        "pump": _pressure_triplet(hb.pump_duty_pa, density_kg_m3, U),
+        "static_applies": hb.static_applies_to_pump,
+        "error": None,
+        "static_pa": hb.static_head_pa,
+        "friction_pa": hb.friction_pa,
+        "pump_duty_pa": hb.pump_duty_pa,
+        "fluid_label": None,  # filled by caller when props known
+    }
+
+
 def _compute_system_state(args, U) -> dict:
     """Full Stage 2 system state: per-row isolation + staging draft + margin."""
     try:
@@ -536,6 +620,20 @@ def _compute_system_state(args, U) -> dict:
     margin_pa = total_pa * safety_margin / 100.0
     total_with_margin_pa = total_pa + margin_pa
 
+    density = ctx["props"].density_kg_m3 if ctx else None
+    head = _compute_head_state(
+        args, U, friction_pa=total_with_margin_pa, density_kg_m3=density
+    )
+    if ctx is not None:
+        props = ctx["props"]
+        fluid_bits = [eng.FLUID_LABELS[props.fluid]]
+        if props.fluid != "water":
+            fluid_bits.append(f"{props.concentration_pct} % v/v")
+        fluid_bits.append(f"mean {U.fmt('temperature', props.temperature_c)} {U.sym('temperature')}")
+        head["fluid_label"] = " · ".join(fluid_bits)
+    else:
+        head["fluid_label"] = "Set fluid in Design Inputs above"
+
     return {
         "row_count": row_count,
         "rows": rows,
@@ -560,6 +658,7 @@ def _compute_system_state(args, U) -> dict:
         "velocity_pressure_sym": U.sym("velocity_pressure"),
         "velocity_sym": U.sym("velocity"),
         "friction_rate_sym": U.sym("friction_rate"),
+        "head": head,
     }
 
 
@@ -640,6 +739,10 @@ def _report_fields_for(fields: dict, system: dict) -> dict:
     for row in system["rows"]:
         for f in SYS_ROW_FIELDS:
             out[f"sys_{f}_{row['index']}"] = row["raw"].get(f, "")
+    head = system.get("head") or {}
+    hf = head.get("fields") or {}
+    out["circuit"] = hf.get("circuit", "pressurised")
+    out["lift"] = hf.get("lift", "")
     return out
 
 
@@ -665,6 +768,7 @@ def index():
 
 
 @bp.route("/api/system-state", methods=["GET"])
+@require_module("pipe.system")
 def api_system_state():
     U = current_view()
     system = _compute_system_state(request.args, U)
@@ -672,6 +776,7 @@ def api_system_state():
 
 
 @bp.route("/system/export.csv", methods=["GET"])
+@require_module("pipe.system")
 def system_export_csv():
     U = current_view()
     system = _compute_system_state(request.args, U)
@@ -688,7 +793,7 @@ def system_export_csv():
     )
 
 
-def _report_rows(state, U):
+def _report_rows(state, U, system=None):
     f = state["fields"]
     input_rows = [
         ("Flow mode", "From load" if f["mode"] == "from_load" else "Flow known", ""),
@@ -707,6 +812,11 @@ def _report_rows(state, U):
     else:
         input_rows.append(("Flow", f["flow_ls"], "l/s"))
 
+    head = system.get("head") if system else None
+    if head and head.get("fields"):
+        input_rows.append(("Circuit type", head["circuit_label"], ""))
+        input_rows.append(("Static lift", head["fields"].get("lift", ""), head["lift_sym"]))
+
     result_rows: list[tuple[str, str, str]] = []
     if state["flow_display"]:
         fd = state["flow_display"]
@@ -715,6 +825,16 @@ def _report_rows(state, U):
             ("Volumetric flow", fd["m3h"], "m³/h"),
             ("Mass flow", fd["mass_kg_s"], "kg/s"),
         ]
+
+    head = system.get("head") if system else None
+    if head and not head.get("error") and head.get("pump"):
+        result_rows.extend([
+            ("Circuit type", head["circuit_label"], ""),
+            ("Static lift", head["lift_display"], head["lift_sym"]),
+            ("Static head", head["static"]["summary"], ""),
+            ("Circuit friction", head["friction"]["summary"], ""),
+            ("Required pump head", head["pump"]["summary"], ""),
+        ])
 
     size_headers = ["DN", f"Velocity ({U.sym('velocity')})", f"ΔP/L ({U.sym('friction_rate')})"]
     catalogue = state.get("catalogue_results") or []
@@ -736,7 +856,7 @@ def report():
         return Response(state["error"], status=400)
 
     system = _compute_system_state(request.form, U)
-    input_rows, result_rows, size_table = _report_rows(state, U)
+    input_rows, result_rows, size_table = _report_rows(state, U, system)
 
     extra = [size_table]
     if system["rows"]:

@@ -177,3 +177,39 @@ def test_flow_from_load_rejects_non_positive():
     p.flow_from_load(0.0, 10.0, props)
   with pytest.raises(ValueError):
     p.flow_from_load(10.0, 0.0, props)
+
+
+def test_hydrostatic_pressure_10m_water():
+  rho = 998.2
+  expected = rho * p.STANDARD_G * 10.0
+  assert p.hydrostatic_pressure_pa(10.0, rho) == pytest.approx(expected, rel=1e-12)
+  assert expected == pytest.approx(97_890.0, abs=1.0)
+
+
+def test_hydrostatic_rejects_bad_args():
+  with pytest.raises(ValueError):
+    p.hydrostatic_pressure_pa(-1.0, 1000.0)
+  with pytest.raises(ValueError):
+    p.hydrostatic_pressure_pa(1.0, 0.0)
+
+
+def test_head_breakdown_open_adds_static():
+  hb = p.head_breakdown("open", 10.0, 1000.0, friction_pa=25_000.0)
+  static = 1000.0 * p.STANDARD_G * 10.0
+  assert hb.static_head_pa == pytest.approx(static)
+  assert hb.friction_pa == 25_000.0
+  assert hb.static_applies_to_pump is True
+  assert hb.pump_duty_pa == pytest.approx(static + 25_000.0)
+
+
+def test_head_breakdown_pressurised_friction_only():
+  hb = p.head_breakdown("pressurised", 10.0, 1000.0, friction_pa=25_000.0)
+  static = 1000.0 * p.STANDARD_G * 10.0
+  assert hb.static_head_pa == pytest.approx(static)
+  assert hb.static_applies_to_pump is False
+  assert hb.pump_duty_pa == pytest.approx(25_000.0)
+
+
+def test_head_breakdown_rejects_negative_friction():
+  with pytest.raises(ValueError):
+    p.head_breakdown("open", 1.0, 1000.0, friction_pa=-1.0)

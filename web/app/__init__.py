@@ -71,6 +71,14 @@ def create_app(config_class: type = Config) -> Flask:
         return {"help_anchor_for": ACTIVE_TO_ANCHOR}
 
     @app.context_processor
+    def inject_access():
+        # Free / Trial / Pro entitlement + module flags for every template
+        # (nav Pro chips, locked panels). See app/access.py and SPEC-access.md.
+        from app.access import current_access
+
+        return {"access": current_access()}
+
+    @app.context_processor
     def inject_paste_url():
         # Lets any template build a "paste this slot into this field group"
         # link without knowing its own route -- used by _state_input.html's

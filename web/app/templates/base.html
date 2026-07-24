@@ -18,49 +18,105 @@
     </div>
   </div>
 
-  <nav>
-    <div class="nav-group">
+  <nav id="sidebar-nav">
+    <div class="nav-group nav-group-flat">
       <a class="nav-item {{ 'active' if active == 'dashboard' }}" href="{{ url_for('main.dashboard') }}">Dashboard</a>
-      <a class="nav-item {{ 'active' if active == 'projects' }}" href="{{ url_for('projects.index') }}">Projects <span class="pro-chip">Pro</span></a>
+      <a class="nav-item {{ 'active' if active == 'projects' }}" href="{{ url_for('projects.index') }}">
+        Projects
+        {% if access.is_pro('projects') %}<span class="pro-chip">Pro</span>{% endif %}
+      </a>
     </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Site Data</div>
-      <a class="nav-item {{ 'active' if active == 'weather' }}" href="{{ url_for('weather.index') }}">Weather &amp; Design Conditions</a>
+    <div class="nav-group" data-nav-group data-nav-id="site-data">
+      <button type="button" class="nav-group-toggle" aria-expanded="true">
+        <span class="nav-group-label">Site Data</span>
+        <span class="nav-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-item {{ 'active' if active == 'weather' }}" href="{{ url_for('weather.index') }}">
+          Weather &amp; Design Conditions
+          {% if access.is_pro('weather') %}<span class="pro-chip">Pro</span>{% endif %}
+        </a>
+      </div>
     </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Psychrometrics</div>
-      <a class="nav-item {{ 'active' if active == 'psychro' }}" href="{{ url_for('psychro.single_point') }}">Single Point</a>
-      <a class="nav-item {{ 'active' if active == 'psychro_mix' }}" href="{{ url_for('psychro.mixed_air') }}">Mixed Air</a>
-      <a class="nav-item {{ 'active' if active == 'psychro_coil' }}" href="{{ url_for('psychro.cooling_coil') }}">Cooling Coil</a>
-      <a class="nav-item {{ 'active' if active == 'psychro_ahu' }}" href="{{ url_for('psychro.ahu') }}">AHU Design</a>
+    <div class="nav-group" data-nav-group data-nav-id="psychrometrics">
+      <button type="button" class="nav-group-toggle" aria-expanded="true">
+        <span class="nav-group-label">Psychrometrics</span>
+        <span class="nav-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-item {{ 'active' if active == 'psychro' }}" href="{{ url_for('psychro.single_point') }}">Single Point</a>
+        <a class="nav-item {{ 'active' if active == 'psychro_mix' }}" href="{{ url_for('psychro.mixed_air') }}">
+          Mixed Air
+          {% if access.is_pro('psychro.mixed_air') %}<span class="pro-chip">Pro</span>{% endif %}
+        </a>
+        <a class="nav-item {{ 'active' if active == 'psychro_coil' }}" href="{{ url_for('psychro.cooling_coil') }}">
+          Cooling Coil
+          {% if access.is_pro('psychro.cooling_coil') %}<span class="pro-chip">Pro</span>{% endif %}
+        </a>
+        <a class="nav-item {{ 'active' if active == 'psychro_ahu' }}" href="{{ url_for('psychro.ahu') }}">
+          AHU Design
+          {% if access.is_pro('psychro.ahu') %}<span class="pro-chip">Pro</span>{% endif %}
+        </a>
+      </div>
     </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Air Distribution</div>
-      <a class="nav-item {{ 'active' if active == 'duct' }}" href="{{ url_for('duct.index') }}">Duct Sizing</a>
+    <div class="nav-group" data-nav-group data-nav-id="air-distribution">
+      <button type="button" class="nav-group-toggle" aria-expanded="true">
+        <span class="nav-group-label">Air Distribution</span>
+        <span class="nav-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-item {{ 'active' if active == 'duct' }}" href="{{ url_for('duct.index') }}">Duct Sizing</a>
+      </div>
     </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Hydronics</div>
-      <a class="nav-item {{ 'active' if active == 'pipe' }}" href="{{ url_for('pipe.index') }}">Pipe Sizing</a>
+    <div class="nav-group" data-nav-group data-nav-id="hydronics">
+      <button type="button" class="nav-group-toggle" aria-expanded="true">
+        <span class="nav-group-label">Hydronics</span>
+        <span class="nav-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-item {{ 'active' if active == 'pipe' }}" href="{{ url_for('pipe.index') }}">Pipe Sizing</a>
+      </div>
     </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Utilities</div>
-      <a class="nav-item {{ 'active' if active == 'converter' }}" href="{{ url_for('converter.index') }}">Unit Converter</a>
+    <div class="nav-group" data-nav-group data-nav-id="utilities">
+      <button type="button" class="nav-group-toggle" aria-expanded="true">
+        <span class="nav-group-label">Utilities</span>
+        <span class="nav-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-item {{ 'active' if active == 'converter' }}" href="{{ url_for('converter.index') }}">
+          Unit Converter
+          {% if access.is_pro('converter') %}<span class="pro-chip">Pro</span>{% endif %}
+        </a>
+      </div>
     </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Reference</div>
-      <a class="nav-item {{ 'active' if active == 'guides' }}" href="{{ url_for('guides.index') }}">Design Guides</a>
+    <div class="nav-group" data-nav-group data-nav-id="reference">
+      <button type="button" class="nav-group-toggle" aria-expanded="true">
+        <span class="nav-group-label">Reference</span>
+        <span class="nav-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-group-items">
+        <a class="nav-item {{ 'active' if active == 'guides' }}" href="{{ url_for('guides.index') }}">Design Guides</a>
+      </div>
     </div>
   </nav>
 
   <div class="sidebar-foot">
     <div class="avatar">·</div>
-    <div class="foot-text">Signed out</div>
+    <div class="foot-text">
+      {% if access.tier == 'pro' %}
+        Pro · signed in soon
+      {% elif access.tier == 'trial' and access.trial_days_remaining is not none %}
+        Trial · {{ access.trial_days_remaining }} day{{ 's' if access.trial_days_remaining != 1 else '' }} left
+      {% else %}
+        Free tier
+      {% endif %}
+    </div>
   </div>
 </aside>
 
@@ -68,6 +124,11 @@
   <div class="topbar">
     <div class="topbar-title">{% block page_title %}{% endblock %}</div>
     <div class="topbar-actions">
+      {% if access.tier == 'trial' and access.trial_days_remaining is not none %}
+      <span class="trial-pill" title="Full suite during trial">Trial · {{ access.trial_days_remaining }}d</span>
+      {% elif access.tier == 'pro' %}
+      <span class="trial-pill pro-on" title="Pro">Pro</span>
+      {% endif %}
       <form method="post" action="{{ url_for('main.set_units') }}" class="unit-toggle" title="Units — applies across every tool">
         <input type="hidden" name="next" value="{{ request.path }}">
         <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}">SI · Metric</button>
@@ -115,6 +176,7 @@
   </div>
 </main>
 
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

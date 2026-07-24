@@ -71,9 +71,35 @@
 
   function buildParams() {
     var params = readDesignParams();
+    // System-level circuit / lift (visible controls; keep form hiddens in sync).
+    var circuitEl = panel.querySelector('input[name="circuit_ui"]:checked');
+    var circuit = (circuitEl && circuitEl.value) || "pressurised";
+    params.set("circuit", circuit);
+    var liftEl = document.getElementById("lift");
+    params.set("lift", liftEl ? (liftEl.value || "0") : "0");
+    syncCircuitHidden(circuit);
+    if (liftEl) syncLiftHidden(liftEl.value || "0");
     readStageFields(params);
     readCommittedRows(params);
     return params;
+  }
+
+  function syncCircuitHidden(value) {
+    var h = document.getElementById("circuit-hidden");
+    if (h) h.value = value;
+  }
+
+  function syncLiftHidden(value) {
+    var h = document.getElementById("lift-hidden");
+    if (h) h.value = value;
+  }
+
+  function syncLiftVisibility(circuit) {
+    var field = document.getElementById("lift-field");
+    var row = document.getElementById("head-lift-row");
+    var open = circuit === "open";
+    if (field) field.style.display = open ? "" : "none";
+    if (row) row.style.display = open ? "" : "none";
   }
 
   function syncTypeVisibility(scope) {
@@ -325,19 +351,47 @@
     var totM = document.getElementById("sys-total-margin");
     if (totM) totM.textContent = system.total_with_margin_display || "";
 
+    applyHeadState(system.head);
+
     syncAllTypeVisibility();
     syncReportForm(system);
     replaceUrl();
     updateCsvLink();
   }
 
+  function applyHeadState(head) {
+    if (!head) return;
+    var note = document.getElementById("head-note");
+    if (note) note.textContent = head.note || "";
+    var fluid = document.getElementById("sys-fluid-label");
+    if (fluid) fluid.textContent = head.fluid_label || "—";
+    var circuit = document.getElementById("head-circuit-label");
+    if (circuit) circuit.textContent = head.circuit_label || "";
+    var liftVal = document.getElementById("head-lift-val");
+    if (liftVal) liftVal.textContent = head.lift_display || "";
+    var liftSym = document.getElementById("head-lift-sym");
+    if (liftSym) liftSym.textContent = head.lift_sym || "";
+    var st = document.getElementById("head-static-summary");
+    if (st) st.textContent = (head.static && head.static.summary) || "—";
+    var fr = document.getElementById("head-friction-summary");
+    if (fr) fr.textContent = (head.friction && head.friction.summary) || "—";
+    var pu = document.getElementById("head-pump-summary");
+    if (pu) pu.textContent = (head.pump && head.pump.summary) || "—";
+    var circ = (head.fields && head.fields.circuit) || "pressurised";
+    syncLiftVisibility(circ);
+    // Keep radios in sync if server corrected a value.
+    var radio = panel.querySelector('input[name="circuit_ui"][value="' + circ + '"]');
+    if (radio) radio.checked = true;
+    syncCircuitHidden(circ);
+  }
+
   function syncReportForm(system) {
     var reportForm = document.querySelector('form[action$="/report"]');
     if (!reportForm) return;
-    // Remove prior sys_* / stage_* hidden fields.
+    // Remove prior sys_* / stage_* / circuit / lift hidden fields.
     Array.prototype.slice.call(reportForm.querySelectorAll('input[type="hidden"]')).forEach(function (inp) {
       var n = inp.name || "";
-      if (n.indexOf("sys_") === 0 || n.indexOf("stage_") === 0) {
+      if (n.indexOf("sys_") === 0 || n.indexOf("stage_") === 0 || n === "circuit" || n === "lift") {
         inp.parentNode.removeChild(inp);
       }
     });
@@ -355,6 +409,12 @@
         addHidden("sys_" + field + "_" + row.index, (row.raw && row.raw[field]) || "");
       });
     });
+    var head = system.head || {};
+    var hf = head.fields || {};
+    var circuitEl = panel.querySelector('input[name="circuit_ui"]:checked');
+    addHidden("circuit", (circuitEl && circuitEl.value) || hf.circuit || "pressurised");
+    var liftEl = document.getElementById("lift");
+    addHidden("lift", (liftEl && liftEl.value) || hf.lift || "");
   }
 
   function replaceUrl() {
@@ -413,6 +473,24 @@
     var t = evt.target;
     if (!t || t.tagName !== "INPUT") return;
     if (t.hasAttribute("data-row-field") || t.id === "sys-safety-margin") {
+      debouncedFetch();
+    }
+  });
+
+  // Stage 3: system type / lift live in the system panel params strip.
+  panel.addEventListener("change", function (evt) {
+    var t = evt.target;
+    if (!t) return;
+    if (t.name === "circuit_ui") {
+      syncLiftVisibility(t.value);
+      syncCircuitHidden(t.value);
+      debouncedFetch();
+    }
+  });
+  panel.addEventListener("input", function (evt) {
+    var t = evt.target;
+    if (t && t.id === "lift") {
+      syncLiftHidden(t.value || "0");
       debouncedFetch();
     }
   });
@@ -495,6 +573,8 @@
   syncAllTypeVisibility();
   updateCsvLink();
   rewriteSizeLinks();
+  var checkedCircuit = panel.querySelector('input[name="circuit_ui"]:checked');
+  if (checkedCircuit) syncLiftVisibility(checkedCircuit.value);
 
   // If the URL already carries sys rows, ensure footer/state matches; otherwise
   // just seed stage preview against current design inputs.

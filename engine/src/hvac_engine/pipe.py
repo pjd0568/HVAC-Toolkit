@@ -26,6 +26,10 @@ FlowMode = Literal["from_load", "flow_known"]
 Application = Literal["lthw", "chw"]
 FluidId = Literal["water", "dtx", "epg", "ppg"]
 MaterialId = Literal["carbon_steel", "copper", "dairy_ss"]
+CircuitType = Literal["open", "pressurised"]
+
+# Standard acceleration due to gravity (m/s²) — BIPM / ISO 80000-3.
+STANDARD_G = 9.80665
 
 # CIBSE Guide C Table 2.2 — retained for help text reference only.
 CIBSE_LIMITS: dict[Application, dict[str, float]] = {
@@ -85,6 +89,11 @@ APPLICATION_LABELS: dict[Application, str] = {
     "chw": "CHW — chilled water",
 }
 
+CIRCUIT_LABELS: dict[CircuitType, str] = {
+    "pressurised": "Pressurised closed circuit",
+    "open": "Open tank",
+}
+
 
 @dataclass(frozen=True)
 class PipeCatalogEntry:
@@ -141,6 +150,19 @@ class PipeSizeResult:
         if self.reynolds < 4000:
             return "Transitional"
         return "Turbulent"
+
+
+@dataclass(frozen=True)
+class HeadBreakdown:
+    """Static lift + friction combined into required pump head (Stage 3)."""
+
+    circuit: CircuitType
+    lift_height_m: float
+    density_kg_m3: float
+    static_head_pa: float
+    friction_pa: float
+    pump_duty_pa: float
+    static_applies_to_pump: bool
 
 
 # ── Pipe catalogues (public standard dimensions) ─────────────────────────────
@@ -384,6 +406,48 @@ def velocity_pressure(velocity_ms: float, density_kg_m3: float) -> float:
     return 0.5 * density_kg_m3 * velocity_ms ** 2
 
 
+def hydrostatic_pressure_pa(height_m: float, density_kg_m3: float) -> float:
+    """Static head as pressure: P = ρ g h (Pa).
+
+    ``height_m`` is the vertical fluid column (lift). Uses ``STANDARD_G``.
+    """
+    if height_m < 0:
+        raise ValueError(f"lift height must be zero or greater (got {height_m!r})")
+    if density_kg_m3 <= 0:
+        raise ValueError(f"density must be positive (got {density_kg_m3!r})")
+    return density_kg_m3 * STANDARD_G * height_m
+
+
+def head_breakdown(
+    circuit: CircuitType,
+    lift_height_m: float,
+    density_kg_m3: float,
+    friction_pa: float,
+) -> HeadBreakdown:
+    """Combine static lift and circuit friction into required pump head.
+
+    Open systems: pump duty = static + friction.
+    Pressurised (closed): circulating pump duty = friction only; static head is
+    still reported for height / fill context but not added to pump duty.
+    """
+    if circuit not in ("open", "pressurised"):
+        raise ValueError(f"unknown circuit type: {circuit!r}")
+    if friction_pa < 0:
+        raise ValueError(f"friction pressure drop must be zero or greater (got {friction_pa!r})")
+    static_pa = hydrostatic_pressure_pa(lift_height_m, density_kg_m3)
+    applies = circuit == "open"
+    pump_pa = static_pa + friction_pa if applies else friction_pa
+    return HeadBreakdown(
+        circuit=circuit,
+        lift_height_m=lift_height_m,
+        density_kg_m3=density_kg_m3,
+        static_head_pa=static_pa,
+        friction_pa=friction_pa,
+        pump_duty_pa=pump_pa,
+        static_applies_to_pump=applies,
+    )
+
+
 def _swamee_jain(reynolds: float, roughness_m: float, diameter_m: float) -> float:
     if reynolds <= 0:
         return 0.0
@@ -607,6 +671,8 @@ __all__ = [
     "APPLICATION_LABELS",
     "Application",
     "CIBSE_LIMITS",
+    "CIRCUIT_LABELS",
+    "CircuitType",
     "FRICTION_BANDS",
     "FLUID_LABELS",
     "FlowMode",
@@ -614,6 +680,7 @@ __all__ = [
     "FluidId",
     "FluidProperties",
     "GLYCOL_CONCENTRATIONS_PCT",
+    "HeadBreakdown",
     "MATERIAL_LABELS",
     "MaterialId",
     "PIPE_CATALOGUES",
@@ -621,6 +688,7 @@ __all__ = [
     "PipeCatalogEntry",
     "PipeSizeResult",
     "ROUGHNESS",
+    "STANDARD_G",
     "band_status",
     "catalogue_for",
     "friction_status",
@@ -634,6 +702,8 @@ __all__ = [
     "fluid_properties",
     "glycol_concentrations",
     "glycol_freeze_point_c",
+    "head_breakdown",
+    "hydrostatic_pressure_pa",
     "mean_water_temperature_c",
     "pipe_mass_per_m",
     "recommended_index",

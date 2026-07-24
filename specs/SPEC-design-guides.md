@@ -43,9 +43,14 @@ cooling process, cross-linked from the Cooling Coil and AHU Design tools.
 
 ## Not yet
 
-- No search/tagging across articles (one article for now).
-- No "read time" or authorship metadata.
-- Future articles (duct sizing practice, pipe sizing/pump curves, psychrometrics
-  primer) should follow the same spec-first, clean-room method: write what the article
-  needs to cover and its public-standard sources here (or a new SPEC-*.md) before
-  drafting the body.
+- No search/tagging across articles.
+- No "read time" or authorship metadata beyond the card estimate.
+- Future articles (duct sizing practice, pump curves, psychrometrics primer)
+  should follow the same spec-first, clean-room method.
+
+## Articles
+
+| Slug | Title | Notes |
+|------|-------|-------|
+| `cooling-coil-design` | Cooling Coil Design… | Original v1.0 article |
+| `pipe-sizing-design-limits` | Pipe Sizing Design Limits… | Moved off the Pipe Sizing page (20 Jul 2026) so the calculator stays lean; linked from the traffic-light legend |

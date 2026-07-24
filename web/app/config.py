@@ -14,3 +14,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "postgresql://app:app@db:5432/app"
     )
+
+    # Access tier override for local click-testing Free vs Pro UI.
+    # None = normal trial clock; "free" | "trial" | "pro" forces that tier.
+    ACCESS_DEV_TIER = os.environ.get("ACCESS_DEV_TIER") or None

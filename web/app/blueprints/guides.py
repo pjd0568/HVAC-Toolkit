@@ -24,6 +24,18 @@ GUIDES = [
         "read_mins": 7,
         "template": "guides/cooling_coil_design.html",
     },
+    {
+        "slug": "pipe-sizing-design-limits",
+        "title": "Pipe Sizing Design Limits: Velocity and Pressure-Gradient Bands",
+        "summary": (
+            "The green / amber / red traffic-light bands used by the Pipe Sizing "
+            "tool — ideal ΔP/L 200–300 Pa/m, per-DN velocity limits, and what "
+            "CAPEX-heavy vs CAPEX-light sizing means in practice."
+        ),
+        "disc": "water",
+        "read_mins": 4,
+        "template": "guides/pipe_sizing_design_limits.html",
+    },
 ]
 
 

@@ -77,6 +77,7 @@ from flask import Blueprint, Response, jsonify, render_template, request
 from hvac_engine import duct as eng
 from hvac_engine import fittings as fit
 
+from app.access_gate import require_module
 from app.reports.builder import build_pdf
 from app.reports.helpers import pdf_response, report_meta_from_form
 from app.units import current_view
@@ -871,6 +872,7 @@ def api_state():
 
 
 @bp.route("/api/leg-state", methods=["GET"])
+@require_module("duct.index_leg")
 def api_leg_state():
     """Index-leg JSON -- independent of the top sizer (Correction #6): this
     never touches or recomputes the 3-column state above it."""
@@ -880,6 +882,7 @@ def api_leg_state():
 
 
 @bp.route("/index-leg/export.csv", methods=["GET"])
+@require_module("duct.index_leg")
 def export_leg_csv():
     """Download the current index-leg table as CSV -- recomputes from the
     query string the same way the page/API routes do, so the export can

@@ -64,6 +64,9 @@ _FPM_PER_MS = 1.0 / (0.3048 / 60.0)              # 1 ft/min = 0.3048/60 m/s exac
 _IN_PER_M = 1.0 / 0.0254                         # 1 in = 0.0254 m exactly
 _PA_PER_INWG = 249.0889                          # 1 in water gauge (conventional) = 249.0889 Pa
 _M_PER_100FT = 30.48                             # 100 ft = 30.48 m exactly
+_PA_PER_PSI = 6894.757                           # 1 lbf/in² (psi) = 6894.757 Pa
+_PA_PER_BAR = 100_000.0                          # 1 bar = 10⁵ Pa exactly
+_PA_PER_KPA = 1000.0                             # 1 kPa = 1000 Pa exactly
 
 
 @dataclass(frozen=True)
@@ -225,4 +228,44 @@ def decimals(quantity: str, system: str) -> int:
     return _unit(quantity, system).decimals
 
 
-__all__ = ["SYSTEMS", "UNITS", "symbol", "to_si", "from_si", "decimals"]
+def head_pressure_triplet(pa: float, density_kg_m3: float, system: str) -> dict:
+    """Format a pump/static head pressure as a three-unit display group.
+
+    SI → Pa · kPa · bar. IP → psi · in.wg · ft of fluid (using ``density_kg_m3``
+    and standard g = 9.80665, matching ``hvac_engine.pipe.STANDARD_G``).
+    Returns ``{"parts": [(value, symbol), ...], "summary": "..."}``.
+    """
+    if system not in SYSTEMS:
+        raise ValueError(f"unknown unit system: {system!r}")
+    if density_kg_m3 <= 0:
+        raise ValueError(f"density must be positive (got {density_kg_m3!r})")
+
+    if system == "SI":
+        parts = [
+            (f"{pa:.0f}", "Pa"),
+            (f"{pa / _PA_PER_KPA:.3f}", "kPa"),
+            (f"{pa / _PA_PER_BAR:.4f}", "bar"),
+        ]
+    else:
+        psi = pa / _PA_PER_PSI
+        inwg = pa / _PA_PER_INWG
+        height_m = pa / (density_kg_m3 * 9.80665)
+        ft_fluid = height_m / _M_PER_FT
+        parts = [
+            (f"{psi:.3f}", "psi"),
+            (f"{inwg:.3f}", "in.wg"),
+            (f"{ft_fluid:.2f}", "ft fluid"),
+        ]
+    summary = "  ·  ".join(f"{v} {s}" for v, s in parts)
+    return {"parts": parts, "summary": summary}
+
+
+__all__ = [
+    "SYSTEMS",
+    "UNITS",
+    "symbol",
+    "to_si",
+    "from_si",
+    "decimals",
+    "head_pressure_triplet",
+]

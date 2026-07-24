@@ -9,6 +9,8 @@ from flask import Blueprint, render_template, request
 
 from hvac_engine import converter as cv
 
+from app.access_gate import require_module
+
 bp = Blueprint("converter", __name__)
 
 GROUP_LABELS = {
@@ -20,6 +22,7 @@ GROUP_LABELS = {
 
 
 @bp.route("/", methods=["GET"])
+@require_module("converter")
 def index():
     categories = cv.list_categories()
     cat_ids = {cid for cid, _ in categories}

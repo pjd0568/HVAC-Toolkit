@@ -8,6 +8,8 @@ wiring the real feature later is a self-contained change.
 
 from flask import Blueprint, render_template
 
+from app.access_gate import require_module
+
 bp = Blueprint("projects", __name__)
 
 # Placeholder data only — illustrates the layout, not stored anywhere.
@@ -40,5 +42,6 @@ _DEMO_PROJECTS = [
 
 
 @bp.get("/")
+@require_module("projects")
 def index():
     return render_template("projects.html", active="projects", projects=_DEMO_PROJECTS)

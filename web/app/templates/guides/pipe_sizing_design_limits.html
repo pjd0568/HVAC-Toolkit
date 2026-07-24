@@ -1,0 +1,43 @@
+<p>These bands drive the traffic-light dots on the
+<a href="{{ url_for('pipe.index') }}">Pipe Sizing</a> catalogue. They are a
+lifecycle-cost framing for closed LTHW and CHW distribution — not a substitute
+for project acoustic, erosion or manufacturer limits. Friction itself is still
+calculated with Darcy–Weisbach / Colebrook–White (CIBSE Guide C).</p>
+
+<div class="callout">
+  <strong>Green</strong> = ideal mid-band ·
+  <strong>Amber</strong> = lower/upper limit bands or the transition between them ·
+  <strong>Red</strong> = outside the acceptable range.
+</div>
+
+<h2>Pressure gradient (ΔP/L)</h2>
+<table class="results">
+  <thead><tr><th>Scenario</th><th>Range</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Lower limit</td><td>100 – 150 Pa/m</td><td>CAPEX-heavy / OPEX-light — oversized pipework, low pumping energy. Headers and low-loss distribution.</td></tr>
+    <tr><td>Ideal design</td><td>200 – 300 Pa/m</td><td>Industry sweet spot — balanced lifecycle cost between pipe cost and pumping energy.</td></tr>
+    <tr><td>Upper limit</td><td>400 – 500 Pa/m</td><td>CAPEX-light / OPEX-heavy — smaller pipe, higher pump head, energy and acoustic risk.</td></tr>
+  </tbody>
+</table>
+<p>Below 100 Pa/m or above 500 Pa/m is outside limits (red). The amber bands cover
+100–200 Pa/m (below ideal) and 300–500 Pa/m (above ideal but still within the
+upper commercial range).</p>
+
+<h2>Velocity (by DN)</h2>
+<table class="results">
+  <thead><tr><th>Pipe size</th><th>Ideal (m/s)</th><th>Maximum (m/s)</th><th>Constraint</th></tr></thead>
+  <tbody>
+    <tr><td>DN 15 – 50</td><td>0.8 – 1.2</td><td>1.5</td><td>Acoustic noise in occupied spaces</td></tr>
+    <tr><td>DN 65 – 150</td><td>1.2 – 1.8</td><td>2.5</td><td>Erosion-corrosion at fittings</td></tr>
+    <tr><td>DN 200+</td><td>1.8 – 2.5</td><td>3.0</td><td>Water hammer and pump head penalties</td></tr>
+  </tbody>
+</table>
+<p>Minimum velocity 0.6 m/s applies to all sizes — below this is outside limits
+(oversized / stagnant risk). Traffic lights: green within the ideal band; amber
+below minimum or above ideal but at/below maximum; red above maximum.</p>
+
+<h2>Recommended size</h2>
+<p>The Pipe Sizing tool highlights the smallest DN with ideal friction
+(200–300 Pa/m) and velocity that is not red — a starting point, not an automatic
+selection. Always check noise, available space and any manufacturer constraints
+for the job.</p>

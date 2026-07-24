@@ -20,6 +20,7 @@ from flask import Blueprint, Response, current_app, jsonify, redirect, render_te
 
 from hvac_engine.climate import COOLING_FRACTIONS, EXTREME_RETURN_PERIODS, HEATING_FRACTIONS
 
+from app.access_gate import require_module
 from app.climate_slots import clear_slot, save_slot
 from app.reports.builder import ReportMeta, build_pdf
 from app.reports.map_image import MAP_ASPECT, render_location_map_png
@@ -142,6 +143,7 @@ def _parse_manual(args, U):
 
 
 @bp.route("/", methods=["GET"])
+@require_module("weather")
 def index():
     U = current_view()
     mode = "manual" if request.args.get("mode") == "manual" else "era5"
@@ -204,6 +206,7 @@ def index():
 
 
 @bp.route("/slots/save", methods=["POST"])
+@require_module("weather")
 def save_slot_route():
     """Copy a condition (from a Summer/Winter percentile block, the Max/Min
     column, or an On This Day hour) into one of the 3 session-backed slots.
@@ -257,6 +260,7 @@ def clear_slot_route():
 
 
 @bp.route("/search", methods=["GET"])
+@require_module("weather")
 def search():
     """JSON typeahead endpoint for the search box (see weathermap.js)."""
     try:
@@ -270,6 +274,7 @@ def search():
 
 
 @bp.route("/elevation", methods=["GET"])
+@require_module("weather")
 def elevation():
     """JSON endpoint the map-click flow uses when there's no geocoder result to
     take elevation from (see weathermap.js)."""
@@ -371,6 +376,7 @@ def _safe_map_png(lat: float, lon: float) -> bytes | None:
 
 
 @bp.route("/report", methods=["POST"])
+@require_module("weather")
 def report():
     """Mirrors the psychrometric tools' PDF pattern (see _report_form.html): the
     calculation inputs travel as hidden fields and are recomputed here from

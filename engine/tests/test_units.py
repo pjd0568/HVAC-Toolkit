@@ -214,3 +214,19 @@ def test_decimals_present_for_all():
     for quantity in u.UNITS:
         for system in u.SYSTEMS:
             assert isinstance(u.decimals(quantity, system), int)
+
+
+def test_head_pressure_triplet_si():
+    t = u.head_pressure_triplet(97_890.0, 998.2, "SI")
+    assert t["parts"][0] == ("97890", "Pa")
+    assert t["parts"][1][1] == "kPa"
+    assert t["parts"][2][1] == "bar"
+    assert "Pa" in t["summary"] and "bar" in t["summary"]
+
+
+def test_head_pressure_triplet_ip():
+    # 6894.757 Pa = 1 psi; density chosen so ft-fluid is well-defined.
+    t = u.head_pressure_triplet(6894.757, 1000.0, "IP")
+    assert t["parts"][0] == ("1.000", "psi")
+    assert t["parts"][1][1] == "in.wg"
+    assert t["parts"][2][1] == "ft fluid"

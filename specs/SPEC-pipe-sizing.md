@@ -1,22 +1,22 @@
 # Functional Spec — Pipe Sizing Module
 
 **Module:** `hvac_engine.pipe` (+ `hvac_engine.pipe_fittings` for Stage 2)
-**Status:** v1.1 Stage 2 — system pressure-drop builder on the same page
-(14 July 2026). Stage 1 sizing remains as before.
+**Status:** v1.2 Stage 3 — open vs pressurised + lift / static head
+(20 July 2026). Stages 1–2 remain as before.
 **Clean-room note:** Written from public engineering standards (CIBSE Guide C,
 BS EN 10255, BS EN 1057, DIN 11850) and published third-party manufacturer
 fluid data (Hydratech Coolflow DTX / EPG / PPG data sheets in
 `Support/Hydratech Glycol Data Sheets/`). No reference to any prior codebase,
 including `archive/Consumer HVAC App/`.
 
-**Phasing (Paul, 12 July 2026; Stage 2 scoped 14 July 2026):**
+**Phasing (Paul, 12 July 2026; Stage 2 scoped 14 July 2026; Stage 3 20 July 2026):**
 
 | Stage | Scope | Status |
 |-------|--------|--------|
 | **1** | Flow from load or known flow; fluid properties; DN table + traffic lights; detail panel; PDF + help | Done |
-| **2** | System builder — pipe sections, fittings/valves (K), devices (manual ΔP), running ΔP total | **This addendum** |
-| **3** | Open vs pressurised, lift / static head | Future |
-| **4** | System volume — tanks, coils, chillers; fitting volume ≠ equivalent pipe length | Future |
+| **2** | System builder — pipe sections, fittings/valves (K), devices (manual ΔP), running ΔP total | Done |
+| **3** | Open vs pressurised, lift / static head; multi-unit head display; pump duty summary | **This addendum** |
+| **4** | System volume — full pipework (incl. branches), client / chiller / min chiller volumes; glycol purchase, buffer tank, expansion vessel | Future (scoped below) |
 
 ---
 
@@ -240,10 +240,9 @@ Imperial fridge copper and PVC — **out of scope** for v1.
 
 ## Deferred (later stages)
 
-- Open vs pressurised; pump static head / lift (Stage 3).
-- System volume; true fitting internal volume (Stage 4).
+- System volume schedule; true fitting internal volume (Stage 4 — see addendum).
 - Plastic / press-fit pipe series; imperial fridge copper.
-- Pump duty point.
+- Full pump curve / duty-point selection (Stage 3 gives required head only).
 - Equivalent-length method (Stage 2 uses K × velocity pressure only).
 - Geometry-dependent full CIBSE/Crane multi-parameter fitting tables.
 
@@ -389,3 +388,120 @@ Engine module: `hvac_engine/glycol_data.py` (regenerate via
 ### Layout
 
 - Three equal-height columns: size table | pipe spec | flow &amp; fluid detail.
+
+---
+
+## Addendum — Stage 3 Lift / static head (20 Jul 2026)
+
+Paul: open vs pressurised circuit; static lift; head shown as **Pa, kPa and bar**
+under SI, and the matching imperial set when the unit toggle is IP. Stage 4 volume
+work (full pipework + plant volumes) is flagged separately so Stage 3 stays a
+pump-duty overlay on the existing index-circuit friction total — not a merge of
+volume into Stage 2 rows.
+
+### Purpose
+
+Convert a vertical lift height into hydrostatic pressure using the same fluid
+density as Stage 1, then combine with the Stage 2 circuit ΔP (including safety
+margin when set) to give a **required pump head** that respects open vs closed
+hydraulics.
+
+### Method (public physics)
+
+Hydrostatic pressure for a fluid column of height *h*:
+
+    P_static = ρ · g · h     [Pa]
+
+with standard gravity `g = 9.80665 m/s²` and `ρ` from `fluid_properties` at the
+duty mean water temperature (same fluid as Design Inputs).
+
+| Circuit type | Static head and circulating pump |
+|--------------|-----------------------------------|
+| **Open** | Pump must lift the fluid column. Required pump head = `P_static + P_friction`. |
+| **Pressurised** (closed) | Circulating static cancels around the loop. Required circulating pump head = `P_friction` only. `P_static` is still shown as the hydrostatic pressure corresponding to system height (useful context for fill / high-point pressure / later expansion-vessel work) — it is **not** added into circulating pump duty. |
+
+`P_friction` is the Stage 2 running total **with** safety margin when margin &gt; 0,
+else the plain total (0 when no system rows).
+
+### Inputs
+
+| Input | Query key | Notes |
+|-------|-----------|-------|
+| Circuit type | `circuit` | `pressurised` (default) = Pressurised closed circuit, or `open` = Open tank |
+| Static lift height | `lift` | Open tank only. Vertical rise to open water surface. Display via `duct_run_length` (m / ft). Hidden / unused when pressurised. |
+
+### Outputs (multi-unit pressure display)
+
+Every pressure figure (static head, friction, required pump head) is shown as a
+triplet — same idea as Stage 1 always showing flow in both l/s and m³/h:
+
+| Unit system | Triplet |
+|-------------|---------|
+| **SI** | Pa · kPa · bar (`1 bar = 10⁵ Pa` exact; kPa = Pa/1000) |
+| **IP** | psi · in.wg · ft of fluid (`1 psi = 6894.757 Pa`; in.wg via existing `velocity_pressure` factor; ft of fluid = `P / (ρ g)` converted with 0.3048 m/ft — uses the **duty fluid** density, not standard water) |
+
+Also show lift height in the active length unit.
+
+### Web
+
+- Panel **Pipe System** on the same `/pipe-sizing` page, below the DN sizer.
+  **System parameters** strip at the top: fluid (from Design Inputs), system type
+  (**Pressurised closed circuit** / **Open tank**), and static lift **only when
+  open**. Then the component schedule, then required pump head summary.
+- Lift is not shown for pressurised circuits (return cancels physical lift;
+  pump duty = friction only).
+- AJAX `/api/system-state` recalculates head whenever friction or system params
+  change (`circuit` / `lift` query keys; hidden fields keep Calculate in sync).
+- Design-limits reference tables live under Reference →
+  `pipe-sizing-design-limits` (linked from the traffic-light legend), not inline
+  on the calculator page.
+- PDF Inputs/Results gain circuit type, lift (open), static head, friction,
+  required pump head (multi-unit strings).
+- Help section matches the system-first layout.
+
+### Engine surface
+
+- `STANDARD_G = 9.80665`
+- `hydrostatic_pressure_pa(height_m, density_kg_m3)`
+- `head_breakdown(circuit, lift_m, density_kg_m3, friction_pa) → HeadBreakdown`
+  (`static_head_pa`, `friction_pa`, `pump_duty_pa`, `static_applies_to_pump`)
+
+### Validation targets
+
+1. Water ρ = 998.2 kg/m³, h = 10 m → P = 998.2 × 9.80665 × 10 ≈ 97 890 Pa
+   (≈ 97.89 kPa ≈ 0.9789 bar).
+2. Open circuit: pump duty = static + friction.
+3. Pressurised: pump duty = friction only; static still reported.
+4. Negative lift or non-positive density rejected.
+
+### Architectural note for Stage 4
+
+Keep Stage 2 as the **index / pump-duty circuit** (friction path). Stage 4 will
+add a **separate volume schedule** (all pipework including branches + plant
+volumes) so glycol fill, buffer tank and expansion vessel sizing do not force
+every branch into the index-leg ΔP table.
+
+---
+
+## Addendum — Stage 4 foreshadow (Paul, 20 Jul 2026) — not built yet
+
+**Intent:** total system volume for glycol purchase, buffer-tank sizing and
+expansion-vessel selection — not only the index leg.
+
+**Expected inputs / content (to confirm when Stage 4 is scoped):**
+
+- Full system pipework schedule (may include branches), with true internal
+  volume from bore × length (fitting internal volume ≠ equivalent pipe length —
+  already flagged).
+- Client-side volume (emitters / AHU coils / terminal units on the client
+  circuit).
+- Chiller (or heat-source) volume.
+- Minimum chiller volume (manufacturer minimum system volume for stable
+  control / freeze protection).
+- Derived: total fill volume; glycol volume at catalogue %; comparison against
+  minimum plant volume; later: expansion vessel sizing from content volume +
+  temperature swing + cold fill / pre-charge (depends on Stage 3 height /
+  pressurised context).
+
+**Out of Stage 3:** do not add volume columns to the Stage 2 ΔP grid in this
+pass.

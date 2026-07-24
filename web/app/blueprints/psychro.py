@@ -12,6 +12,7 @@ from hvac_engine import processes as proc
 from hvac_engine import psychrometrics as psy
 from hvac_engine.ahu_design import design_ahu_to_supply
 
+from app.access_gate import require_module
 from app.chart import chart_payload
 from app.climate_slots import get_slots
 from app.reports.builder import build_pdf
@@ -330,6 +331,7 @@ def _run_mixed_air(form, U):
 
 
 @bp.route("/mixed-air", methods=["GET", "POST"])
+@require_module("psychro.mixed_air")
 def mixed_air():
     U = current_view()
     result = None
@@ -358,6 +360,7 @@ def mixed_air():
 
 
 @bp.route("/mixed-air/report", methods=["POST"])
+@require_module("psychro.mixed_air")
 def mixed_air_report():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _MIXED_AIR_DEFAULTS.items()}
@@ -401,6 +404,7 @@ def mixed_air_report():
 
 
 @bp.route("/mixed-air/chart.png", methods=["POST"])
+@require_module("psychro.mixed_air")
 def mixed_air_chart_png():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _MIXED_AIR_DEFAULTS.items()}
@@ -449,6 +453,7 @@ def _run_cooling_coil(form, U):
 
 
 @bp.route("/cooling-coil", methods=["GET", "POST"])
+@require_module("psychro.cooling_coil")
 def cooling_coil():
     U = current_view()
     result = None
@@ -477,6 +482,7 @@ def cooling_coil():
 
 
 @bp.route("/cooling-coil/report", methods=["POST"])
+@require_module("psychro.cooling_coil")
 def cooling_coil_report():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _COOLING_COIL_DEFAULTS.items()}
@@ -516,6 +522,7 @@ def cooling_coil_report():
 
 
 @bp.route("/cooling-coil/chart.png", methods=["POST"])
+@require_module("psychro.cooling_coil")
 def cooling_coil_chart_png():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _COOLING_COIL_DEFAULTS.items()}
@@ -591,6 +598,7 @@ def _run_ahu(form, U):
 
 
 @bp.route("/ahu", methods=["GET", "POST"])
+@require_module("psychro.ahu")
 def ahu():
     U = current_view()
     result = None
@@ -620,6 +628,7 @@ def ahu():
 
 
 @bp.route("/ahu/report", methods=["POST"])
+@require_module("psychro.ahu")
 def ahu_report():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
@@ -671,6 +680,7 @@ def ahu_report():
 
 
 @bp.route("/ahu/chart.png", methods=["POST"])
+@require_module("psychro.ahu")
 def ahu_chart_png():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}

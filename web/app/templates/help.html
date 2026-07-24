@@ -302,7 +302,7 @@
 
     <!-- ═══════════════ PIPE SIZING ═══════════════ -->
     <section class="help-section" id="pipe" data-help-section
-             data-keywords="pipe sizing hydronics lthw chw load flow delta t lwt glycol dtx epg ppg velocity pressure gradient dn carbon steel copper stainless dairy cibse darcy weisbach system fittings valves k-factor safety margin">
+             data-keywords="pipe sizing hydronics lthw chw load flow delta t lwt glycol dtx epg ppg velocity pressure gradient dn carbon steel copper stainless dairy cibse darcy weisbach system fittings valves k-factor safety margin lift static head pump open pressurised bar kpa">
       <h2 class="help-h">Pipe Sizing</h2>
       <p class="help-lead"><span class="help-badge water">Hydronics</span> Flow from load or known flow; DN catalogue with traffic lights; circuit pressure-drop schedule with fittings and devices.</p>
 
@@ -326,20 +326,25 @@
         <li>Click a size row — pipe dimensions appear in the centre panel; flow and fluid data on the right.</li>
       </ol>
 
-      <h3 class="help-sub">Pipe System — Pressure Drop</h3>
-      <p>Spreadsheet-style builder for the dynamic ΔP along a circuit. Fluid, material and duty flow come from Design Inputs above; each row can override DN and flow.</p>
+      <h3 class="help-sub">Pipe System</h3>
+      <p>Define the whole-system parameters first, then build the dynamic ΔP schedule. Fluid and duty come from Design Inputs; system type and lift sit at the top of this panel.</p>
       <dl class="help-io">
+        <dt>System type</dt><dd><strong>Pressurised closed circuit</strong> — return / gravity cancels physical lift; pump head = friction only. <strong>Open tank</strong> — pump must lift to the open water surface; pump head = static lift + friction. Lift height is shown only for open tank.</dd>
+        <dt>Static lift height</dt><dd>Open tank only — vertical rise to the open water surface (m or ft).</dd>
         <dt>Straight pipe</dt><dd>Length × friction rate (Pa/m) from Darcy–Weisbach at that row’s DN and flow.</dd>
         <dt>Fitting / valve</dt><dd>Pick from the catalogue; ΔP = K × velocity pressure (½ρV²). K values are representative planning figures — not full CIBSE/Crane geometry tables.</dd>
         <dt>Device (manual ΔP)</dt><dd>Enter a manufacturer pressure drop (coil, HX, etc.) directly in Pa.</dd>
         <dt>Safety Margin %</dt><dd>Optional uplift on the running total (fitting uncertainty, future extensions).</dd>
+        <dt>Required pump head</dt><dd>Shown as Pa · kPa · bar (SI) or psi · in.wg · ft of fluid (IP).</dd>
       </dl>
       <ol class="help-steps">
-        <li>Fill the tinted top row (type, DN, length or fitting or device ΔP) and click <strong>+ Add</strong>.</li>
-        <li>Edit committed rows in place — totals update immediately.</li>
-        <li>Use Clear table / Export CSV / Download PDF Report as needed.</li>
+        <li>Set Design Inputs (fluid, duty) and Calculate so flow and fluid properties are known.</li>
+        <li>In Pipe System, choose Pressurised closed circuit or Open tank; enter lift only if open.</li>
+        <li>Add components in the tinted top row and click <strong>+ Add</strong>; edit rows in place.</li>
+        <li>Read required pump head at the bottom of the panel.</li>
       </ol>
-      <div class="help-note">Lift / static head and system volume are planned for later stages — this panel is dynamic pressure drop only.</div>
+      <div class="help-tip">Traffic-light bands for the DN catalogue are documented under <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Reference → Pipe Sizing Design Limits</a>.</div>
+      <div class="help-note">Full system volume (all pipework including branches, client-side volume, chiller volume, minimum chiller volume — for glycol purchase, buffer tanks and expansion vessels) is planned as a later stage.</div>
     </section>
 
     <!-- ═══════════════ PROJECTS ═══════════════ -->
