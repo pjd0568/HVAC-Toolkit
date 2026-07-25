@@ -96,17 +96,24 @@ def create_app(config_class: type = Config) -> Flask:
         from flask import url_for
 
         mark = app.config.get("BRAND_MARK", "images/brand/icon.svg")
+        lockup = app.config.get("BRAND_LOCKUP", "images/brand/lockup-tagline.svg")
         favicon = app.config.get("BRAND_FAVICON", "images/brand/favicon-32.png")
         apple = app.config.get(
             "BRAND_APPLE_TOUCH", "images/brand/apple-touch-icon.png"
         )
+        v = app.config.get("BRAND_ASSET_VERSION", "1")
+
+        def _brand_url(filename: str) -> str:
+            return f"{url_for('static', filename=filename)}?v={v}"
+
         return {
             "brand_name": app.config["BRAND_NAME"],
             "brand_tag": app.config["BRAND_TAG"],
             "registration_open": app.config.get("REGISTRATION_OPEN", False),
-            "brand_mark_url": url_for("static", filename=mark),
-            "brand_favicon_url": url_for("static", filename=favicon),
-            "brand_apple_touch_url": url_for("static", filename=apple),
+            "brand_mark_url": _brand_url(mark),
+            "brand_lockup_url": _brand_url(lockup),
+            "brand_favicon_url": _brand_url(favicon),
+            "brand_apple_touch_url": _brand_url(apple),
         }
 
     @app.context_processor

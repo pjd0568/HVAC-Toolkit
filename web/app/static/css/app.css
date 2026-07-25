@@ -55,7 +55,7 @@ body {
 }
 .logo-mark-img {
   width: 32px; height: 32px; display: block; flex-shrink: 0;
-  border-radius: 9px; background: #E0F2FE;
+  border-radius: 9px;
 }
 .logo-name { color: var(--ink); font-weight: 700; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; }
 .logo-tag { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
@@ -944,6 +944,10 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 .marketing-footer .muted { color: var(--muted); }
 
 .coming-hero { padding: clamp(32px, 8vw, 72px) 0 40px; max-width: 640px; }
+.coming-lockup {
+  display: block; width: min(100%, 520px); height: auto;
+  margin: 0 0 28px;
+}
 .coming-eyebrow {
   font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase;
   color: var(--green-ink); margin-bottom: 12px;
@@ -986,14 +990,16 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 }
 .pricing-note { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.45; }
 
-.auth-panel {
-  max-width: 400px; margin: 40px auto 0; padding: 28px;
-  background: rgba(255,255,255,0.9); border: 1px solid var(--line); border-radius: 14px;
+.auth-hero {
+  max-width: 520px; margin: 28px auto 0; padding: 0 20px;
+  display: flex; justify-content: center;
 }
-.auth-brand { margin-bottom: 14px; }
-.auth-brand-mark {
-  width: 48px; height: 48px; display: block;
-  border-radius: 12px; background: #E0F2FE;
+.auth-lockup {
+  display: block; width: min(100%, 520px); height: auto;
+}
+.auth-panel {
+  max-width: 400px; margin: 28px auto 0; padding: 28px;
+  background: rgba(255,255,255,0.9); border: 1px solid var(--line); border-radius: 14px;
 }
 .auth-panel h1 { font-size: 1.5rem; margin-bottom: 6px; }
 .auth-form { display: grid; gap: 14px; margin-top: 18px; }
