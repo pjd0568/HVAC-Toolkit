@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 96" fill="none" role="img" aria-label="hvac-calcs.app — Psychrometrics, Ducts &amp; Pipework. Simplified.">
+  <!-- Lockup + tagline (light). For marketing / login hero drop-in. -->
+  <g transform="translate(0 8)">
+    <g stroke="#94A3B8" stroke-width="1" opacity="0.65">
+      <path d="M14 14h36v36H14z"/>
+      <path d="M23 14v36M32 14v36M41 14v36"/>
+      <path d="M14 23h36M14 32h36M14 41h36"/>
+    </g>
+    <path d="M16.5 46C22 42 28 36 34 28.5C40 21 45 16.5 48.5 14.5"
+          stroke="#0F172A" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M16.5 40C23 35 30 27 37 19.5C42.5 13.5 46.5 11 49 10"
+          stroke="#14B8A6" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="16.5" cy="40" r="2.4" fill="#14B8A6"/>
+    <circle cx="28.5" cy="28.5" r="2.4" fill="#14B8A6"/>
+    <circle cx="40.5" cy="16.2" r="2.4" fill="#14B8A6"/>
+    <circle cx="34" cy="28.5" r="2.1" fill="#60A5FA"/>
+  </g>
+  <text x="80" y="40" font-family="Sora, system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="28" font-weight="600" fill="#0F172A">hvac-calcs</text>
+  <text x="252" y="40" font-family="Sora, system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="28" font-weight="600" fill="#14B8A6">.app</text>
+  <line x1="80" y1="58" x2="118" y2="58" stroke="#14B8A6" stroke-width="1.5"/>
+  <text x="128" y="62" font-family="Sora, system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="12" font-weight="500" fill="#64748B">Psychrometrics, Ducts &amp; Pipework. Simplified.</text>
+  <line x1="430" y1="58" x2="468" y2="58" stroke="#14B8A6" stroke-width="1.5"/>
+</svg>

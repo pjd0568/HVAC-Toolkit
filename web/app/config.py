@@ -1,5 +1,11 @@
 import os
+from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
+# Packaged V2 mark — used when REPORT_LOGO_PATH is unset.
+_DEFAULT_REPORT_LOGO = (
+    Path(__file__).resolve().parent / "static" / "images" / "brand" / "logo-pdf.png"
+)
 
 
 def normalize_database_url(url: str | None) -> str | None:
@@ -39,9 +45,19 @@ class Config:
     BRAND_NAME = os.environ.get("BRAND_NAME", "HVAC Toolkit")
     BRAND_TAG = os.environ.get("BRAND_TAG", "working title")
 
-    # PDF report header logo — unset until a brand asset exists; the report header
-    # falls back to brand-name-as-text (see web/app/reports/builder.py).
-    REPORT_LOGO_PATH = os.environ.get("REPORT_LOGO_PATH", "")
+    # PDF report header logo. Empty env → packaged V2 mark; missing file → text-only
+    # header (see web/app/reports/builder.py). Override with a company logo path later.
+    REPORT_LOGO_PATH = os.environ.get("REPORT_LOGO_PATH") or (
+        str(_DEFAULT_REPORT_LOGO) if _DEFAULT_REPORT_LOGO.is_file() else ""
+    )
+
+    # Static brand mark paths (relative to the Flask static folder). Swap files in
+    # static/images/brand/ to rebrand without template edits.
+    BRAND_MARK = os.environ.get("BRAND_MARK", "images/brand/icon.svg")
+    BRAND_FAVICON = os.environ.get("BRAND_FAVICON", "images/brand/favicon-32.png")
+    BRAND_APPLE_TOUCH = os.environ.get(
+        "BRAND_APPLE_TOUCH", "images/brand/apple-touch-icon.png"
+    )
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
     # Resolved again in create_app so Railway-injected DATABASE_URL is never stale.

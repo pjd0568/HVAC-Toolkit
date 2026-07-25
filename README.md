@@ -2,6 +2,8 @@
 
 Subscription HVAC engineering toolkit for engineers, designers and contractors.
 SI + imperial. Brand via `BRAND_NAME` / `BRAND_TAG` (see `.env.example`).
+Logo assets live in `web/app/static/images/brand/` (V2 mark); PDFs use
+`logo-pdf.png` by default (`REPORT_LOGO_PATH` to override).
 
 Public site: coming-soon marketing at `/`. Calculators at `/app` (login required).
 

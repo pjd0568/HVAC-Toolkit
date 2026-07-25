@@ -4,13 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}{{ brand_name }}{% endblock %}</title>
+<link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 {% block extra_head %}{% endblock %}
 </head>
 <body class="marketing-body">
   <header class="marketing-header">
     <a class="marketing-brand" href="{{ url_for('main.coming_soon') }}">
-      <span class="logo-mark">{{ brand_name[0] }}</span>
+      {% include "_brand_mark.html" %}
       <span class="marketing-brand-text">
         <span class="logo-name">{{ brand_name }}</span>
         <span class="logo-tag">{{ brand_tag }}</span>

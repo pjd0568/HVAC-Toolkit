@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}{{ brand_name }}{% endblock %}</title>
+<link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 {% block extra_head %}{% endblock %}
 </head>
@@ -12,7 +14,7 @@
 <aside class="sidebar">
   <div class="logo">
     <a class="logo-link" href="{{ url_for('main.dashboard') }}">
-      <div class="logo-mark">{{ brand_name[0] }}</div>
+      {% include "_brand_mark.html" %}
       <div>
         <div class="logo-name">{{ brand_name }}</div>
         <div class="logo-tag">{{ brand_tag }}</div>

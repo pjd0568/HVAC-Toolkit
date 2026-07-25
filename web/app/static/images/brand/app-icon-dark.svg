@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-hidden="true">
+  <!-- Dark app icon / favicon tile -->
+  <rect width="64" height="64" rx="14" fill="#0F172A"/>
+  <g stroke="#475569" stroke-width="1" opacity="0.95">
+    <path d="M14 14h36v36H14z"/>
+    <path d="M23 14v36M32 14v36M41 14v36"/>
+    <path d="M14 23h36M14 32h36M14 41h36"/>
+  </g>
+  <path d="M16.5 46C22 42 28 36 34 28.5C40 21 45 16.5 48.5 14.5"
+        stroke="#E0F2FE" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16.5 40C23 35 30 27 37 19.5C42.5 13.5 46.5 11 49 10"
+        stroke="#14B8A6" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16.5" cy="40" r="2.4" fill="#14B8A6"/>
+  <circle cx="28.5" cy="28.5" r="2.4" fill="#14B8A6"/>
+  <circle cx="40.5" cy="16.2" r="2.4" fill="#14B8A6"/>
+  <circle cx="34" cy="28.5" r="2.1" fill="#60A5FA"/>
+</svg>

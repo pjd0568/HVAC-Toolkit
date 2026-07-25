@@ -53,6 +53,10 @@ body {
   display: flex; align-items: center; justify-content: center;
   color: white; font-weight: 800; font-size: 15px;
 }
+.logo-mark-img {
+  width: 32px; height: 32px; display: block; flex-shrink: 0;
+  border-radius: 9px; background: #E0F2FE;
+}
 .logo-name { color: var(--ink); font-weight: 700; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; }
 .logo-tag { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
 
@@ -985,6 +989,11 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 .auth-panel {
   max-width: 400px; margin: 40px auto 0; padding: 28px;
   background: rgba(255,255,255,0.9); border: 1px solid var(--line); border-radius: 14px;
+}
+.auth-brand { margin-bottom: 14px; }
+.auth-brand-mark {
+  width: 48px; height: 48px; display: block;
+  border-radius: 12px; background: #E0F2FE;
 }
 .auth-panel h1 { font-size: 1.5rem; margin-bottom: 6px; }
 .auth-form { display: grid; gap: 14px; margin-top: 18px; }

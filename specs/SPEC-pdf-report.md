@@ -38,10 +38,12 @@ warrant a report), Duct/Pipe Sizing (not built yet).
 
 ## Report contents
 
-1. **Header** — brand name (+ logo, if `Config.REPORT_LOGO_PATH` is set; falls back to
-   text-only using the existing `BRAND_NAME` placeholder if not — no logo asset exists
-   yet), tool title (e.g. "Psychrometrics - Cooling Coil"), and a project/system
-   information block: Project, System, Date (auto, today), Revision, Author.
+1. **Header** — brand name (+ logo from `Config.REPORT_LOGO_PATH`, defaulting to the
+   packaged V2 mark at `static/images/brand/logo-pdf.png`; falls back to text-only
+   if the file is missing), tool title (e.g. "Psychrometrics - Cooling Coil"), and a
+   project/system information block: Project, System, Date (auto, today), Revision,
+   Author. A future per-user company logo should override `logo_path` on `ReportMeta`
+   only — UI chrome stays product-branded.
 2. **Inputs** — a table of every value the user entered, in the active display unit
    system (°C/°F, kPa/inHg, etc. — same `U.fmt`/`U.sym` used on screen), one row per
    field, human-readable labels matching the on-screen form labels.
@@ -94,8 +96,9 @@ user preference later — `report_author_default()` would follow the same patter
 
 ## Not yet
 
-- No logo asset exists — `Config.REPORT_LOGO_PATH` is wired but unset; the header
-  renders brand-name-as-text until Paul supplies one.
+- No per-user company logo upload yet — `REPORT_LOGO_PATH` / `ReportMeta.logo_path`
+  already accept an override path; UI + storage still to land.
 - No persisted report history (each PDF is generated on demand, not stored).
 - No company/letterhead template variants (single fixed layout for now).
-- Author is not tied to a logged-in identity (no auth yet — flagged above).
+- Author is not tied to a logged-in identity on every tool (auth exists; report
+  author is still a free-text field at download time).
