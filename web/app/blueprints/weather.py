@@ -18,6 +18,7 @@ bp = Blueprint("weather", __name__)
 # Official ASHRAE climatic design tools — short-term external substitute.
 ASHRAE_WEATHER_VIEWER_URL = "https://weather.ashrae.org"
 ASHRAE_STATION_FINDER_URL = "https://klimaat.github.io/StationFinder/"
+ASHRAE_METEO_URL = "https://ashrae-meteo.info/v3.0/"
 ASHRAE_WEATHER_CENTER_URL = (
     "https://www.ashrae.org/technical-resources/bookstore/weather-data-center"
 )
@@ -31,6 +32,7 @@ def index():
         active="weather",
         ashrae_viewer_url=ASHRAE_WEATHER_VIEWER_URL,
         ashrae_station_finder_url=ASHRAE_STATION_FINDER_URL,
+        ashrae_meteo_url=ASHRAE_METEO_URL,
         ashrae_center_url=ASHRAE_WEATHER_CENTER_URL,
     )
 
