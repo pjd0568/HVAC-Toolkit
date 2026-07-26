@@ -12,11 +12,7 @@
 <body class="marketing-body">
   <header class="marketing-header">
     <a class="marketing-brand" href="{{ url_for('main.coming_soon') }}">
-      {% include "_brand_mark.html" %}
-      <span class="marketing-brand-text">
-        <span class="logo-name">{{ brand_name }}</span>
-        <span class="logo-tag">{{ brand_tag }}</span>
-      </span>
+      {% include "_brand_lockup.html" %}
     </a>
     <nav class="marketing-nav">
       <a href="{{ url_for('billing.subscribe') }}">Pricing</a>

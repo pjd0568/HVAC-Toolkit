@@ -926,6 +926,10 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 }
 .marketing-brand {
   display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit;
+  min-width: 0; flex: 1 1 auto;
+}
+.marketing-brand .brand-lockup {
+  display: block; width: min(100%, 360px); height: auto;
 }
 .marketing-brand-text { display: flex; flex-direction: column; }
 .marketing-nav {
@@ -943,11 +947,7 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 }
 .marketing-footer .muted { color: var(--muted); }
 
-.coming-hero { padding: clamp(32px, 8vw, 72px) 0 40px; max-width: 640px; }
-.coming-lockup {
-  display: block; width: min(100%, 520px); height: auto;
-  margin: 0 0 28px;
-}
+.coming-hero { padding: clamp(24px, 5vw, 48px) 0 40px; max-width: 640px; }
 .coming-eyebrow {
   font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase;
   color: var(--green-ink); margin-bottom: 12px;
@@ -990,13 +990,6 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 }
 .pricing-note { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.45; }
 
-.auth-hero {
-  max-width: 520px; margin: 28px auto 0; padding: 0 20px;
-  display: flex; justify-content: center;
-}
-.auth-lockup {
-  display: block; width: min(100%, 520px); height: auto;
-}
 .auth-panel {
   max-width: 400px; margin: 28px auto 0; padding: 28px;
   background: rgba(255,255,255,0.9); border: 1px solid var(--line); border-radius: 14px;

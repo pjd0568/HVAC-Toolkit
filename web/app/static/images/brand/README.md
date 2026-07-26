@@ -11,7 +11,7 @@ exports for favicons and PDF headers (ReportLab does not embed SVG).
 | `icon-dark.svg` | Same mark on dark backgrounds |
 | `app-icon.svg` / `app-icon-dark.svg` | Rounded-square app icon |
 | `lockup.svg` / `lockup-dark.svg` | Icon + wordmark (optional drop-in) |
-| `lockup-tagline.svg` | Icon + wordmark + tagline (login / coming-soon hero) |
+| `lockup-tagline.svg` | Icon + wordmark + tagline (marketing header) |
 | `logo-pdf.png` | PDF report header (default `REPORT_LOGO_PATH`) — 400×400 |
 | `favicon-32.png` | Browser favicon |
 | `apple-touch-icon.png` | 180×180 iOS home screen |
