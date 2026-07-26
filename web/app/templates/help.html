@@ -42,7 +42,7 @@
       <p>The <strong>SI · Metric / IP · Imperial</strong> toggle in the top bar sets the unit system for the whole app in one click. Every input label, every result and every chart axis switches with it. Imperial conventions used here: duty in Btu/h, humidity ratio in grains/lb, pressure in inHg, plus °F, CFM, lb/h and ft³/lb. Set it before you start typing so you enter values in the units you're thinking in.</p>
 
       <h3 class="help-sub">Memory Slots — carry a condition between tools</h3>
-      <p>The three <strong>Memory Slots</strong> in the bar below the top bar are shown on every page. Copy a design condition into a slot from the Weather tool (a Summer/Winter design point or a record extreme), then <strong>Paste from Slot</strong> drops that exact air state straight into any psychrometric tool's airstream — so the outdoor-air condition you looked up is the outdoor-air condition you design against, with no re-typing. Clear a slot with the <strong>×</strong> on its chip.</p>
+      <p>The three <strong>Memory Slots</strong> in the bar below the top bar are shown on every page. When the Pro weather lookup ships, you will be able to copy a design condition into a slot from that tool. Until then, you can still paste a slot into any psychrometric tool’s airstream if a slot is filled — Clear a slot with the <strong>×</strong> on its chip.</p>
 
       <h3 class="help-sub">Every result is a shareable link</h3>
       <p>Tool results live in the page's web address. Copy the URL after a calculation and it reopens with the same inputs and answer — handy for saving a case, sending it to a colleague, or bookmarking a standard scenario.</p>
@@ -50,40 +50,26 @@
       <h3 class="help-sub">PDF report &amp; PNG chart export</h3>
       <p>Once a psychrometric or duct calculation succeeds, a <strong>Download PDF Report</strong> panel appears under the results. Fill in the Project / System / Revision / Author fields and download a formatted report with the inputs, results and chart. Where there's a chart, an <strong>Export Chart (PNG)</strong> button gives you just the image. Reports are generated from the same calculation as the screen, so they can never disagree with it.</p>
 
-      <div class="help-tip">New here? Start with the <a href="#weather">Weather &amp; Design Conditions</a> tool to establish your site's design temperatures, copy them into a Memory Slot, then move to the <a href="#single-point">Psychrometrics</a> tools.</div>
+      <div class="help-tip">New here? Start with <a href="#single-point">Psychrometrics — Single Point</a> to resolve a moist-air state, or open <a href="#weather">Weather &amp; Design Conditions</a> for the planned Pro ASHRAE lookup and links to ASHRAE’s own tools.</div>
     </section>
 
     <!-- ═══════════════ WEATHER ═══════════════ -->
     <section class="help-section" id="weather" data-help-section
-             data-keywords="weather design conditions ashrae percentile cooling heating dry bulb wet bulb location map elevation altitude era5 open-meteo on this day record extremes 0.4% 99.6% mcwb">
+             data-keywords="weather design conditions ashrae coming soon pro station finder weather data viewer dry bulb wet bulb">
       <h2 class="help-h">Weather &amp; Design Conditions</h2>
-      <p class="help-lead"><span class="help-badge site">Site Data</span> Look up the design outdoor conditions for any site on a map, computed from decades of historical hourly weather at that exact coordinate. Replaces manually digging design temperatures out of an ASHRAE or CIBSE table.</p>
+      <p class="help-lead"><span class="help-badge site">Site Data</span> <strong>Coming soon for Pro</strong> — in-app ASHRAE climatic design lookup (nearest-station cooling and heating design conditions). Not live in this release.</p>
 
-      <h3 class="help-sub">When to use it</h3>
-      <p>At the start of a job, to establish the summer (cooling) and winter (heating) design temperatures a system must cope with, plus the site elevation that sets the design air pressure. Feed the result into the psychrometric tools via a Memory Slot.</p>
+      <h3 class="help-sub">What will ship</h3>
+      <p>Pro subscribers will look up authoritative design outdoor conditions for a site and use them in the psychrometric tools. Until the licensed data feed is wired, the Weather page is a placeholder.</p>
 
-      <h3 class="help-sub">Inputs</h3>
-      <dl class="help-io">
-        <dt>Search Location</dt><dd>Type a town, city or postcode and pick from the dropdown. Multiple matches (e.g. two towns of the same name) are listed with region and country so you can pick the right one.</dd>
-        <dt>Map</dt><dd>Or click anywhere on the map to drop a pin — useful for a site with no named address. The pin resolves to a coordinate and elevation automatically.</dd>
-        <dt>Years of Record</dt><dd>How many years of hourly history to average the design percentiles over. More years is more stable; fewer is faster. Years with incomplete data are excluded automatically.</dd>
-        <dt>Design Percentile</dt><dd>How extreme a condition to design to, as one choice covering both ends: 0.4% cooling / 99.6% heating (most extreme, the default), 1% / 99%, or 2% / 98%. The figure in brackets is the hours per year a typical year spends at or beyond that condition.</dd>
-        <dt>Pick a Date (On This Day)</dt><dd>Optional. Choose any historical calendar date to pull the hour-by-hour dry-bulb / wet-bulb / RH / dew point for that day at the selected location.</dd>
-      </dl>
-
-      <h3 class="help-sub">How to use it</h3>
+      <h3 class="help-sub">What to do now</h3>
       <ol class="help-steps">
-        <li>Search for your site or click its location on the map.</li>
-        <li>Set Years of Record (the default is a sensible starting point).</li>
-        <li>Read the three columns: <strong>Summer</strong> (cooling design), <strong>Winter</strong> (heating design) and <strong>Absolute Max / Min</strong> (the record extremes, with the date they occurred).</li>
-        <li>Switch the Design Percentile radio to see a more or less extreme tier — Summer and Winter update together.</li>
-        <li>Under any column, use <strong>Copy to Slot</strong> to store that full condition (dry-bulb, wet-bulb, RH, dew point, moisture ratio) in a Memory Slot for use in the other tools.</li>
+        <li>Open <a href="{{ url_for('weather.index') }}">Weather &amp; Design Conditions</a> for links to ASHRAE’s <strong>Weather Data Viewer</strong> and free <strong>Station Finder</strong>.</li>
+        <li>Read summer/winter design dry-bulb and wet-bulb (or RH) from that source or from your ASHRAE / CIBSE tables.</li>
+        <li>Enter those values in <a href="#single-point">Psychrometrics — Single Point</a> (or another psychrometric tool) as the outdoor-air state.</li>
       </ol>
 
-      <h3 class="help-sub">Reading the results</h3>
-      <p>Each column shows a full psychrometric state, not just a temperature. The <strong>mean coincident wet-bulb</strong> is the wet-bulb that typically occurs alongside the design dry-bulb — use the pair together for coil sizing.</p>
-
-      <div class="help-note">Figures are estimated from ERA5 reanalysis data, not an official ASHRAE/CIBSE published table. Reanalysis extremes run slightly damped versus a real station thermometer — for business-critical plant, cross-check against the nearest station's published design data.</div>
+      <div class="help-note">Memory Slots remain available for carrying a condition between tools once you have values to paste; they are no longer filled from an in-app weather lookup.</div>
     </section>
 
     <!-- ═══════════════ SINGLE POINT ═══════════════ -->

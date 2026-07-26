@@ -31,7 +31,7 @@ MODULES: dict[str, dict[str, str]] = {
     "duct.index_leg": {"tier": "pro", "label": "Duct Index Leg"},
     "pipe.sizer": {"tier": "free", "label": "Pipe Sizing"},
     "pipe.system": {"tier": "pro", "label": "Pipe System"},
-    "weather": {"tier": "pro", "label": "Weather & Design Conditions"},
+    "weather": {"tier": "pro", "label": "Weather & Design Conditions (ASHRAE lookup)"},
     "converter": {"tier": "pro", "label": "Unit Converter"},
     "projects": {"tier": "pro", "label": "Projects"},
 }

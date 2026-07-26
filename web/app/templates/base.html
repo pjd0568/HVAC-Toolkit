@@ -39,7 +39,7 @@
       <div class="nav-group-items">
         <a class="nav-item {{ 'active' if active == 'weather' }}" href="{{ url_for('weather.index') }}">
           Weather &amp; Design Conditions
-          {% if access.is_pro('weather') %}<span class="pro-chip">Pro</span>{% endif %}
+          <span class="pro-chip">Pro</span>
         </a>
       </div>
     </div>
