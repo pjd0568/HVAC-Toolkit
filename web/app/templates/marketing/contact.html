@@ -1,0 +1,61 @@
+{% extends "marketing/base.html" %}
+{% block title %}Contact — {{ brand_name }}{% endblock %}
+{% block meta_description %}Contact {{ brand_name }} for help, bug reports, feature ideas, general information, or subscription queries.{% endblock %}
+{% block content %}
+<section class="contact-hero">
+  <h1>Contact us</h1>
+  <p class="coming-lead">
+    Choose a subject so your message is routed correctly. You can also email
+    <a href="mailto:{{ contact_email }}">{{ contact_email }}</a> directly.
+  </p>
+</section>
+
+<section class="contact-layout">
+  <form method="post" action="{{ url_for('pages.contact') }}" class="contact-form" novalidate>
+    <label>
+      Name
+      <input type="text" name="name" required maxlength="120" autocomplete="name"
+             value="{{ form.name or '' }}">
+    </label>
+    <label>
+      Email
+      <input type="email" name="email" required maxlength="254" autocomplete="email"
+             value="{{ form.email or (current_user.email if current_user.is_authenticated else '') }}">
+    </label>
+    <label>
+      Subject
+      <select name="topic" required>
+        <option value="" disabled {% if not form.topic %}selected{% endif %}>Select a topic…</option>
+        {% for key, prefix, label in subjects %}
+        <option value="{{ key }}" {% if form.topic == key %}selected{% endif %}>
+          {{ label }} ({{ prefix }})
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Message
+      <textarea name="message" required rows="8" maxlength="8000"
+                placeholder="Include enough detail for us to help — steps to reproduce for bugs, or the tool and inputs involved.">{{ form.message or '' }}</textarea>
+    </label>
+    <button type="submit" class="btn-accent">Send message</button>
+  </form>
+
+  <aside class="contact-aside">
+    <h2>How routing works</h2>
+    <p>
+      Messages are sent with a subject prefix so we can filter them into the right
+      inbox:
+    </p>
+    <ul class="contact-prefixes">
+      {% for key, prefix, label in subjects %}
+      <li><code>{{ prefix }}</code> — {{ label }}</li>
+      {% endfor %}
+    </ul>
+    <p class="muted">
+      Typical reply time: within a few business days. Billing and account issues
+      are prioritised when subscriptions are live.
+    </p>
+  </aside>
+</section>
+{% endblock %}

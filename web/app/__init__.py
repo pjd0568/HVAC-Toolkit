@@ -15,6 +15,11 @@ _PUBLIC_ENDPOINTS = frozenset(
         "auth.register",
         "auth.register_post",
         "billing.subscribe",
+        "pages.terms",
+        "pages.privacy",
+        "pages.contact",
+        "pages.robots_txt",
+        "pages.sitemap_xml",
         "static",
     }
 )
@@ -65,12 +70,14 @@ def create_app(config_class: type = Config) -> Flask:
     from app.blueprints.guides import bp as guides_bp
     from app.blueprints.help import bp as help_bp
     from app.blueprints.main import bp as main_bp
+    from app.blueprints.pages import bp as pages_bp
     from app.blueprints.pipe import bp as pipe_bp
     from app.blueprints.projects import bp as projects_bp
     from app.blueprints.psychro import bp as psychro_bp
     from app.blueprints.weather import bp as weather_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(pages_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(billing_bp)
     app.register_blueprint(weather_bp, url_prefix="/weather")
@@ -114,6 +121,15 @@ def create_app(config_class: type = Config) -> Flask:
             "brand_lockup_url": _brand_url(lockup),
             "brand_favicon_url": _brand_url(favicon),
             "brand_apple_touch_url": _brand_url(apple),
+            "public_base_url": app.config.get(
+                "PUBLIC_BASE_URL", "https://hvac-calcs.app"
+            ),
+            "legal_entity": app.config.get("LEGAL_ENTITY", "PJD IT Systems"),
+            "contact_email": app.config.get("CONTACT_EMAIL", "info@hvac-calcs.app"),
+            "default_meta_description": (
+                f"{app.config['BRAND_NAME']} — professional HVAC calculators for "
+                "engineers: psychrometrics, duct sizing, pipe sizing, and more."
+            ),
         }
 
     @app.context_processor

@@ -80,3 +80,28 @@ class Config:
     # Access tier override for local click-testing Free vs Pro UI.
     # None = normal trial clock; "free" | "trial" | "pro" forces that tier.
     ACCESS_DEV_TIER = os.environ.get("ACCESS_DEV_TIER") or None
+
+    # Public site URL (canonical links, sitemap, Open Graph).
+    PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://hvac-calcs.app").rstrip(
+        "/"
+    )
+
+    # Legal / contact (marketing pages + contact form routing).
+    LEGAL_ENTITY = os.environ.get("LEGAL_ENTITY", "PJD IT Systems")
+    LEGAL_JURISDICTION = os.environ.get(
+        "LEGAL_JURISDICTION", "England and Wales"
+    )
+    CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "info@hvac-calcs.app")
+
+    # Optional SMTP for the contact form. If unset, the form falls back to mailto.
+    MAIL_SERVER = os.environ.get("MAIL_SERVER", "")
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", "587") or "587")
+    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "") or CONTACT_EMAIL

@@ -1,11 +1,14 @@
 {% extends "marketing/base.html" %}
-{% block title %}{{ brand_name }} — Coming soon{% endblock %}
+{% block title %}{{ brand_name }} — HVAC calculators for engineers{% endblock %}
+{% block meta_description %}Professional HVAC calculators for engineers, designers and contractors: psychrometrics, duct sizing, pipe sizing, weather design conditions, and unit conversion. SI and imperial.{% endblock %}
 {% block content %}
 <section class="coming-hero">
+  <h1 class="coming-title">HVAC calculators for day-to-day design</h1>
   <p class="coming-lead">
-    Professional HVAC calculators for engineers, designers and contractors —
-    psychrometrics, duct and pipe sizing, weather design conditions, and more.
-    SI and imperial. Built for day-to-day design work.
+    Professional tools for engineers, designers and contractors —
+    <strong>psychrometrics</strong>, <strong>duct sizing</strong>,
+    <strong>pipe sizing</strong>, weather design conditions, and more.
+    SI and imperial. Built for clean, repeatable HVAC design work.
   </p>
   <div class="coming-actions">
     {% if current_user.is_authenticated %}
@@ -24,16 +27,30 @@
 </section>
 
 <section class="coming-section">
-  <h2>What’s coming</h2>
+  <h2>HVAC design tools in one place</h2>
   <p class="coming-section-lead">
-    A focused suite of clean-room engineering tools, with a free tier and a Pro
-    subscription for the full catalogue.
+    A focused suite of engineering calculators — free core tools, with Pro for the
+    full catalogue. Coming soon to public signup.
   </p>
   <ul class="coming-list">
-    <li>Psychrometrics — single point, mixed air, cooling coil, AHU design</li>
-    <li>Duct and pipe sizing with system / index-leg workflows on Pro</li>
-    <li>Weather &amp; design conditions (ASHRAE lookup for Pro — coming soon)</li>
-    <li>Unit converter, design guides, and PDF reports</li>
+    <li><strong>Psychrometric calculator</strong> — single point, mixed air, cooling coil, AHU design</li>
+    <li><strong>Duct sizing calculator</strong> and <strong>pipe sizing calculator</strong> with system / index-leg workflows on Pro</li>
+    <li>Weather &amp; climatic design conditions (ASHRAE lookup for Pro — coming soon)</li>
+    <li>HVAC unit converter, design guides, and PDF reports</li>
   </ul>
+</section>
+
+<section class="coming-section">
+  <h2>Built for practising engineers</h2>
+  <p class="coming-section-lead">
+    Use SI (metric) or IP (imperial) units across every tool. Results are a design
+    aid — always apply professional judgement and verify against codes and
+    manufacturer data.
+  </p>
+  <p>
+    Questions? <a href="{{ url_for('pages.contact') }}">Contact us</a>
+    · <a href="{{ url_for('pages.terms') }}">Terms</a>
+    · <a href="{{ url_for('pages.privacy') }}">Privacy</a>
+  </p>
 </section>
 {% endblock %}

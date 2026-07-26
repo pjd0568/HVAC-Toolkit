@@ -46,12 +46,15 @@ Open `http://127.0.0.1:5000/` (coming soon), register at `/register`, then use `
 2. Add the **Postgres** plugin; Railway injects `DATABASE_URL`.
 3. Set variables: `SECRET_KEY` (long random), `BRAND_NAME` (e.g. `HVAC Calcs`),
    optional `BRAND_TAG`. Leave `REGISTRATION_OPEN` unset or `false` until launch
-   (existing accounts can still log in; `/register` stays closed).
+   (existing accounts can still log in; `/register` stays closed). Optional:
+   `CONTACT_EMAIL`, `LEGAL_ENTITY`, and `MAIL_*` SMTP vars so `/contact` sends
+   mail server-side (otherwise it opens a mailto draft).
 4. Deploy. Release command runs `flask --app wsgi db upgrade`. Health check:
    `GET /health`.
 5. Custom domain: Railway → Domains → `hvac-calcs.app`. Copy the CNAME/ALIAS
    into Cloudflare DNS. SSL mode on Cloudflare: **Full (strict)** once Railway
    has issued its certificate.
+6. After go-live, submit `https://hvac-calcs.app/sitemap.xml` in Google Search Console.
 
 If the build fails, confirm the service root is the monorepo root and the
 Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.

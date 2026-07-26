@@ -1,0 +1,24 @@
+{% extends "marketing/base.html" %}
+{% block title %}Send your message — {{ brand_name }}{% endblock %}
+{% block meta_description %}Finish sending your message to {{ brand_name }}.{% endblock %}
+{% block extra_head %}
+<meta http-equiv="refresh" content="0;url={{ mailto }}">
+{% endblock %}
+{% block content %}
+<section class="contact-hero">
+  <h1>Almost there</h1>
+  <p class="coming-lead">
+    Server email isn’t configured yet, so we’ll open your email app with a
+    pre-filled message to <strong>{{ contact_email }}</strong>
+    (subject starts with <code>{{ prefix }}</code>).
+  </p>
+  <div class="coming-actions">
+    <a class="btn-accent" href="{{ mailto }}">Open email app</a>
+    <a class="btn-ghost" href="{{ url_for('pages.contact') }}">Back to contact form</a>
+  </div>
+  <p class="muted" style="margin-top: 1.25rem;">
+    If nothing opens, email {{ contact_email }} and start the subject with
+    <code>{{ prefix }}</code>.
+  </p>
+</section>
+{% endblock %}
