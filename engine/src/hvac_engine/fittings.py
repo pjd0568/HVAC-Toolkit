@@ -15,18 +15,17 @@ A straight run's loss is just its friction rate (from hvac_engine.duct)
 times its length. Both draw on an existing duct-sizing result -- this
 module is a pure accounting layer, it does no sizing of its own.
 
-IMPORTANT — data provenance, flagged honestly (same standard as the
-flat-oval equivalent-diameter note in hvac_engine.duct): the K values below
+IMPORTANT — data provenance, flagged honestly: the K values below
 are REPRESENTATIVE / TYPICAL single-point figures of the kind quick-reference
 duct design guides publish for common fittings, not the full multi-parameter
 geometry-dependent correlations ASHRAE Ch.32 / CIBSE Guide C Section 4
 actually tabulate (a real elbow's K varies continuously with its r/D or r/W
 ratio; a real tee/branch's K varies with the branch/main area ratio and the
-flow-split fraction; a real damper's K varies with blade angle). This session
-had no way to check a page-specific table against a primary source -- treat
-every value here as a first-pass planning figure, not a certified design
-value, and cross-check against a real ASHRAE/CIBSE copy (or a manufacturer's
-own published K-factor data) before relying on a result for a real job.
+flow-split fraction; a real damper's K varies with blade angle). Treat every
+value here as a first-pass planning figure, not a certified design value, and
+cross-check against a real ASHRAE/CIBSE copy (or a manufacturer's own published
+K-factor data) before relying on a result for a real job. Disclosed in the
+duct Index Leg UI.
 """
 
 from __future__ import annotations

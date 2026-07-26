@@ -19,7 +19,11 @@ Method summary (see the spec for the full rationale):
       threshold in each year, using wet-bulb values the caller supplies per hour
       (see wet_bulb_fn below) -- this module never touches psychrometrics directly,
       the web layer wires that up using hvac_engine.psychrometrics.state(tdp=...).
-"""
+
+Data provenance (caller responsibility to disclose in the UI): when the hourly
+series comes from Open-Meteo ERA5 reanalysis rather than a licensed ASHRAE/CIBSE
+station table, design conditions are for preliminary design only. Reanalysis
+tends to damp extremes vs station observations — see docs/climate-validation.md."""
 
 from __future__ import annotations
 

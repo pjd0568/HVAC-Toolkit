@@ -58,6 +58,7 @@ HELP_NAV = [
         "group": "Reference",
         "sections": [
             {"id": "guides", "title": "Design Guides"},
+            {"id": "methodology", "title": "Methodology & Limitations"},
             {"id": "projects", "title": "Projects"},
         ],
     },
@@ -77,6 +78,7 @@ ACTIVE_TO_ANCHOR = {
     "pipe": "pipe",
     "converter": "converter",
     "guides": "guides",
+    "methodology": "methodology",
     "projects": "projects",
     "help": "overview",
 }

@@ -545,6 +545,7 @@ _AHU_DEFAULTS = {
     "oa_frac": "100",
     "ra_t": "22", "ra_prop": "rh", "ra_val": "50",
     "sup_t": "14", "sup_prop": "rh", "sup_val": "90",
+    "coil_rh_off": "90",
     "fan_pos": "none", "fan_sfp": "2.0", "fan_kw": "",
     "altitude": "0",
 }
@@ -568,6 +569,7 @@ def _run_ahu(form, U):
     kwargs = dict(
         m_da=m_da, supply=supply, outdoor=oa,
         return_air=ra, oa_fraction=oa_frac,
+        coil_rh_off=_f(form, "coil_rh_off") / 100.0,
     )
     if form["fan_pos"] in ("blow", "draw"):
         kwargs["fan_position"] = form["fan_pos"]
@@ -646,6 +648,7 @@ def ahu_report():
         + _state_input_rows("ra", "Return Air", form, sp, U)
         + _state_input_rows("sup", "Supply", form, sp, U)
         + [("Supply Flow", form['flow'], U.sym('vol_flow'))]
+        + [("Off-coil RH target", form['coil_rh_off'], "%")]
         + [("Fan Position", form["fan_pos"], "")]
     )
     if form["fan_pos"] in ("blow", "draw"):

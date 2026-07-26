@@ -11,9 +11,10 @@ Hydratech Coolflow published data at fixed concentration grid points.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import log10, pi
+from math import pi
 from typing import Literal
 
+from hvac_engine.fluid_mechanics import swamee_jain
 from hvac_engine.glycol_data import (
     FLUID_LABELS as _GLYCOL_FLUID_LABELS,
     GLYCOL_CONCENTRATIONS_PCT,
@@ -31,23 +32,31 @@ CircuitType = Literal["open", "pressurised"]
 # Standard acceleration due to gravity (m/s²) — BIPM / ISO 80000-3.
 STANDARD_G = 9.80665
 
-# CIBSE Guide C Table 2.2 — retained for help text reference only.
+# Application keys used by the sizer (and historically mirrored CIBSE Guide C
+# Table 2.2's single 1.5 m/s LTHW/CHW figure). Traffic-light *status* uses the
+# per-DN bands below — not this flat 1.5 m/s limit. The DN ≤ 50 maximum of
+# 1.5 m/s aligns with that CIBSE small-pipe figure; larger DN allow higher
+# velocities for erosion/noise/lifecycle reasons (see VELOCITY_BANDS_BY_DN).
 CIBSE_LIMITS: dict[Application, dict[str, float]] = {
     "lthw": {"max_velocity_ms": 1.5},
     "chw": {"max_velocity_ms": 1.5},
 }
 
 # Per-DN velocity bands (m/s): (dn_max, minimum, ideal_min, ideal_max, maximum).
-# DN 15–50, 65–150, 200+ per pipe-sizing methodology.
+# These drive green/amber/red status — not the flat CIBSE 1.5 m/s figure.
+# DN ≤ 50 max matches CIBSE Guide C Table 2.2; larger sizes follow industry
+# acoustic / erosion / pump-head practice (documented in the Pipe Sizing
+# Design Limits guide).
 VELOCITY_BANDS_BY_DN: tuple[tuple[int, float, float, float, float], ...] = (
     (50, 0.6, 0.8, 1.2, 1.5),
     (150, 0.6, 1.2, 1.8, 2.5),
     (9999, 0.6, 1.8, 2.5, 3.0),
 )
 
-# ΔP/L design bands (Pa/m) — lifecycle-cost framing (12 Jul 2026).
-# Lower 100–150: CAPEX-heavy / OPEX-light. Ideal 200–300: sweet spot.
-# Upper 400–500: CAPEX-light / OPEX-heavy. Below 100 or above 500 → red.
+# ΔP/L design bands (Pa/m) — lifecycle-cost framing for closed LTHW/CHW
+# distribution (not a named CIBSE/ASHRAE table). Lower 100–150: CAPEX-heavy /
+# OPEX-light. Ideal 200–300: sweet spot. Upper 400–500: CAPEX-light /
+# OPEX-heavy. Below 100 or above 500 → red.
 FRICTION_BANDS: dict[str, float] = {
     "red_low_pa_per_m": 100.0,
     "lower_min_pa_per_m": 100.0,
@@ -448,13 +457,8 @@ def head_breakdown(
     )
 
 
-def _swamee_jain(reynolds: float, roughness_m: float, diameter_m: float) -> float:
-    if reynolds <= 0:
-        return 0.0
-    if reynolds < 2300:
-        return 64.0 / reynolds
-    rel = roughness_m / diameter_m
-    return 0.25 / (log10(rel / 3.7 + 5.74 / reynolds ** 0.9)) ** 2
+# Back-compat alias — prefer hvac_engine.fluid_mechanics.swamee_jain.
+_swamee_jain = swamee_jain
 
 
 def evaluate_size(
@@ -475,7 +479,7 @@ def evaluate_size(
     nu = props.kinematic_viscosity_m2_s
     re = v * d / nu
     rough = ROUGHNESS[material]
-    f = _swamee_jain(re, rough, d)
+    f = swamee_jain(re, rough, d)
     dp_dl = f * (1.0 / d) * (props.density_kg_m3 * v ** 2 / 2.0)
 
     return PipeSizeResult(

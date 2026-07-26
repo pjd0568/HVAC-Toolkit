@@ -4,9 +4,13 @@
 {% block content %}
 
 <div class="note-banner">
-  Pipe sizes and friction loss use Darcy–Weisbach with Colebrook–White (CIBSE Guide C).
-  Traffic lights: <strong>green</strong> = ideal design band; <strong>amber</strong> = border of design limits;
-  <strong>red</strong> = outside acceptable range.
+  Friction loss uses Darcy–Weisbach with Colebrook–White (CIBSE Guide C).
+  Velocity traffic lights use <strong>per-DN bands</strong> (not a flat 1.5&nbsp;m/s
+  limit): DN&nbsp;15–50 ideal 0.8–1.2&nbsp;m/s (max 1.5, matching CIBSE Guide C
+  Table&nbsp;2.2 for small pipe); DN&nbsp;65–150 ideal 1.2–1.8 (max 2.5); DN&nbsp;200+
+  ideal 1.8–2.5 (max 3.0). ΔP/L bands are a lifecycle-cost framing
+  (ideal 200–300&nbsp;Pa/m) — see the design-limits guide.
+  <strong>Green</strong> = ideal · <strong>amber</strong> = border · <strong>red</strong> = outside range.
 </div>
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
@@ -244,9 +248,10 @@
     <div class="note-banner" style="margin:14px 0;">
       Add circuit components below. Each row uses its own DN and optional flow
       (blank flow inherits the duty flow from Design Inputs). Fitting/valve K-factors
-      are representative planning figures — cross-check for real jobs. Devices take
-      a manufacturer ΔP. Full system volume (branches, plant volumes, glycol fill)
-      is a later stage.
+      are indicative for preliminary sizing — not full CIBSE/Crane geometry tables;
+      verify critical or high-pressure runs against manufacturer or primary data.
+      Devices take a manufacturer ΔP. Full system volume (branches, plant volumes,
+      glycol fill) is a later stage.
     </div>
 
     {% if system.ctx_error and not flow_display %}

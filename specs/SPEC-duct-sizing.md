@@ -95,19 +95,12 @@ dimensions are proprietary manufacturer data, not a public standard, and are
 not used here..." — this constraint no longer applies now that Paul has
 supplied the real catalogue himself.)*
 
-**Note on the flat-oval equivalent-diameter correlation:** implemented per the
-commonly published closed-form (`equivalent_diameter_flat_oval`, cited above),
-but — unlike the psychrometrics module's anchor values, which were checked
-against ASHRAE HOF Table 3 — this specific coefficient set could not be
-independently verified against a primary-source page in this session (no
-internet access to the Handbook itself). Treat flat-oval results as
-provisional pending a page-reference check against CIBSE Guide C or ASHRAE
-Fundamentals Ch.21 before relying on them for a live client deliverable. This
-is the same "flag the data gap rather than present false confidence" approach
-the source brief itself asks for (section 3.2), applied here to a formula gap
-rather than a fittings-catalogue gap. Circular and rectangular (Darcy-Weisbach,
-Swamee-Jain, Huebscher) are standard, widely cross-published forms and are not
-flagged.
+**Note on the flat-oval equivalent-diameter correlation:** ASHRAE Handbook —
+Fundamentals Chapter 21 (Duct Design), after Heyt and Diaz (1975):
+De = 1.55 · A^0.625 / P^0.25 with stadium area/perimeter. Verified against the
+published closed form and covered by an engine unit test worked example
+(24 in × 12 in → De ≈ 17.745 in). Circular and rectangular (Darcy-Weisbach,
+Swamee-Jain, Huebscher) remain standard, widely cross-published forms.
 
 ## Conventions
 
@@ -229,8 +222,8 @@ height, r = a/b ≥ 1), substituting into the Huebscher relation:
 `equivalent_diameter_flat_oval(major_m, minor_m) -> m`
 De = 1.55 · A^0.625 / P^0.25, where for a stadium (two semicircles of
 diameter = minor axis, joined by a straight section of length major − minor):
-A = b·(a−b) + (π/4)·b², P = 2·(a−b) + π·b. **Provisional — see the flat-oval
-note above.**
+A = b·(a−b) + (π/4)·b², P = 2·(a−b) + π·b. ASHRAE HOF Ch.21 / Heyt & Diaz
+(1975) — see the flat-oval note above.
 
 `size_flat_oval(volume_m3h, major_m, minor_m, ...) -> FlatOvalResult`
 Same pattern as rectangular: actual velocity from the real cross-sectional

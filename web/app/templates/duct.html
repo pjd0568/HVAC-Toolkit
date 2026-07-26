@@ -13,11 +13,9 @@
   watch velocity, aspect ratio and friction rate respond, using the
   traffic-light status to judge the result. Flat oval only steps through
   Lindab's real stocked major/minor combinations, so it's never possible to
-  land on an unmanufactured size. The flat-oval equivalent-diameter
-  correlation is provisional — it could not be independently checked against
-  a primary-source page this session (see specs/SPEC-duct-sizing.md);
-  circular and rectangular sizing are standard, cross-published forms and
-  unaffected.
+  land on an unmanufactured size. Flat-oval equivalent diameter uses the
+  ASHRAE Fundamentals Ch.21 / Heyt &amp; Diaz (1975) correlation
+  De&nbsp;=&nbsp;1.55·A<sup>0.625</sup>/P<sup>0.25</sup>.
 </div>
 
 <form id="duct-form" method="get" data-nudge-step="{{ nudge_step }}" data-round25-step="{{ round25_step }}" data-dim-unit="{{ U.sym('duct_dimension') }}">
@@ -283,13 +281,16 @@
     <div class="note-banner" style="margin-bottom:14px;">
       Each row is sized independently — its own volume, shape and size — so
       a run that steps down, changes shape, or ends at a grille can be built
-      piece by piece. Fitting K-factors are representative single-point
-      values, not the full multi-parameter ASHRAE Ch.32/CIBSE Guide C
-      correlations — treat as first-pass planning figures. Accessory items
-      (louvers, attenuators, dampers, grilles) take a manually entered
-      pressure drop from your own manufacturer data — there's no K-factor
-      catalogue for these yet. Type/shape row: the top row (tinted) composes
-      a new item — fill it in and press "Add" to commit it as a row below.
+      piece by piece. Fitting K-factors are indicative single-point values for
+      preliminary sizing — not the full multi-parameter ASHRAE Ch.32 / CIBSE
+      Guide C correlations. Verify critical or high-pressure runs against
+      manufacturer or full geometry-dependent data. Flex-duct rows apply a
+      ×1.5 planning derate to rigid friction (no named standard source —
+      extend fully and check manufacturer data for critical runs). Accessory
+      items (louvers, attenuators, dampers, grilles) take a manually entered
+      pressure drop from your own manufacturer data. Type/shape row: the top
+      row (tinted) composes a new item — fill it in and press "Add" to commit
+      it as a row below.
     </div>
 
     <div class="leg-table-scroll">

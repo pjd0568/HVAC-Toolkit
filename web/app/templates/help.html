@@ -181,6 +181,7 @@
         <dt>Outdoor Air — condition + Outdoor Air Fraction (%)</dt><dd>The fresh-air state and how much of the supply is fresh air (the rest is return air).</dd>
         <dt>Return Air — condition</dt><dd>The air coming back from the space.</dd>
         <dt>Required Supply — condition + Supply Flow</dt><dd>The off-unit condition to deliver into the room, and the total supply volume flow.</dd>
+        <dt>Off-coil RH target (%)</dt><dd>Default <strong>90%</strong> — same wet-coil leaving assumption as the Cooling Coil tool. Use <strong>100%</strong> for idealised contact factor = 1 (saturated at the supply dew point).</dd>
         <dt>Supply Fan — Position, SFP, Power</dt><dd>Optional fan heat gain. <em>Blow-through</em> sits before the coil (adds to coil duty); <em>draw-through</em> sits after reheat. Give the fan power directly (kW) or let it be estimated from Specific Fan Power (W per l/s). Leave Position on "No fan gain" to ignore it.</dd>
       </dl>
 
@@ -190,12 +191,13 @@
         <li>Enter the Outdoor Air condition and the fresh-air fraction.</li>
         <li>Enter the Return Air condition.</li>
         <li>Enter the Required Supply condition and supply flow.</li>
+        <li>Confirm the off-coil RH target (90% default).</li>
         <li>Optionally set the fan position and power/SFP.</li>
         <li>Press <strong>Design</strong>. The derived stages, total cooling and total heating are listed and drawn on the chart; expand <strong>Design method &amp; notes</strong> for the assumptions.</li>
       </ol>
 
       <h3 class="help-sub">Reading the results</h3>
-      <p>Each stage (mix, cool, reheat) is a row with its state and the duty/moisture change at that step. Totals give the coil (cooling) duty and reheat/preheat (heating) duty. An idealised coil is assumed — off-coil is taken as saturated, so reheat is a conservative upper bound.</p>
+      <p>Each stage (mix, cool, reheat) is a row with its state and the duty/moisture change at that step. Totals give the coil (cooling) duty and reheat/preheat (heating) duty. A note under the totals states which off-coil RH idealisation was used — keep that in mind if comparing with the Cooling Coil tool.</p>
 
       <div class="help-note">A cooling coil can only remove moisture: a supply moisture content above the on-coil value is <strong>rejected as unreachable</strong> (that duty needs humidification). Equal moisture collapses the duty to a purely sensible cool or heat. Frost is flagged when the off-coil temperature is at or below 0 °C.</div>
     </section>
@@ -242,7 +244,7 @@
         <dt>Accessory</dt><dd>Takes a free-text Description and a Manual ΔP you enter directly from your own manufacturer data (louvers, attenuators, dampers, grilles).</dd>
       </dl>
 
-      <div class="help-note">Fitting K-factors are representative single-point values, not the full multi-parameter ASHRAE Ch.32 / CIBSE Guide C correlations — treat as first-pass planning figures. The flat-oval equivalent-diameter correlation is provisional; circular and rectangular sizing are standard published forms.</div>
+      <div class="help-note">Fitting K-factors are indicative single-point values for preliminary sizing, not the full multi-parameter ASHRAE Ch.32 / CIBSE Guide C correlations — verify critical runs. Flex duct applies a ×1.5 planning friction derate. Flat-oval equivalent diameter uses ASHRAE Fundamentals Ch.21 / Heyt &amp; Diaz (1975).</div>
     </section>
 
     <!-- ═══════════════ CONVERTER ═══════════════ -->
@@ -329,8 +331,16 @@
         <li>Add components in the tinted top row and click <strong>+ Add</strong>; edit rows in place.</li>
         <li>Read required pump head at the bottom of the panel.</li>
       </ol>
-      <div class="help-tip">Traffic-light bands for the DN catalogue are documented under <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Reference → Pipe Sizing Design Limits</a>.</div>
+      <div class="help-tip">Traffic-light bands for the DN catalogue are documented under <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Reference → Pipe Sizing Design Limits</a>. Velocity status uses per-DN bands (DN ≤ 50 max 1.5 m/s aligns with CIBSE Guide C Table 2.2; larger DN allow higher speeds) — not a flat 1.5 m/s limit on every size.</div>
       <div class="help-note">Full system volume (all pipework including branches, client-side volume, chiller volume, minimum chiller volume — for glycol purchase, buffer tanks and expansion vessels) is planned as a later stage.</div>
+    </section>
+
+    <!-- ═══════════════ METHODOLOGY ═══════════════ -->
+    <section class="help-section" id="methodology" data-help-section
+             data-keywords="methodology limitations standards ashrae cibse climate era5 provenance coil model k-factor flex provisional">
+      <h2 class="help-h">Methodology &amp; Limitations</h2>
+      <p class="help-lead"><span class="help-badge util">Reference</span> Standards basis, disclosed simplifications, and climate-data provenance.</p>
+      <p>See the dedicated <a href="{{ url_for('methodology.index') }}">Methodology &amp; Limitations</a> page for the full summary — psychrometric/AHU coil models, duct and pipe methods, planning-grade K-values, and ERA5 vs licensed station design conditions.</p>
     </section>
 
     <!-- ═══════════════ PROJECTS ═══════════════ -->

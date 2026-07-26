@@ -58,9 +58,11 @@ ARCHIVE_TIMEOUT_S = 30       # a 20-year hourly pull is a few MB of JSON
 # resolution surface temperature available for a coordinate without any null
 # handling of our own. The finer grid smooths the extremes less than base ERA5,
 # narrowing (but not closing) the well-known reanalysis "damped extremes" gap
-# vs. an ASHRAE/CIBSE station value -- see the spec's clean-room/accuracy note.
-# The residual gap is fundamental to reanalysis (grid-cell area average vs a point
-# station), which is what the manual-override entry is for.
+# vs. an ASHRAE/CIBSE station value -- see the spec's clean-room/accuracy note
+# and docs/climate-validation.md (spot-check: cooling 0.4% DB often ~0.5–1.8 K
+# low vs NCEI station sheets for UK/EU sites). The residual gap is fundamental
+# to reanalysis (grid-cell area average vs a point station), which is what the
+# manual-override entry is for. Always disclose this provenance in the UI.
 ARCHIVE_MODEL = "era5_seamless"
 
 

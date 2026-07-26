@@ -23,7 +23,9 @@ constraint, fittings/K-factor catalogue, the interactive slider, PDF export).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import ceil, log10, pi, sqrt
+from math import ceil, pi, sqrt
+
+from hvac_engine.fluid_mechanics import swamee_jain
 
 # ── Standard air (CIBSE Guide C "standard air": 20 degC, 101.325 kPa) ───────────
 RHO_STD = 1.2       # kg/m3
@@ -99,23 +101,8 @@ _V_MIN, _V_MAX = 0.1, 50.0   # m/s
 
 # ── Friction factor / Darcy-Weisbach core ────────────────────────────────────────
 
-def _swamee_jain(reynolds: float, roughness_m: float, diameter_m: float) -> float:
-    """Darcy friction factor.
-
-    Swamee-Jain (1976) explicit approximation to Colebrook-White, valid for
-    4e3 < Re < 1e8 and eps/D < 0.05 (the normal HVAC duct range) — used in
-    place of iterating Colebrook-White directly, per the source brief's own
-    suggestion of "high-accuracy explicit approximations... for computational
-    efficiency". Falls back to the laminar relation f = 64/Re below Re=2300
-    (not a realistic HVAC duct condition, but keeps the function well-behaved
-    at very low velocities instead of raising).
-    """
-    if reynolds <= 0:
-        return 0.0
-    if reynolds < 2300:
-        return 64.0 / reynolds
-    rel_roughness = roughness_m / diameter_m
-    return 0.25 / (log10(rel_roughness / 3.7 + 5.74 / reynolds ** 0.9)) ** 2
+# Back-compat alias — prefer hvac_engine.fluid_mechanics.swamee_jain.
+_swamee_jain = swamee_jain
 
 
 def _friction_rate_from_v_d(
@@ -124,7 +111,7 @@ def _friction_rate_from_v_d(
     """Darcy-Weisbach pressure loss per unit length (Pa/m) from velocity and
     diameter directly."""
     reynolds = velocity_ms * diameter_m / nu
-    f = _swamee_jain(reynolds, roughness, diameter_m)
+    f = swamee_jain(reynolds, roughness, diameter_m)
     return f * (1.0 / diameter_m) * (rho * velocity_ms ** 2 / 2.0)
 
 
@@ -447,9 +434,11 @@ def _flat_oval_perimeter(major_m: float, minor_m: float) -> float:
 def equivalent_diameter_flat_oval(major_m: float, minor_m: float) -> float:
     """Equal-friction/capacity equivalent diameter for flat oval duct.
 
-    De = 1.55 * A^0.625 / P^0.25 (ASHRAE Fundamentals Ch.21). PROVISIONAL —
-    see SPEC-duct-sizing.md's flat-oval note: this coefficient set could not
-    be independently checked against a primary-source page in this session.
+    De = 1.55 · A^0.625 / P^0.25 — ASHRAE Handbook — Fundamentals, Chapter 21
+    (Duct Design), circular equivalent of a flat oval duct for equal airflow,
+    resistance and length; after Heyt and Diaz (1975). Area and perimeter use
+    the stadium geometry in the same chapter:
+    A = (π/4)·b² + b·(a − b),  P = π·b + 2·(a − b), with a = major, b = minor.
     """
     if minor_m <= 0 or major_m < minor_m:
         raise ValueError("major axis must be >= minor axis > 0")
@@ -687,11 +676,10 @@ def status(value: float, limit: float, amber_fraction: float = 0.85) -> str:
 # wall. FLEX_DUCT_DERATE is a single representative multiplier applied to an
 # otherwise-normal rigid-duct friction-rate calculation for a straight run
 # flagged as flex -- same "first-pass planning figure, not a certified design
-# value" honesty as the fitting K-factors in hvac_engine.fittings and the
-# flat-oval equivalent-diameter coefficient: real flex friction depends on
-# how fully the duct is extended (a compressed/kinked run can be far worse
-# than this), so this is a starting point, not a substitute for manufacturer
-# performance data on a real job.
+# value" honesty as the fitting K-factors in hvac_engine.fittings: real flex
+# friction depends on how fully the duct is extended (a compressed/kinked run
+# can be far worse than this), so this is a starting point, not a substitute
+# for manufacturer performance data on a real job. Disclosed in the Index Leg UI.
 FLEX_DUCT_DERATE = 1.5  # typical corrugated-flex vs rigid friction-rate multiplier
 
 

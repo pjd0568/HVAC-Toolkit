@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block page_title %}Methodology &amp; Limitations{% endblock %}
+{% block content %}
+
+<div class="page-title">Methodology &amp; Limitations</div>
+<div class="page-sub" style="max-width:720px;">
+  Standards basis, disclosed simplifications, and climate-data provenance for the
+  calculation tools. Intended for preliminary / planning design — verify critical
+  projects against licensed tables, manufacturer data, and project-specific limits.
+</div>
+
+<div class="panel" style="max-width:820px; margin-top:18px;">
+  <div class="panel-head">Psychrometrics &amp; AHU</div>
+  <div class="panel-body" style="font-size:13px; line-height:1.6;">
+    <p>Moist-air properties follow ASHRAE Handbook — Fundamentals Chapter&nbsp;1
+    relations (saturation pressure, humidity ratio, enthalpy, wet-bulb).</p>
+    <p><strong>Cooling Coil</strong> is defined by the on- and off-coil states you enter.
+    A wet (dehumidifying) coil typically leaves air at ~90–95% RH; that is a design
+    assumption, not a solved coil geometry.</p>
+    <p><strong>AHU Design</strong> (supply-driven) derives off-coil from the required supply
+    moisture at a target off-coil RH (default <strong>90%</strong>, matching typical wet-coil
+    practice and the Cooling Coil tool). Set 100% RH for the idealised contact-factor&nbsp;= 1
+    case (saturated at the supply dew point). The two tools are comparable when they
+    use the same off-coil RH idealisation.</p>
+  </div>
+</div>
+
+<div class="panel" style="max-width:820px; margin-top:14px;">
+  <div class="panel-head">Duct sizing</div>
+  <div class="panel-body" style="font-size:13px; line-height:1.6;">
+    <p>Friction via Darcy–Weisbach with Swamee–Jain explicit Colebrook–White.
+    Rectangular equivalent diameter: Huebscher (ASHRAE Fundamentals Ch.21).
+    Flat oval: Heyt &amp; Diaz (1975) / ASHRAE Fundamentals Ch.21 —
+    De&nbsp;=&nbsp;1.55·A<sup>0.625</sup>/P<sup>0.25</sup>.</p>
+    <p>Index-leg fitting K-values and the ×1.5 flex-duct friction derate are
+    <strong>indicative planning figures</strong>, not full ASHRAE Ch.32 / CIBSE Guide C
+    geometry-dependent tables. Verify critical or high-pressure runs against
+    manufacturer or primary data.</p>
+  </div>
+</div>
+
+<div class="panel" style="max-width:820px; margin-top:14px;">
+  <div class="panel-head">Pipe sizing</div>
+  <div class="panel-body" style="font-size:13px; line-height:1.6;">
+    <p>Friction via Darcy–Weisbach / Colebrook–White (CIBSE Guide C). Pipe
+    dimensions from BS&nbsp;EN&nbsp;10255, BS&nbsp;EN&nbsp;1057, DIN&nbsp;11850.</p>
+    <p>Velocity traffic lights use <strong>per-DN bands</strong> (DN&nbsp;≤&nbsp;50 max 1.5&nbsp;m/s aligns
+    with CIBSE Guide C Table&nbsp;2.2; larger DN allow higher velocities). ΔP/L bands
+    (ideal 200–300&nbsp;Pa/m) are a lifecycle-cost framing, not a named code table.
+    See <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Pipe Sizing Design Limits</a>.</p>
+    <p>Fitting/valve K-values are indicative planning figures — not full
+    CIBSE/Crane geometry tables.</p>
+  </div>
+</div>
+
+<div class="panel" style="max-width:820px; margin-top:14px;">
+  <div class="panel-head">Climate / design weather</div>
+  <div class="panel-body" style="font-size:13px; line-height:1.6;">
+    <p>Percentile method follows ASHRAE HOF Ch.14 (per-year then average). When
+    reanalysis lookup is enabled, design conditions are derived from Open-Meteo
+    ERA5 / ERA5-Land — <strong>not</strong> licensed ASHRAE or CIBSE station tables.</p>
+    <p>Reanalysis is a grid-cell average and tends to damp extremes versus station
+    observations. Spot-checks against NCEI Engineering Weather Data (station
+    percentiles, 1988–2017) showed cooling 0.4% dry-bulb typically
+    ~0.5–1.8&nbsp;°C lower for UK/EU sites; heating 99.6% often milder by ~0.5–2.5&nbsp;°C.
+    Use published ASHRAE/CIBSE tables for critical plant sizing.</p>
+    <p>Evidence table: <code>docs/climate-validation.md</code> in the repository.</p>
+  </div>
+</div>
+
+<p class="page-sub" style="margin-top:20px; max-width:720px;">
+  Related: <a href="{{ url_for('help.index') }}">Help</a> ·
+  <a href="{{ url_for('guides.index') }}">Design Guides</a> ·
+  <a href="{{ url_for('weather.index') }}">Weather &amp; Design Conditions</a>
+</p>
+
+{% endblock %}

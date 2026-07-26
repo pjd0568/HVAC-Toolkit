@@ -253,6 +253,21 @@ def test_flat_oval_rejects_major_less_than_minor():
         d.equivalent_diameter_flat_oval(0.2, 0.3)
 
 
+def test_equivalent_diameter_flat_oval_ashrae_hey_t_diaz_worked_example():
+    """ASHRAE HOF Ch.21 / Heyt & Diaz (1975): De = 1.55·A^0.625/P^0.25.
+
+    Worked example: 24 in × 12 in flat oval (major × minor).
+    A = π·12²/4 + 12·(24−12) = 257.097 in²
+    P = π·12 + 2·(24−12) = 61.699 in
+    De = 1.55 · A^0.625 / P^0.25 ≈ 17.745 in
+    """
+    major_m = 24 * 0.0254
+    minor_m = 12 * 0.0254
+    de_m = d.equivalent_diameter_flat_oval(major_m, minor_m)
+    de_in = de_m / 0.0254
+    assert approx(de_in, 17.745, tol=0.01)
+
+
 def test_size_flat_oval_area_and_velocity():
     major, minor = 0.5, 0.2
     res = d.size_flat_oval(3600.0, major, minor)

@@ -142,15 +142,15 @@ content w_sup with the on-coil w_on:
 - **w_sup ≈ w_on** (within ~0.01 g/kg, no net moisture change): a purely sensible duty.
   If t_sup < t_A it is sensible (dry) cooling A→D; if t_sup > t_A it is heating-only
   A→D; if equal, no duty.
-- **w_sup < w_on** (dehumidification): **idealised model** — the cooling coil brings the
-  air down to the supply moisture content sitting *on the saturation curve*, i.e. the
-  off-coil point C is the **supply dew point, saturated** (contact factor 1). The path is:
+- **w_sup < w_on** (dehumidification): off-coil C holds the supply moisture at a
+  target off-coil RH (`coil_rh_off`, default **0.90** — matching `simulate_ahu` and
+  typical wet-coil practice). `coil_rh_off=1.0` recovers the idealised CF = 1 case
+  (saturated at the supply dew point). The path is:
   A → B saturation onset (sensible cooling at constant w_on to the on-coil dew point) →
-  C off-coil (tracking the saturation curve to the supply dew point, wringing out
-  moisture) → D supply (sensible reheat at constant w_sup to the supply dry bulb). B is a
-  zero-duty chart waypoint; the whole coil duty A→C is reported on the CC stage; the
-  reheat C→D on the HC stage. Degenerate: if t_sup = dew-point(w_sup) the supply is on the
-  saturation line and no reheat is needed (C = D).
+  C off-coil (at w_sup and coil_rh_off) →
+  D supply (sensible reheat at constant w_sup to the supply dry bulb when needed).
+  B is a zero-duty chart waypoint; the whole coil duty A→C is reported on the CC
+  stage; the reheat C→D on the HC stage when t_off < t_sup.
 
 Coil duty (dehumidification): q_total = m_da·(h_C − h_A) (negative); q_sensible =
 m_da·(h(t_C, w_on) − h(t_A, w_on)); q_latent = q_total − q_sensible; condensate =

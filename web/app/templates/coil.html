@@ -54,6 +54,12 @@ below freezing. Consider glycol protection, DX defrost strategy or face-and-bypa
     {% endif %}
     <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', m_da) }}</td></tr>
   </table>
+  <div class="note-banner" style="margin:14px 0 0;">
+    Coil duty is from the off-coil condition you entered
+    ({{ '%.0f'|format(result.state.rh * 100) }}% RH off-coil). A common wet-coil design assumption
+    is ~90% RH — the AHU Design tool uses the same default when deriving off-coil from a supply
+    target.
+  </div>
 </div>
 
 {% include "_chart.html" %}

@@ -30,6 +30,15 @@
         <div><label>Supply Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
       </div>
 
+      <div class="section-label">Cooling coil model</div>
+      <div class="form-grid four">
+        <div>
+          <label>Off-coil RH target (%)</label>
+          <input name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
+          <div class="suffix">Default 90% — matches typical wet-coil / Cooling Coil tool practice. Use 100% for idealised CF = 1 (saturated at supply dew point).</div>
+        </div>
+      </div>
+
       <div class="section-label">Supply Fan — leave off to ignore fan gain</div>
       <div class="form-grid four">
         <div>
@@ -74,6 +83,11 @@
     <tr><td>Moisture added / removed</td><td class="num"><span class="valunit"><span class="v">{{ U.fmt('moisture_rate', result.moisture_added) }} / {{ U.fmt('moisture_rate', result.moisture_removed) }}</span><span class="u">{{ U.sym('moisture_rate') }}</span></span></td></tr>
     <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', result.m_da) }}</td></tr>
   </table>
+  <div class="note-banner" style="margin:14px 0 0;">
+    Coil duty assumes {{ form.coil_rh_off }}% off-coil RH at the supply moisture content
+    {% if form.coil_rh_off == '100' %}(idealised contact factor = 1, saturated at the supply dew point){% else %}(same idealisation as the Cooling Coil tool’s typical 90–95% wet-coil leaving condition){% endif %}.
+    Duties are not directly comparable to a run that used a different off-coil RH.
+  </div>
 </div>
 
 {% include "_chart.html" %}
@@ -85,13 +99,12 @@
     (the supply, or off-unit, condition); the tool mixes outdoor and return air to the on-coil
     condition, checks the supply is reachable, then works out the coil and reheat needed to get
     there. It is the inverse of specifying the off-coil condition and reading off the result.</p>
-    <p><strong>Idealised coil model.</strong> Where dehumidification is needed, the cooling coil is
-    taken to bring the air down to the supply moisture content <em>on the saturation curve</em> —
-    the off-coil point is the supply dew point, saturated (contact factor 1). The air is cooled at
-    constant moisture to the on-coil dew point (saturation onset), then tracks the saturation curve,
-    wringing out moisture, to the off-coil point. A reheat coil then lifts it sensibly to the supply
-    dry bulb. Real coils leave air a little off saturation (~90–95% RH), so this gives a slightly
-    optimistic off-coil temperature and a conservative (upper-bound) reheat.</p>
+    <p><strong>Coil model.</strong> Where dehumidification is needed, the cooling coil is taken to
+    leave air at the supply moisture content and the off-coil RH target (default <strong>90%</strong>,
+    matching typical wet-coil practice and the Cooling Coil tool). Set the target to 100% for the
+    idealised CF = 1 case (saturated at the supply dew point). Real coils leave air a little off
+    saturation (~90–95% RH). A reheat coil then lifts the air sensibly to the supply dry bulb when
+    the off-coil temperature is below the supply dry bulb.</p>
     <p><strong>Reachability.</strong> A cooling coil can only remove moisture, so a supply moisture
     content above the on-coil value is rejected — that duty needs humidification. If the supply
     moisture equals the on-coil moisture the duty collapses to a purely sensible cool or heat.</p>

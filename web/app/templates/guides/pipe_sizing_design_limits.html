@@ -2,7 +2,10 @@
 <a href="{{ url_for('pipe.index') }}">Pipe Sizing</a> catalogue. They are a
 lifecycle-cost framing for closed LTHW and CHW distribution — not a substitute
 for project acoustic, erosion or manufacturer limits. Friction itself is still
-calculated with Darcy–Weisbach / Colebrook–White (CIBSE Guide C).</p>
+calculated with Darcy–Weisbach / Colebrook–White (CIBSE Guide C). Velocity
+status does <strong>not</strong> use a flat 1.5&nbsp;m/s limit on every size: the DN&nbsp;≤&nbsp;50
+maximum of 1.5&nbsp;m/s aligns with CIBSE Guide C Table&nbsp;2.2; larger DN use the
+higher maxima in the table below.</p>
 
 <div class="callout">
   <strong>Green</strong> = ideal mid-band ·
