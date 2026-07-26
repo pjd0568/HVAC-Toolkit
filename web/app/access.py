@@ -32,7 +32,7 @@ MODULES: dict[str, dict[str, str]] = {
     "pipe.sizer": {"tier": "free", "label": "Pipe Sizing"},
     "pipe.system": {"tier": "pro", "label": "Pipe System"},
     "weather": {"tier": "pro", "label": "Weather & Design Conditions (ASHRAE lookup)"},
-    "converter": {"tier": "pro", "label": "Unit Converter"},
+    "converter": {"tier": "free", "label": "Unit Converter"},
     "projects": {"tier": "pro", "label": "Projects"},
 }
 

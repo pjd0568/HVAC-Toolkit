@@ -30,6 +30,7 @@ open Pro modules (soft gate: upgrade panel, not a raw 403).
 | `psychro.single_point` | Psychrometrics — Single Point | Full single-point tool |
 | `duct.sizer` | Duct Sizing — core 3-column sizer | Index Leg is Pro (`duct.index_leg`) |
 | `pipe.sizer` | Pipe Sizing — Stage 1 DN / flow sizer | System builder + lift/head is Pro (`pipe.system`) |
+| `converter` | Unit Converter | Full catalogue converter |
 
 Always free (navigation / learning, not “calculators”):
 
@@ -38,7 +39,7 @@ Always free (navigation / learning, not “calculators”):
 ## Pro catalogue (everything else)
 
 Includes but is not limited to: Mixed Air, Cooling Coil, AHU Design, Weather,
-Unit Converter, Projects, Duct Index Leg, Pipe System (pressure drop + lift /
+Projects, Duct Index Leg, Pipe System (pressure drop + lift /
 pump head), and any future Pro-only modules.
 
 ## Trial clock

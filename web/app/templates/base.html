@@ -94,7 +94,6 @@
       <div class="nav-group-items">
         <a class="nav-item {{ 'active' if active == 'converter' }}" href="{{ url_for('converter.index') }}">
           Unit Converter
-          {% if access.is_pro('converter') %}<span class="pro-chip">Pro</span>{% endif %}
         </a>
       </div>
     </div>
