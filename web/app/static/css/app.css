@@ -928,6 +928,12 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
     linear-gradient(180deg, #eef3f9 0%, var(--bg) 40%, #e4ebf4 100%);
   color: var(--ink);
 }
+.marketing-body.marketing-home {
+  background:
+    linear-gradient(180deg, rgba(238, 243, 249, 0.35) 0%, rgba(232, 237, 245, 0.55) 45%, rgba(228, 235, 244, 0.72) 100%),
+    url("../images/home-background.png") center top / cover no-repeat;
+  background-attachment: scroll;
+}
 .marketing-header {
   display: flex; align-items: center; justify-content: space-between;
   gap: 20px; padding: 20px clamp(20px, 4vw, 48px); max-width: 1100px; margin: 0 auto;
