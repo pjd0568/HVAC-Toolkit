@@ -106,3 +106,16 @@ class Config:
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "") or CONTACT_EMAIL
+
+    # Stripe (Test mode keys from https://dashboard.stripe.com/test/apikeys).
+    # Leave empty until wired; pricing page shows a disabled CTA when unset.
+    STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+    STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
+    STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    # Price ID for the £9.50/month full-suite plan (price_…). Optional if you
+    # run `flask ensure-stripe-product` once to create product + price.
+    STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
+    # When true (default), Checkout Sessions use Managed Payments (Stripe MoR + tax).
+    STRIPE_MANAGED_PAYMENTS = os.environ.get(
+        "STRIPE_MANAGED_PAYMENTS", "true"
+    ).lower() in ("1", "true", "yes", "on")

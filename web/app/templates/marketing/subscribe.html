@@ -6,7 +6,8 @@
   <h1>Pricing</h1>
   <p class="coming-lead">
     Every new account gets a 14-day free trial of the full suite. After that,
-    subscribe for £9.50/month — checkout will connect here when Stripe is wired up.
+    subscribe for £9.50/month. Tax is calculated at checkout for your location
+    (Stripe Managed Payments).
   </p>
 </section>
 
@@ -24,17 +25,32 @@
       <li>Weather &amp; design conditions — coming soon</li>
       <li>Projects — coming soon</li>
     </ul>
-    <button type="button" class="btn-accent" disabled title="Stripe Checkout coming soon">
-      Checkout coming soon
-    </button>
-    {% if current_user.is_authenticated %}
-    <p class="pricing-note">
-      Signed in as {{ current_user.email }}. Billing will attach to this account.
-    </p>
-    {% elif registration_open %}
-    <p class="pricing-note">
-      <a href="{{ url_for('auth.register') }}">Create an account</a> to start your free trial.
-    </p>
+
+    {% if current_user.is_authenticated and current_user.subscription_status == 'active' %}
+      <a class="btn-accent" href="{{ url_for('main.dashboard') }}">Open toolkit</a>
+      <p class="pricing-note">Your subscription is active.</p>
+    {% elif stripe_ready and current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('billing.create_checkout_session_route') }}">
+        <button type="submit" class="btn-accent">Subscribe — £9.50/month</button>
+      </form>
+      <p class="pricing-note">
+        Signed in as {{ current_user.email }}. You’ll complete payment on Stripe’s secure checkout.
+      </p>
+    {% elif stripe_ready and registration_open %}
+      <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
+      <p class="pricing-note">
+        Create an account for your 14-day trial, then subscribe here when you’re ready.
+      </p>
+    {% elif stripe_ready %}
+      <a class="btn-accent" href="{{ url_for('auth.login', next=url_for('billing.subscribe')) }}">Log in to subscribe</a>
+    {% else %}
+      <button type="button" class="btn-accent" disabled title="Add Stripe keys to enable checkout">
+        Checkout coming soon
+      </button>
+      <p class="pricing-note">
+        Stripe keys not configured yet. Add <code>STRIPE_SECRET_KEY</code> from the
+        <a href="https://dashboard.stripe.com/test/apikeys" rel="noopener" target="_blank">Dashboard (Test mode)</a>.
+      </p>
     {% endif %}
   </article>
 </section>

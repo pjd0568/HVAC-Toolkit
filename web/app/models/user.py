@@ -16,6 +16,9 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     trial_started_at = db.Column(db.Date, nullable=True)
     subscription_status = db.Column(db.String(32), nullable=False, default="trialing")
+    # Stripe Managed Payments identifiers (Customer + Subscription).
+    stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True, index=True)
+    stripe_subscription_id = db.Column(db.String(255), nullable=True, unique=True, index=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

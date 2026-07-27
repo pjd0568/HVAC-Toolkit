@@ -14,7 +14,7 @@ public marketing / coming-soon / pricing pages stay open.
 
 | Path | Auth |
 |------|------|
-| `/`, `/login`, `/subscribe`, `/health`, static | Public |
+| `/`, `/login`, `/subscribe`, `/webhooks/stripe`, `/health`, static | Public |
 | `/register` | Public only when `REGISTRATION_OPEN=true` (default **closed**) |
 | `/app` and all calculator / reference / help routes | Login required |
 
@@ -30,6 +30,8 @@ opened for launch.
 | `password_hash` | Werkzeug hash; never store plaintext |
 | `trial_started_at` | Date; set on register |
 | `subscription_status` | `none` \| `trialing` \| `active` \| `canceled` |
+| `stripe_customer_id` | Stripe Customer id (`cus_…`); set at Checkout |
+| `stripe_subscription_id` | Stripe Subscription id (`sub_…`); set by webhook |
 | `created_at` / `updated_at` | Timestamps |
 
 ## Entitlement (with `access.py`)
@@ -42,9 +44,9 @@ For an authenticated user:
 2. Else if `trial_started_at` within 14 days → Trial (`has_suite_access`)
 3. Else → Trial ended (no calculator access until subscribe)
 
-Stripe Checkout / webhooks later only flip `subscription_status`.
+Stripe Checkout webhooks flip `subscription_status` (see `SPEC-billing-stripe.md`).
 
 ## Out of scope
 
 Email verification, password reset, Google OAuth, invite-only registration,
-roles/admin, Stripe.
+roles/admin.

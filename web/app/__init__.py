@@ -15,6 +15,7 @@ _PUBLIC_ENDPOINTS = frozenset(
         "auth.register",
         "auth.register_post",
         "billing.subscribe",
+        "billing.stripe_webhook",
         "pages.terms",
         "pages.privacy",
         "pages.contact",
@@ -190,5 +191,33 @@ def create_app(config_class: type = Config) -> Flask:
             return f"{flask_request.path}?{urlencode(args)}"
 
         return {"paste_url": paste_url}
+
+    @app.cli.command("ensure-stripe-product")
+    def ensure_stripe_product_command():
+        """Create the £9.50/month Managed Payments product+price if needed.
+
+        Prints the Price ID to set as STRIPE_PRICE_ID. Requires STRIPE_SECRET_KEY
+        from https://dashboard.stripe.com/test/apikeys
+        """
+        from app.stripe_billing import (
+            StripeNotConfiguredError,
+            create_subscription_product,
+            resolve_price_id,
+        )
+
+        try:
+            if app.config.get("STRIPE_PRICE_ID"):
+                price_id = resolve_price_id()
+                print(f"Using existing STRIPE_PRICE_ID={price_id}")
+                return
+            created = create_subscription_product()
+            print("Created Stripe product + price (Test mode).")
+            print(f"  product_id={created['product_id']}")
+            print(f"  price_id={created['price_id']}")
+            print("Add this to your environment:")
+            print(f"  STRIPE_PRICE_ID={created['price_id']}")
+        except StripeNotConfiguredError as exc:
+            print(f"Error: {exc}")
+            raise SystemExit(1) from exc
 
     return app

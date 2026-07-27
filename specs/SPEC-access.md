@@ -47,8 +47,9 @@ Nav and pages flag these with a **Coming Soon** chip only — no Pro tags.
 - Persistence: Postgres user row (survives cookie clear).
 - While trial active: `tier == "trial"`, `has_suite_access == True`.
 - After expiry without subscription: `tier == "free"`, `has_suite_access == False`.
-- Subscribed: `User.subscription_status == "active"` (Stripe later); internal
-  tier code remains `"pro"` for the `ACCESS_DEV_TIER` override.
+- Subscribed: `User.subscription_status == "active"` (Stripe Managed Payments
+  Checkout + webhooks — see `SPEC-billing-stripe.md`); internal tier code
+  remains `"pro"` for the `ACCESS_DEV_TIER` override.
 
 ## Module flag API
 
@@ -73,8 +74,8 @@ show Trial countdown or **Subscribed** — never “Pro”.
 
 ## Out of scope for this scaffold
 
-- Stripe Checkout / Customer Portal / Tax (pricing page is a placeholder).
 - Softening access further (watermarked PDFs, etc.).
+- Stripe Customer Portal (Managed Payments uses Link for subscription management).
 
 ## Dev override
 
