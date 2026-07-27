@@ -69,8 +69,8 @@ Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.
 ## Auth & billing (current)
 
 - Email/password accounts in Postgres (`specs/SPEC-auth.md`).
-- 14-day Pro trial starts on register; Free/Pro module gates in
-  `specs/SPEC-access.md`.
+- 14-day free trial starts on register; full suite then £9.50/month
+  (`specs/SPEC-access.md`). Weather and Projects are Coming Soon.
 - `/subscribe` is a pricing placeholder — Stripe Checkout later.
 
 ## Provenance

@@ -228,6 +228,7 @@ def _run_single_point(form, U):
 
 
 @bp.route("/", methods=["GET", "POST"])
+@require_module("psychro.single_point")
 def single_point():
     U = current_view()
     result = None
@@ -254,6 +255,7 @@ def single_point():
 
 
 @bp.route("/report", methods=["POST"])
+@require_module("psychro.single_point")
 def single_point_report():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}
@@ -287,6 +289,7 @@ def single_point_report():
 
 
 @bp.route("/chart.png", methods=["POST"])
+@require_module("psychro.single_point")
 def single_point_chart_png():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}

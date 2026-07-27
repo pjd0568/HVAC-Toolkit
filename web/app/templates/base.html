@@ -27,7 +27,7 @@
       <a class="nav-item {{ 'active' if active == 'dashboard' }}" href="{{ url_for('main.dashboard') }}">Dashboard</a>
       <a class="nav-item {{ 'active' if active == 'projects' }}" href="{{ url_for('projects.index') }}">
         Projects
-        {% if access.is_pro('projects') %}<span class="pro-chip">Pro</span>{% endif %}
+        <span class="soon">Coming Soon</span>
       </a>
     </div>
 
@@ -39,7 +39,7 @@
       <div class="nav-group-items">
         <a class="nav-item {{ 'active' if active == 'weather' }}" href="{{ url_for('weather.index') }}">
           Weather &amp; Design Conditions
-          <span class="pro-chip">Pro</span>
+          <span class="soon">Coming Soon</span>
         </a>
       </div>
     </div>
@@ -51,18 +51,9 @@
       </button>
       <div class="nav-group-items">
         <a class="nav-item {{ 'active' if active == 'psychro' }}" href="{{ url_for('psychro.single_point') }}">Single Point</a>
-        <a class="nav-item {{ 'active' if active == 'psychro_mix' }}" href="{{ url_for('psychro.mixed_air') }}">
-          Mixed Air
-          {% if access.is_pro('psychro.mixed_air') %}<span class="pro-chip">Pro</span>{% endif %}
-        </a>
-        <a class="nav-item {{ 'active' if active == 'psychro_coil' }}" href="{{ url_for('psychro.cooling_coil') }}">
-          Cooling Coil
-          {% if access.is_pro('psychro.cooling_coil') %}<span class="pro-chip">Pro</span>{% endif %}
-        </a>
-        <a class="nav-item {{ 'active' if active == 'psychro_ahu' }}" href="{{ url_for('psychro.ahu') }}">
-          AHU Design
-          {% if access.is_pro('psychro.ahu') %}<span class="pro-chip">Pro</span>{% endif %}
-        </a>
+        <a class="nav-item {{ 'active' if active == 'psychro_mix' }}" href="{{ url_for('psychro.mixed_air') }}">Mixed Air</a>
+        <a class="nav-item {{ 'active' if active == 'psychro_coil' }}" href="{{ url_for('psychro.cooling_coil') }}">Cooling Coil</a>
+        <a class="nav-item {{ 'active' if active == 'psychro_ahu' }}" href="{{ url_for('psychro.ahu') }}">AHU Design</a>
       </div>
     </div>
 
@@ -123,11 +114,11 @@
         <div class="foot-email" title="{{ current_user.email }}">{{ current_user.email }}</div>
       {% endif %}
       {% if access.tier == 'pro' %}
-        Pro
+        Subscribed
       {% elif access.tier == 'trial' and access.trial_days_remaining is not none %}
         Trial · {{ access.trial_days_remaining }} day{{ 's' if access.trial_days_remaining != 1 else '' }} left
       {% else %}
-        Free tier
+        Trial ended
       {% endif %}
     </div>
     {% if current_user.is_authenticated %}
@@ -145,7 +136,7 @@
       {% if access.tier == 'trial' and access.trial_days_remaining is not none %}
       <span class="trial-pill" title="Full suite during trial">Trial · {{ access.trial_days_remaining }}d</span>
       {% elif access.tier == 'pro' %}
-      <span class="trial-pill pro-on" title="Pro">Pro</span>
+      <span class="trial-pill pro-on" title="Subscribed">Subscribed</span>
       {% endif %}
       <a class="help-btn" href="{{ url_for('billing.subscribe') }}" title="Pricing">Pricing</a>
       <form method="post" action="{{ url_for('main.set_units') }}" class="unit-toggle" title="Units — applies across every tool">

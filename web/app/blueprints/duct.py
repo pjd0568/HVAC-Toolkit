@@ -801,6 +801,7 @@ def _report_fields_for(fields: dict, leg: dict) -> dict:
 # -- routes -----------------------------------------------------------------------------
 
 @bp.route("/", methods=["GET"])
+@require_module("duct.sizer")
 def index():
     U = current_view()
     fields, circular, rectangular, flat_oval, error = _compute_state(request.args, U)
@@ -815,6 +816,7 @@ def index():
 
 
 @bp.route("/report", methods=["POST"])
+@require_module("duct.sizer")
 def report():
     """Download PDF Report -- recomputes both the 3-column sizer and the Index
     Leg from the posted hidden fields (see `_report_fields_for`), the same
@@ -856,6 +858,7 @@ def report():
 
 
 @bp.route("/api/state", methods=["GET"])
+@require_module("duct.sizer")
 def api_state():
     """Top 3-column sizer JSON -- independent of the index leg (Correction
     #6): this response never carries leg data, and recomputing it never

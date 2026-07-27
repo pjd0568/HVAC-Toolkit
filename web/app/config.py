@@ -77,8 +77,9 @@ class Config:
         "on",
     )
 
-    # Access tier override for local click-testing Free vs Pro UI.
-    # None = normal trial clock; "free" | "trial" | "pro" forces that tier.
+    # Access tier override for local click-testing trial vs subscribed UI.
+    # None = normal trial clock; "free" | "trial" | "pro" forces that tier
+    # ("free" = trial ended / no suite access; "pro" = subscribed).
     ACCESS_DEV_TIER = os.environ.get("ACCESS_DEV_TIER") or None
 
     # Public site URL (canonical links, sitemap, Open Graph).

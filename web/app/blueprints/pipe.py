@@ -749,6 +749,7 @@ def _report_fields_for(fields: dict, system: dict) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @bp.route("/", methods=["GET"])
+@require_module("pipe.sizer")
 def index():
     U = current_view()
     state = _compute_state(request.args, U)
@@ -849,6 +850,7 @@ def _report_rows(state, U, system=None):
 
 
 @bp.route("/report", methods=["POST"])
+@require_module("pipe.sizer")
 def report():
     U = current_view()
     state = _compute_state(request.form, U)

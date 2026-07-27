@@ -38,9 +38,9 @@ Priority: `ACCESS_DEV_TIER` → authenticated user → (anonymous has no app acc
 
 For an authenticated user:
 
-1. `subscription_status == "active"` → Pro
-2. Else if `trial_started_at` within 14 days → Trial (`can_use_pro`)
-3. Else → Free
+1. `subscription_status == "active"` → Subscribed (full suite; internal tier `"pro"`)
+2. Else if `trial_started_at` within 14 days → Trial (`has_suite_access`)
+3. Else → Trial ended (no calculator access until subscribe)
 
 Stripe Checkout / webhooks later only flip `subscription_status`.
 

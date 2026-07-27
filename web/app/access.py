@@ -1,7 +1,8 @@
-"""Access tiers — Free / Trial / Pro module flags.
+"""Access — 14-day trial then subscription for the full suite.
 
-See specs/SPEC-access.md and specs/SPEC-auth.md. Trial / Pro bind to the
-authenticated User row; ACCESS_DEV_TIER still forces tier for local UI testing.
+See specs/SPEC-access.md and specs/SPEC-auth.md. Trial / subscription bind to
+the authenticated User row; ACCESS_DEV_TIER still forces tier for local UI
+testing.
 """
 
 from __future__ import annotations
@@ -13,27 +14,49 @@ from typing import Literal
 from flask import current_app
 from flask_login import current_user
 
+# Internal tier codes. UI labels: Trial / Subscribed / Trial ended (never "Pro").
 TierName = Literal["free", "trial", "pro"]
-ModuleTier = Literal["free", "pro"]
 
 TRIAL_DAYS = 14
+PRICE_MONTHLY_GBP = "9.50"
 
-# module_id → catalogue entry. Labels are for nav / upgrade copy.
+# Modules that need an active trial or subscription. Always-open pages
+# (dashboard, help, guides, methodology) and Coming Soon placeholders
+# (weather, projects) are omitted — they stay reachable after trial expiry
+# so users can still reach pricing and reference material.
+SUITE_MODULES: frozenset[str] = frozenset({
+    "psychro.single_point",
+    "psychro.mixed_air",
+    "psychro.cooling_coil",
+    "psychro.ahu",
+    "duct.sizer",
+    "duct.index_leg",
+    "pipe.sizer",
+    "pipe.system",
+    "converter",
+})
+
+COMING_SOON_MODULES: frozenset[str] = frozenset({
+    "weather",
+    "projects",
+})
+
+# module_id → label (for upgrade / gate copy).
 MODULES: dict[str, dict[str, str]] = {
-    "dashboard": {"tier": "free", "label": "Dashboard"},
-    "help": {"tier": "free", "label": "Help"},
-    "guides": {"tier": "free", "label": "Design Guides"},
-    "psychro.single_point": {"tier": "free", "label": "Psychrometrics — Single Point"},
-    "psychro.mixed_air": {"tier": "pro", "label": "Psychrometrics — Mixed Air"},
-    "psychro.cooling_coil": {"tier": "pro", "label": "Psychrometrics — Cooling Coil"},
-    "psychro.ahu": {"tier": "pro", "label": "Psychrometrics — AHU Design"},
-    "duct.sizer": {"tier": "free", "label": "Duct Sizing"},
-    "duct.index_leg": {"tier": "pro", "label": "Duct Index Leg"},
-    "pipe.sizer": {"tier": "free", "label": "Pipe Sizing"},
-    "pipe.system": {"tier": "pro", "label": "Pipe System"},
-    "weather": {"tier": "pro", "label": "Weather & Design Conditions (ASHRAE lookup)"},
-    "converter": {"tier": "free", "label": "Unit Converter"},
-    "projects": {"tier": "pro", "label": "Projects"},
+    "dashboard": {"label": "Dashboard"},
+    "help": {"label": "Help"},
+    "guides": {"label": "Design Guides"},
+    "psychro.single_point": {"label": "Psychrometrics — Single Point"},
+    "psychro.mixed_air": {"label": "Psychrometrics — Mixed Air"},
+    "psychro.cooling_coil": {"label": "Psychrometrics — Cooling Coil"},
+    "psychro.ahu": {"label": "Psychrometrics — AHU Design"},
+    "duct.sizer": {"label": "Duct Sizing"},
+    "duct.index_leg": {"label": "Duct Index Leg"},
+    "pipe.sizer": {"label": "Pipe Sizing"},
+    "pipe.system": {"label": "Pipe System"},
+    "weather": {"label": "Weather & Design Conditions (ASHRAE lookup)"},
+    "converter": {"label": "Unit Converter"},
+    "projects": {"label": "Projects"},
 }
 
 
@@ -42,10 +65,15 @@ class Entitlement:
     """Resolved access state for the current request."""
 
     tier: TierName
-    can_use_pro: bool
+    has_suite_access: bool
     trial_days_remaining: int | None
     trial_started: date | None
     trial_ends: date | None
+
+    @property
+    def can_use_pro(self) -> bool:
+        """Alias kept for older call sites — means full suite access."""
+        return self.has_suite_access
 
 
 def _today() -> date:
@@ -70,7 +98,7 @@ def _entitlement_for_user(user) -> Entitlement:
 
 
 def get_entitlement() -> Entitlement:
-    """Resolve Free / Trial / Pro for this request.
+    """Resolve Trial / Subscribed / expired for this request.
 
     Priority: Config.ACCESS_DEV_TIER (dev) → authenticated user record → free.
     """
@@ -92,28 +120,30 @@ def get_entitlement() -> Entitlement:
     return Entitlement("free", False, 0, None, None)
 
 
-def module_tier(module_id: str) -> ModuleTier:
-    entry = MODULES.get(module_id)
-    if entry is None:
-        # Unknown modules default to Pro so new tools don't ship free by accident.
-        return "pro"
-    return entry["tier"]  # type: ignore[return-value]
-
-
 def module_label(module_id: str) -> str:
     entry = MODULES.get(module_id)
     return entry["label"] if entry else module_id
 
 
-def is_pro_module(module_id: str) -> bool:
-    return module_tier(module_id) == "pro"
+def is_coming_soon(module_id: str) -> bool:
+    return module_id in COMING_SOON_MODULES
+
+
+def requires_suite(module_id: str) -> bool:
+    """True if this module needs an active trial or subscription."""
+    if module_id in SUITE_MODULES:
+        return True
+    # Unknown calculator modules default to gated so new tools don't ship open.
+    if module_id in MODULES or module_id in COMING_SOON_MODULES:
+        return False
+    return True
 
 
 def can_access(module_id: str) -> bool:
     """True if the current entitlement may use this module."""
-    if module_tier(module_id) == "free":
+    if not requires_suite(module_id):
         return True
-    return get_entitlement().can_use_pro
+    return get_entitlement().has_suite_access
 
 
 @dataclass
@@ -127,20 +157,28 @@ class AccessView:
         return self.entitlement.tier
 
     @property
+    def has_suite_access(self) -> bool:
+        return self.entitlement.has_suite_access
+
+    @property
     def can_use_pro(self) -> bool:
-        return self.entitlement.can_use_pro
+        return self.entitlement.has_suite_access
 
     @property
     def trial_days_remaining(self) -> int | None:
         return self.entitlement.trial_days_remaining
 
-    def can(self, module_id: str) -> bool:
-        if module_tier(module_id) == "free":
-            return True
-        return self.entitlement.can_use_pro
+    @property
+    def price_monthly(self) -> str:
+        return PRICE_MONTHLY_GBP
 
-    def is_pro(self, module_id: str) -> bool:
-        return is_pro_module(module_id)
+    def can(self, module_id: str) -> bool:
+        if not requires_suite(module_id):
+            return True
+        return self.entitlement.has_suite_access
+
+    def is_coming_soon(self, module_id: str) -> bool:
+        return is_coming_soon(module_id)
 
     def label(self, module_id: str) -> str:
         return module_label(module_id)
@@ -151,18 +189,22 @@ def current_access() -> AccessView:
 
 
 def deny_upgrade_context(module_id: str) -> dict:
-    """Context for the shared upgrade / trial-ended panel."""
+    """Context for the shared trial-ended / subscribe panel."""
     ent = get_entitlement()
     return {
         "module_id": module_id,
         "module_label": module_label(module_id),
         "entitlement": ent,
         "trial_expired": ent.tier == "free" and ent.trial_started is not None,
+        "price_monthly": PRICE_MONTHLY_GBP,
     }
 
 
 __all__ = [
+    "COMING_SOON_MODULES",
     "MODULES",
+    "PRICE_MONTHLY_GBP",
+    "SUITE_MODULES",
     "TRIAL_DAYS",
     "AccessView",
     "Entitlement",
@@ -170,7 +212,7 @@ __all__ = [
     "current_access",
     "deny_upgrade_context",
     "get_entitlement",
-    "is_pro_module",
+    "is_coming_soon",
     "module_label",
-    "module_tier",
+    "requires_suite",
 ]

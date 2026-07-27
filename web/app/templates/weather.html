@@ -2,17 +2,17 @@
 {% block page_title %}Weather &amp; Design Conditions{% endblock %}
 {% block content %}
 
-<div class="page-title">Weather &amp; Design Conditions <span class="pro-chip">Pro</span></div>
-<div class="page-sub">Authoritative climatic design conditions for Pro subscribers — coming soon.</div>
+<div class="page-title">Weather &amp; Design Conditions <span class="soon">Coming Soon</span></div>
+<div class="page-sub">Authoritative climatic design conditions — coming soon.</div>
 
 <div class="note-banner">
   <span>ℹ</span>
   <div>
-    <strong>Coming soon for Pro.</strong>
-    In-app climatic design conditions will unlock with a Pro subscription once a
-    licensed data feed is in place (ASHRAE Climatic Design Data and/or a commercial
-    reanalysis licence). Until then, use ASHRAE’s tools below, then enter outdoor
-    conditions directly in the psychrometric calculators.
+    <strong>Coming soon.</strong>
+    In-app climatic design conditions will unlock once a licensed data feed is in
+    place (ASHRAE Climatic Design Data and/or a commercial reanalysis licence).
+    Until then, use ASHRAE’s tools below, then enter outdoor conditions directly
+    in the psychrometric calculators.
     <br><br>
     <strong>Data provenance.</strong> Any future in-app lookup derived from ERA5
     reanalysis (Open-Meteo) is <em>not</em> a licensed ASHRAE/CIBSE station table —
@@ -49,12 +49,12 @@
 <div class="section-label" style="margin-top:28px;">Meanwhile in this app</div>
 <p class="page-sub" style="max-width:640px;margin-bottom:16px;">
   Use <a href="{{ url_for('psychro.single_point') }}">Psychrometrics — Single Point</a>
-  (or Mixed Air / Cooling Coil / AHU Design on Pro) and type the outdoor dry-bulb and
+  (or Mixed Air / Cooling Coil / AHU Design) and type the outdoor dry-bulb and
   wet-bulb (or RH) from your ASHRAE or CIBSE table.
 </p>
 <p>
   <a class="btn-accent" href="{{ url_for('psychro.single_point') }}">Open Single Point</a>
-  <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">View Pro pricing</a>
+  <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">View pricing</a>
 </p>
 
 {% endblock %}

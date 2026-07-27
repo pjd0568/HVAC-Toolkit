@@ -99,7 +99,7 @@ def register_post():
     db.session.add(user)
     db.session.commit()
     login_user(user)
-    flash("Account created. Your 14-day Pro trial has started.", "success")
+    flash("Account created. Your 14-day free trial has started.", "success")
     return redirect(url_for("main.dashboard"))
 
 

@@ -1,14 +1,12 @@
-"""Projects — placeholder for the planned Pro feature.
+"""Projects — Coming Soon placeholder.
 
 Renders a static preview page: dummy projects, each with dummy saved calculations.
 No persistence yet. When the feature is built, subscribers will name a project and
-commit calculation results to it (see REVIEW-AND-PLAN.md). Kept as its own blueprint so
-wiring the real feature later is a self-contained change.
+commit calculation results to it. Kept as its own blueprint so wiring the real
+feature later is a self-contained change.
 """
 
 from flask import Blueprint, render_template
-
-from app.access_gate import require_module
 
 bp = Blueprint("projects", __name__)
 
@@ -42,6 +40,5 @@ _DEMO_PROJECTS = [
 
 
 @bp.get("/")
-@require_module("projects")
 def index():
     return render_template("projects.html", active="projects", projects=_DEMO_PROJECTS)

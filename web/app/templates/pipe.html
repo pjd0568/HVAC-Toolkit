@@ -209,7 +209,7 @@
 
 {% if access.can('pipe.system') %}
 <div class="panel pipe-system-panel tile-water-border" id="sys-panel">
-  <div class="panel-head">Pipe System <span class="pro-chip">Pro</span></div>
+  <div class="panel-head">Pipe System</div>
   <div class="panel-body">
 
     {% set head = system.head %}
@@ -471,15 +471,6 @@
       {% endif %}
     </div>
   </div>
-</div>
-{% else %}
-<div class="access-lock-card">
-  <h3>Pipe System <span class="pro-chip">Pro</span></h3>
-  <p>Circuit schedule, fittings, static lift and required pump head are Pro
-    features. Your free access covers the DN / flow sizer above.
-    {% if access.tier == 'trial' %}Trial is active — if you still see this, refresh the page.{% endif %}
-    {% if access.tier == 'free' %}Subscribe to Pro after your trial to unlock the full system builder.{% endif %}
-  </p>
 </div>
 {% endif %}
 

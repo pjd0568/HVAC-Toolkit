@@ -1,30 +1,24 @@
-{# Shared Free→Pro upgrade panel. Expects module_label, entitlement, trial_expired. #}
+{# Shared trial-ended / subscribe panel. Expects module_label, entitlement,
+   trial_expired, price_monthly. #}
 <div class="panel tile-util-border access-gate-panel">
-  <div class="panel-head">Pro feature</div>
+  <div class="panel-head">Subscription required</div>
   <div class="panel-body">
     <p class="access-gate-lead">
-      <strong>{{ module_label }}</strong> is part of the Pro suite.
+      <strong>{{ module_label }}</strong> is part of the full toolkit suite.
     </p>
     {% if trial_expired %}
-    <p>Your 14-day full-suite trial has ended. Subscribe to Pro to keep using this
-      tool, or continue with the free calculators (Single Point, Duct Sizing core,
-      Pipe Sizing core, Unit Converter).</p>
+    <p>Your 14-day free trial has ended. Subscribe for
+      <strong>£{{ price_monthly }}/month</strong> to keep full access to every
+      calculator.</p>
     {% elif entitlement.tier == 'free' %}
-    <p>Start a design on the free tools, or unlock the full suite with Pro
-      (14-day trial included for new users).</p>
+    <p>Create an account to start a 14-day free trial of the full suite, then
+      continue with a subscription at <strong>£{{ price_monthly }}/month</strong>.</p>
     {% else %}
     <p>Something went wrong resolving access. Try refreshing the page.</p>
     {% endif %}
     <div class="access-gate-actions">
-      <a class="btn-accent" href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
-      <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">View Pro pricing</a>
+      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">View pricing</a>
+      <a class="btn-ghost" href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
     </div>
-    <dl class="access-gate-free-list">
-      <dt>Free forever</dt>
-      <dd>Psychrometrics — Single Point · Duct Sizing (core) · Pipe Sizing (core) · Unit Converter</dd>
-      <dt>Pro</dt>
-      <dd>Mixed Air, Cooling Coil, AHU Design, Weather (coming soon), Projects,
-        Duct Index Leg, Pipe System (pressure drop + lift), and more.</dd>
-    </dl>
   </div>
 </div>

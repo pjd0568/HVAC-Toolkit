@@ -1,47 +1,28 @@
 {% extends "marketing/base.html" %}
 {% block title %}Pricing — {{ brand_name }} HVAC calculators{% endblock %}
-{% block meta_description %}{{ brand_name }} pricing: free HVAC calculators plus Pro at £9.50/month for psychrometrics, duct and pipe systems, weather, and projects.{% endblock %}
+{% block meta_description %}{{ brand_name }} pricing: 14-day free trial, then £9.50/month for the full HVAC calculator suite — psychrometrics, duct and pipe systems, and more.{% endblock %}
 {% block content %}
 <section class="pricing-hero">
   <h1>Pricing</h1>
   <p class="coming-lead">
-    Start with free HVAC calculators. Unlock the full suite with Pro — checkout will
-    connect here when Stripe is wired up.
+    Every new account gets a 14-day free trial of the full suite. After that,
+    subscribe for £9.50/month — checkout will connect here when Stripe is wired up.
   </p>
 </section>
 
-<section class="pricing-grid">
-  <article class="pricing-card">
-    <h2>Free</h2>
-    <p class="pricing-amount">£0</p>
-    <p class="pricing-period">forever</p>
-    <ul>
-      <li>Psychrometrics — Single Point</li>
-      <li>Duct Sizing (core)</li>
-      <li>Pipe Sizing (core)</li>
-      <li>Unit Converter</li>
-      <li>Design Guides &amp; Help</li>
-    </ul>
-    {% if current_user.is_authenticated %}
-      <a class="btn-ghost" href="{{ url_for('main.dashboard') }}">Open app</a>
-    {% elif registration_open %}
-      <a class="btn-ghost" href="{{ url_for('auth.register') }}">Create account</a>
-    {% else %}
-      <a class="btn-ghost" href="{{ url_for('auth.login') }}">Private access</a>
-    {% endif %}
-  </article>
-
-  <article class="pricing-card pricing-card-pro">
-    <h2>Pro</h2>
+<section class="pricing-grid pricing-grid-single">
+  <article class="pricing-card pricing-card-featured">
+    <h2>Full suite</h2>
     <p class="pricing-amount">£9.50</p>
     <p class="pricing-period">per month</p>
+    <p class="pricing-trial">14-day free trial on signup</p>
     <ul>
-      <li>Everything in Free</li>
-      <li>Mixed Air, Cooling Coil, AHU Design</li>
-      <li>Weather &amp; design conditions (ASHRAE lookup — coming soon)</li>
-      <li>Projects</li>
-      <li>Duct Index Leg &amp; Pipe System</li>
-      <li>14-day full-suite trial on signup</li>
+      <li>Psychrometrics — Single Point, Mixed Air, Cooling Coil, AHU Design</li>
+      <li>Duct Sizing &amp; Index Leg</li>
+      <li>Pipe Sizing &amp; Pipe System</li>
+      <li>Unit Converter, Design Guides &amp; PDF reports</li>
+      <li>Weather &amp; design conditions — coming soon</li>
+      <li>Projects — coming soon</li>
     </ul>
     <button type="button" class="btn-accent" disabled title="Stripe Checkout coming soon">
       Checkout coming soon
@@ -49,6 +30,10 @@
     {% if current_user.is_authenticated %}
     <p class="pricing-note">
       Signed in as {{ current_user.email }}. Billing will attach to this account.
+    </p>
+    {% elif registration_open %}
+    <p class="pricing-note">
+      <a href="{{ url_for('auth.register') }}">Create an account</a> to start your free trial.
     </p>
     {% endif %}
   </article>

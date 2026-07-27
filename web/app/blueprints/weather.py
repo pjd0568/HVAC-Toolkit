@@ -2,7 +2,7 @@
 
 Live Open-Meteo / ERA5 lookup is disabled pending a commercial data licence
 (Open-Meteo Professional and/or ASHRAE Climatic Design Data). This blueprint
-serves a Pro-feature placeholder and keeps the Memory Slot clear endpoint used
+serves a Coming Soon placeholder and keeps the Memory Slot clear endpoint used
 by the global slot bar. The previous client and templates remain in the tree
 for when the feature is re-enabled.
 """
