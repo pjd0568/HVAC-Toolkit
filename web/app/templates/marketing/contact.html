@@ -11,7 +11,7 @@
 </section>
 
 <section class="contact-layout">
-  <form method="post" action="{{ url_for('pages.contact') }}" class="contact-form" novalidate>
+  <form method="post" action="{{ url_for('pages.contact') }}" class="contact-form" id="contact-form" novalidate>
     {% if errors %}
     <div class="flash-stack" style="margin:0 0 12px;">
       {% for err in errors %}
@@ -32,8 +32,6 @@
     </label>
     <label>
       Subject
-      {# Placeholder is not disabled — a disabled selected option can submit blank
-           in some browsers and leave a sticky “choose a subject” error. #}
       <select name="topic" required>
         <option value="" {% if not form.topic %}selected{% endif %}>Select a topic…</option>
         {% for key, prefix, label in subjects %}
@@ -48,7 +46,10 @@
       <textarea name="message" required rows="8" minlength="5" maxlength="8000"
                 placeholder="Include enough detail for us to help — steps to reproduce for bugs, or the tool and inputs involved.">{{ form.message or '' }}</textarea>
     </label>
-    <button type="submit" class="btn-accent">Send message</button>
+    <button type="submit" class="btn-accent" id="contact-submit">Send message</button>
+    <p class="muted" id="contact-sending" hidden style="margin:8px 0 0;font-size:13px;">
+      Sending… this can take a few seconds.
+    </p>
   </form>
 
   <aside class="contact-aside">
@@ -68,4 +69,18 @@
     </p>
   </aside>
 </section>
+
+<script>
+(function () {
+  var form = document.getElementById("contact-form");
+  var btn = document.getElementById("contact-submit");
+  var hint = document.getElementById("contact-sending");
+  if (!form || !btn) return;
+  form.addEventListener("submit", function () {
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    if (hint) hint.hidden = false;
+  });
+})();
+</script>
 {% endblock %}

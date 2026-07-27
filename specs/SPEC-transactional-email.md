@@ -21,12 +21,22 @@ Contact-form messages already use the same SMTP helper.
 | Variable | Example |
 |----------|---------|
 | `MAIL_SERVER` | `smtp.gmail.com` |
-| `MAIL_PORT` | `587` |
-| `MAIL_USE_TLS` | `true` |
+| `MAIL_PORT` | `587` (or `465` if 587 is blocked) |
+| `MAIL_USE_TLS` | `true` (for 587) |
+| `MAIL_USE_SSL` | `true` when using port `465` |
 | `MAIL_USERNAME` | `info@hvac-calcs.app` |
 | `MAIL_PASSWORD` | Google **App Password** (not the normal login password) |
 | `MAIL_DEFAULT_SENDER` | `info@hvac-calcs.app` |
 | `CONTACT_EMAIL` | `info@hvac-calcs.app` |
+
+If contact form sits on “Sending…” then fails: check Railway logs for
+`SMTP auth failed` or `SMTP timed out`. Timeout on 587 → switch to:
+
+```text
+MAIL_PORT=465
+MAIL_USE_SSL=true
+MAIL_USE_TLS=false
+```
 
 ### Google Workspace setup
 

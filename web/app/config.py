@@ -115,6 +115,12 @@ class Config:
         "yes",
         "on",
     )
+    MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "") or CONTACT_EMAIL
