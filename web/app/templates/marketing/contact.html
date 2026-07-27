@@ -12,6 +12,14 @@
 
 <section class="contact-layout">
   <form method="post" action="{{ url_for('pages.contact') }}" class="contact-form" novalidate>
+    {% if errors %}
+    <div class="flash-stack" style="margin:0 0 12px;">
+      {% for err in errors %}
+      <div class="flash flash-error">{{ err }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     <label>
       Name
       <input type="text" name="name" required maxlength="120" autocomplete="name"
@@ -24,8 +32,10 @@
     </label>
     <label>
       Subject
+      {# Placeholder is not disabled — a disabled selected option can submit blank
+           in some browsers and leave a sticky “choose a subject” error. #}
       <select name="topic" required>
-        <option value="" disabled {% if not form.topic %}selected{% endif %}>Select a topic…</option>
+        <option value="" {% if not form.topic %}selected{% endif %}>Select a topic…</option>
         {% for key, prefix, label in subjects %}
         <option value="{{ key }}" {% if form.topic == key %}selected{% endif %}>
           {{ label }} ({{ prefix }})

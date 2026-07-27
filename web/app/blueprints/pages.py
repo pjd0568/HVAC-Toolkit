@@ -60,6 +60,7 @@ def contact():
             subjects=subjects,
             contact_email=current_app.config["CONTACT_EMAIL"],
             form={},
+            errors=[],
         )
 
     name = (request.form.get("name") or "").strip()
@@ -75,20 +76,19 @@ def contact():
         errors.append("Please enter a valid email address.")
     topic_map = _contact_map()
     if topic not in topic_map:
-        errors.append("Please choose a subject.")
+        errors.append("Please choose a subject from the list.")
     if len(message) < 5:
         errors.append("Please enter a longer message (at least 5 characters).")
     if len(message) > 8000:
         errors.append("Message is too long.")
 
     if errors:
-        for err in errors:
-            flash(err, "error")
         return render_template(
             "marketing/contact.html",
             subjects=subjects,
             contact_email=current_app.config["CONTACT_EMAIL"],
             form=form,
+            errors=errors,
         ), 400
 
     prefix, label = topic_map[topic]
@@ -111,16 +111,15 @@ def contact():
                 "success",
             )
             return redirect(url_for("pages.contact"))
-        flash(
-            "We couldn’t send your message just now. Please email us directly "
-            f"at {to_addr} (use subject starting with {prefix}).",
-            "error",
-        )
         return render_template(
             "marketing/contact.html",
             subjects=subjects,
             contact_email=to_addr,
             form=form,
+            errors=[
+                f"We couldn’t send your message just now. Please email us directly "
+                f"at {to_addr} (use subject starting with {prefix})."
+            ],
         ), 503
 
     # No SMTP yet: keep the form usable by handing off to the user’s mail client.
