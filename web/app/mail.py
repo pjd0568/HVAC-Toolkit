@@ -1,4 +1,4 @@
-"""Minimal outbound email via SMTP (optional — contact form)."""
+"""Minimal outbound email via SMTP (contact form + lifecycle mail)."""
 
 from __future__ import annotations
 
@@ -12,8 +12,14 @@ log = logging.getLogger(__name__)
 
 
 def mail_configured() -> bool:
+    """True when SMTP host, sender, username and password are all set."""
     cfg = current_app.config
-    return bool(cfg.get("MAIL_SERVER") and cfg.get("MAIL_DEFAULT_SENDER"))
+    return bool(
+        cfg.get("MAIL_SERVER")
+        and cfg.get("MAIL_DEFAULT_SENDER")
+        and cfg.get("MAIL_USERNAME")
+        and cfg.get("MAIL_PASSWORD")
+    )
 
 
 def send_email(
@@ -37,20 +43,31 @@ def send_email(
         msg["Reply-To"] = reply_to
     msg.set_content(body)
 
-    host = cfg["MAIL_SERVER"]
+    host = (cfg["MAIL_SERVER"] or "").strip()
     port = int(cfg.get("MAIL_PORT") or 587)
     use_tls = bool(cfg.get("MAIL_USE_TLS", True))
-    username = cfg.get("MAIL_USERNAME") or ""
-    password = cfg.get("MAIL_PASSWORD") or ""
+    username = (cfg.get("MAIL_USERNAME") or "").strip()
+    # App passwords are often copied with spaces; Gmail accepts either form.
+    password = (cfg.get("MAIL_PASSWORD") or "").replace(" ", "").strip()
 
     try:
         with smtplib.SMTP(host, port, timeout=20) as smtp:
+            smtp.ehlo()
             if use_tls:
                 smtp.starttls()
-            if username:
-                smtp.login(username, password)
+                smtp.ehlo()
+            smtp.login(username, password)
             smtp.send_message(msg)
+        log.info("Sent email to %s subject=%r", to, subject)
         return True
+    except smtplib.SMTPAuthenticationError:
+        log.exception(
+            "SMTP auth failed for %s@%s — check MAIL_USERNAME / App Password "
+            "(no quotes in Railway; 2SV must be on).",
+            username,
+            host,
+        )
+        return False
     except Exception:
         log.exception("Failed to send email: %s", subject)
         return False

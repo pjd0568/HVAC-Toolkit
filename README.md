@@ -72,7 +72,9 @@ Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.
 - 14-day free trial starts on register; full suite then £9.50/month
   (`specs/SPEC-access.md`). Weather and Projects are Coming Soon.
 - Stripe Managed Payments Checkout + webhooks (`specs/SPEC-billing-stripe.md`).
-  Set Test mode keys in `.env` from the Stripe Dashboard.
+  Set keys in Railway from the Stripe Dashboard.
+- Transactional SMTP from `info@hvac-calcs.app` (`specs/SPEC-transactional-email.md`)
+  — trial welcome, subscribe thanks, cancellation.
 
 ## Provenance
 

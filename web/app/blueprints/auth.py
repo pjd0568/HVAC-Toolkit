@@ -99,6 +99,11 @@ def register_post():
     db.session.add(user)
     db.session.commit()
     login_user(user)
+
+    from app.lifecycle_mail import send_trial_started
+
+    send_trial_started(user)
+
     flash("Account created. Your 14-day free trial has started.", "success")
     return redirect(url_for("main.dashboard"))
 

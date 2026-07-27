@@ -76,8 +76,8 @@ def contact():
     topic_map = _contact_map()
     if topic not in topic_map:
         errors.append("Please choose a subject.")
-    if len(message) < 10:
-        errors.append("Please enter a message (at least a short sentence).")
+    if len(message) < 5:
+        errors.append("Please enter a longer message (at least 5 characters).")
     if len(message) > 8000:
         errors.append("Message is too long.")
 

@@ -81,8 +81,8 @@ def create_checkout_session_route():
     except stripe.StripeError:
         logger.exception("Stripe Checkout Session create failed")
         flash(
-            "Could not start checkout. Check Stripe Test mode keys, Managed "
-            "Payments terms acceptance, and that your product tax code is eligible.",
+            "Could not start checkout. Check Stripe keys, Managed Payments "
+            "terms acceptance, and that your product tax code is eligible.",
             "error",
         )
         return redirect(url_for("billing.subscribe"))

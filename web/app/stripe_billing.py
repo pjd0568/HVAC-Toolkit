@@ -224,6 +224,8 @@ def _apply_subscription_to_user(user: User, subscription: Any) -> None:
 
 def handle_checkout_session_completed(session: Any) -> None:
     """Fulfill ``checkout.session.completed`` — unlock suite for the user."""
+    from app.lifecycle_mail import notify_subscription_status_change
+
     user = _find_user_for_session(session)
     if user is None:
         logger.error(
@@ -231,6 +233,8 @@ def handle_checkout_session_completed(session: Any) -> None:
             _field(session, "id"),
         )
         return
+
+    previous_status = user.subscription_status or ""
 
     customer_id = _id_of(_field(session, "customer"))
     if customer_id:
@@ -251,6 +255,7 @@ def handle_checkout_session_completed(session: Any) -> None:
         user.subscription_status = "active"
 
     db.session.commit()
+    notify_subscription_status_change(user, previous_status)
     logger.info(
         "Unlocked suite for user %s (status=%s, sub=%s)",
         user.id,
@@ -261,6 +266,8 @@ def handle_checkout_session_completed(session: Any) -> None:
 
 def handle_subscription_event(subscription: Any) -> None:
     """Sync ``customer.subscription.*`` into the matching User row."""
+    from app.lifecycle_mail import notify_subscription_status_change
+
     sub_id = _field(subscription, "id")
     customer_id = _id_of(_field(subscription, "customer"))
 
@@ -278,8 +285,10 @@ def handle_subscription_event(subscription: Any) -> None:
         logger.warning("subscription event: no user for sub %s", sub_id)
         return
 
+    previous_status = user.subscription_status or ""
     _apply_subscription_to_user(user, subscription)
     db.session.commit()
+    notify_subscription_status_change(user, previous_status)
 
 
 def construct_webhook_event(payload: bytes, sig_header: str | None) -> stripe.Event:

@@ -35,7 +35,7 @@
     </label>
     <label>
       Message
-      <textarea name="message" required rows="8" maxlength="8000"
+      <textarea name="message" required rows="8" minlength="5" maxlength="8000"
                 placeholder="Include enough detail for us to help — steps to reproduce for bugs, or the tool and inputs involved.">{{ form.message or '' }}</textarea>
     </label>
     <button type="submit" class="btn-accent">Send message</button>

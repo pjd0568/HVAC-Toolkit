@@ -1,6 +1,7 @@
 from flask import Flask, redirect, request, url_for
 from flask_login import current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
+import click
 
 from app.config import Config
 from app.extensions import db, login_manager, migrate
@@ -219,5 +220,32 @@ def create_app(config_class: type = Config) -> Flask:
         except StripeNotConfiguredError as exc:
             print(f"Error: {exc}")
             raise SystemExit(1) from exc
+
+    @app.cli.command("send-test-email")
+    @click.argument("to_address")
+    def send_test_email_command(to_address: str):
+        """Send a one-off test message via configured SMTP (MAIL_* vars)."""
+        from app.mail import mail_configured, send_email
+
+        if not mail_configured():
+            click.echo(
+                "Mail not configured. Set MAIL_SERVER, MAIL_USERNAME, "
+                "MAIL_PASSWORD, MAIL_DEFAULT_SENDER (see .env.example).",
+                err=True,
+            )
+            raise SystemExit(1)
+        brand = app.config.get("BRAND_NAME", "HVAC Toolkit")
+        ok = send_email(
+            to=to_address,
+            subject=f"{brand} — test email",
+            body=(
+                f"This is a test message from {brand}.\n\n"
+                "If you received it, SMTP for info@ is working.\n"
+            ),
+        )
+        if not ok:
+            click.echo("Send failed — check logs / app password.", err=True)
+            raise SystemExit(1)
+        click.echo(f"Sent test email to {to_address}")
 
     return app
