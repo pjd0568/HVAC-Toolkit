@@ -2,6 +2,18 @@ import os
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+# Load repo-root and web/ `.env` for local dev (no-op if python-dotenv missing
+# or files absent). Production (Railway) injects env vars directly.
+try:
+    from dotenv import load_dotenv
+
+    _web_dir = Path(__file__).resolve().parent.parent  # web/
+    _repo_root = _web_dir.parent
+    load_dotenv(_repo_root / ".env")
+    load_dotenv(_web_dir / ".env", override=True)
+except ImportError:
+    pass
+
 # Packaged V2 mark — used when REPORT_LOGO_PATH is unset.
 _DEFAULT_REPORT_LOGO = (
     Path(__file__).resolve().parent / "static" / "images" / "brand" / "logo-pdf.png"

@@ -28,8 +28,11 @@ Payments**, e.g. `txcd_10103100`) or:
 
 ```bash
 cd web
+source .venv/bin/activate   # required — plain `flask` is often not on PATH
 flask --app wsgi ensure-stripe-product
 # then set STRIPE_PRICE_ID=price_…
+# or without activate:
+#   .venv/bin/flask --app wsgi ensure-stripe-product
 ```
 
 ## Flow

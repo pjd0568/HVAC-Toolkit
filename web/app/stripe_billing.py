@@ -54,6 +54,27 @@ class StripeNotConfiguredError(RuntimeError):
     """Raised when Stripe secret key or price id is missing."""
 
 
+def _field(obj: Any, key: str, default: Any = None) -> Any:
+    """Read a field from a StripeObject or dict (StripeObject has no ``.get``)."""
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    try:
+        return obj[key]
+    except (KeyError, TypeError):
+        return default
+
+
+def _id_of(value: Any) -> str | None:
+    """Expand ``cus_…`` / ``sub_…`` whether Stripe returned an id or an object."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return _field(value, "id")
+
+
 def stripe_configured() -> bool:
     return bool(current_app.config.get("STRIPE_SECRET_KEY"))
 
@@ -101,12 +122,11 @@ def create_subscription_product() -> dict[str, str]:
         },
         options=_request_options(),
     )
-    price_id = product.get("default_price")
-    if isinstance(price_id, dict):
-        price_id = price_id.get("id")
-    if not price_id:
+    price_id = _id_of(_field(product, "default_price"))
+    product_id = _field(product, "id")
+    if not price_id or not product_id:
         raise RuntimeError("Stripe product created without default_price")
-    return {"product_id": product["id"], "price_id": str(price_id)}
+    return {"product_id": str(product_id), "price_id": str(price_id)}
 
 
 def resolve_price_id() -> str:
@@ -165,63 +185,58 @@ def create_checkout_session(*, user: User, success_url: str, cancel_url: str) ->
         params["managed_payments"] = {"enabled": True}
 
     session = client.v1.checkout.sessions.create(params, options=_request_options())
-    url = session.get("url")
+    url = _field(session, "url")
     if not url:
         raise RuntimeError("Stripe Checkout Session missing url")
     return str(url)
 
 
-def _find_user_for_session(session: dict[str, Any]) -> User | None:
-    ref = session.get("client_reference_id")
+def _find_user_for_session(session: Any) -> User | None:
+    ref = _field(session, "client_reference_id")
     if ref and str(ref).isdigit():
         user = db.session.get(User, int(ref))
         if user is not None:
             return user
 
-    meta = session.get("metadata") or {}
-    uid = meta.get("user_id")
+    meta = _field(session, "metadata") or {}
+    uid = meta.get("user_id") if isinstance(meta, dict) else _field(meta, "user_id")
     if uid and str(uid).isdigit():
         user = db.session.get(User, int(uid))
         if user is not None:
             return user
 
-    customer_id = session.get("customer")
-    if isinstance(customer_id, dict):
-        customer_id = customer_id.get("id")
+    customer_id = _id_of(_field(session, "customer"))
     if customer_id:
         return User.query.filter_by(stripe_customer_id=customer_id).first()
     return None
 
 
-def _apply_subscription_to_user(user: User, subscription: dict[str, Any]) -> None:
-    status = (subscription.get("status") or "").lower()
+def _apply_subscription_to_user(user: User, subscription: Any) -> None:
+    status = (_field(subscription, "status") or "").lower()
     user.subscription_status = _STATUS_MAP.get(status, "canceled")
-    sub_id = subscription.get("id")
+    sub_id = _field(subscription, "id")
     if sub_id:
         user.stripe_subscription_id = sub_id
-    customer_id = subscription.get("customer")
-    if isinstance(customer_id, dict):
-        customer_id = customer_id.get("id")
+    customer_id = _id_of(_field(subscription, "customer"))
     if customer_id and not user.stripe_customer_id:
         user.stripe_customer_id = customer_id
 
 
-def handle_checkout_session_completed(session: dict[str, Any]) -> None:
+def handle_checkout_session_completed(session: Any) -> None:
     """Fulfill ``checkout.session.completed`` — unlock suite for the user."""
     user = _find_user_for_session(session)
     if user is None:
-        logger.error("checkout.session.completed: no user for session %s", session.get("id"))
+        logger.error(
+            "checkout.session.completed: no user for session %s",
+            _field(session, "id"),
+        )
         return
 
-    customer_id = session.get("customer")
-    if isinstance(customer_id, dict):
-        customer_id = customer_id.get("id")
+    customer_id = _id_of(_field(session, "customer"))
     if customer_id:
         user.stripe_customer_id = customer_id
 
-    subscription_id = session.get("subscription")
-    if isinstance(subscription_id, dict):
-        subscription_id = subscription_id.get("id")
+    subscription_id = _id_of(_field(session, "subscription"))
 
     if subscription_id:
         client = _client()
@@ -244,21 +259,20 @@ def handle_checkout_session_completed(session: dict[str, Any]) -> None:
     )
 
 
-def handle_subscription_event(subscription: dict[str, Any]) -> None:
+def handle_subscription_event(subscription: Any) -> None:
     """Sync ``customer.subscription.*`` into the matching User row."""
-    sub_id = subscription.get("id")
-    customer_id = subscription.get("customer")
-    if isinstance(customer_id, dict):
-        customer_id = customer_id.get("id")
+    sub_id = _field(subscription, "id")
+    customer_id = _id_of(_field(subscription, "customer"))
 
     user = None
     if sub_id:
         user = User.query.filter_by(stripe_subscription_id=sub_id).first()
     if user is None and customer_id:
         user = User.query.filter_by(stripe_customer_id=customer_id).first()
-    meta = subscription.get("metadata") or {}
-    if user is None and meta.get("user_id") and str(meta["user_id"]).isdigit():
-        user = db.session.get(User, int(meta["user_id"]))
+    meta = _field(subscription, "metadata") or {}
+    uid = meta.get("user_id") if isinstance(meta, dict) else _field(meta, "user_id")
+    if user is None and uid and str(uid).isdigit():
+        user = db.session.get(User, int(uid))
 
     if user is None:
         logger.warning("subscription event: no user for sub %s", sub_id)
