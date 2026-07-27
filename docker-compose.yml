@@ -23,6 +23,7 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_DEFAULT_SENDER: ${MAIL_DEFAULT_SENDER:-}
       CONTACT_EMAIL: ${CONTACT_EMAIL:-info@hvac-calcs.app}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
     depends_on:
       - db
 

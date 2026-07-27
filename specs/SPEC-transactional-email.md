@@ -1,61 +1,50 @@
-# Functional Spec — Transactional email (SMTP)
+# Functional Spec — Transactional email
 
 **Module:** `web/app/mail.py`, `web/app/lifecycle_mail.py`
-**Status:** v0.1
-**From address:** `info@hvac-calcs.app` (Google Workspace)
+**Status:** v0.2 — Resend preferred on Railway
+**From address:** `info@hvac-calcs.app`
 
-## Purpose
+## Why not Gmail SMTP on Railway?
 
-Send operational mail from the product mailbox:
+Outbound SMTP (ports 587/465) from cloud hosts to `smtp.gmail.com` often
+**times out or is refused**, even with a valid Workspace App Password. Prefer
+an HTTP email API.
+
+## Preferred: Resend
+
+1. Create an account at [https://resend.com](https://resend.com)
+2. **Domains → Add** `hvac-calcs.app` and add the DNS records Resend shows
+   (SPF / DKIM — usually at Cloudflare)
+3. Wait until the domain shows **Verified**
+4. **API Keys → Create** → copy `re_…`
+5. Railway variables:
+
+| Variable | Value |
+|----------|--------|
+| `RESEND_API_KEY` | `re_…` |
+| `MAIL_DEFAULT_SENDER` | `info@hvac-calcs.app` |
+| `CONTACT_EMAIL` | `info@hvac-calcs.app` |
+
+You can leave `MAIL_SERVER` / `MAIL_PASSWORD` unset when Resend is configured.
+`send_email()` uses Resend whenever `RESEND_API_KEY` is present.
+
+### Quick test before domain verify
+
+Resend allows sending from `onboarding@resend.dev` **only to your Resend
+account email**. For production mail to customers, the domain must be verified
+and `MAIL_DEFAULT_SENDER` must be on that domain (e.g. `info@hvac-calcs.app`).
+
+## Fallback: Google Workspace SMTP
+
+Only if you must. Same App Password flow as before (`MAIL_*` vars). Unreliable
+from Railway.
+
+## Lifecycle emails
 
 | Trigger | Email |
 |---------|--------|
 | Account register | Trial welcome |
-| Subscription becomes `active` | Thanks for subscribing |
-| Subscription leaves `active` → `canceled` | Soft cancellation / come-back |
+| Subscription → `active` | Thanks for subscribing |
+| Subscription `active` → `canceled` | Soft cancellation |
 
-Contact-form messages already use the same SMTP helper.
-
-## Railway variables
-
-| Variable | Example |
-|----------|---------|
-| `MAIL_SERVER` | `smtp.gmail.com` |
-| `MAIL_PORT` | `587` (or `465` if 587 is blocked) |
-| `MAIL_USE_TLS` | `true` (for 587) |
-| `MAIL_USE_SSL` | `true` when using port `465` |
-| `MAIL_USERNAME` | `info@hvac-calcs.app` |
-| `MAIL_PASSWORD` | Google **App Password** (not the normal login password) |
-| `MAIL_DEFAULT_SENDER` | `info@hvac-calcs.app` |
-| `CONTACT_EMAIL` | `info@hvac-calcs.app` |
-
-If contact form sits on “Sending…” then fails: check Railway logs for
-`SMTP auth failed` or `SMTP timed out`. Timeout on 587 → switch to:
-
-```text
-MAIL_PORT=465
-MAIL_USE_SSL=true
-MAIL_USE_TLS=false
-```
-
-### Google Workspace setup
-
-1. Admin / account: enable 2-Step Verification for `info@`.
-2. Google Account → Security → App passwords → create one for “Mail”.
-3. Put that 16-character password in `MAIL_PASSWORD` on Railway.
-4. Redeploy.
-
-### Local test
-
-```bash
-cd web
-source .venv/bin/activate
-flask --app wsgi send-test-email you@example.com
-```
-
-## Behaviour notes
-
-- If SMTP is unset, sends are skipped (logged); register / webhooks still succeed.
-- Subscribe / cancel mails fire only on **status transitions** so Stripe webhook
-  retries do not spam the user.
-- Plain text only (no HTML templates yet).
+If mail is unset, sends are skipped (logged); register / webhooks still succeed.

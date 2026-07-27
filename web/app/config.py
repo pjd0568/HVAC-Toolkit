@@ -106,7 +106,10 @@ class Config:
     )
     CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "info@hvac-calcs.app")
 
-    # Optional SMTP for the contact form. If unset, the form falls back to mailto.
+    # Preferred on Railway: Resend HTTP API (Gmail SMTP is often blocked from cloud IPs).
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+
+    # Optional SMTP fallback (Workspace App Password). Prefer Resend in production.
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", "587") or "587")
     MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() in (

@@ -73,8 +73,10 @@ Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.
   (`specs/SPEC-access.md`). Weather and Projects are Coming Soon.
 - Stripe Managed Payments Checkout + webhooks (`specs/SPEC-billing-stripe.md`).
   Set keys in Railway from the Stripe Dashboard.
-- Transactional SMTP from `info@hvac-calcs.app` (`specs/SPEC-transactional-email.md`)
-  — trial welcome, subscribe thanks, cancellation.
+- Transactional email via **Resend** (preferred on Railway) or SMTP fallback
+  (`specs/SPEC-transactional-email.md`) — trial welcome, subscribe thanks,
+  cancellation. Gmail SMTP from Railway is unreliable.
+
 
 ## Provenance
 
