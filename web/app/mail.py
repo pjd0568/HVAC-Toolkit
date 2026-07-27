@@ -2,11 +2,15 @@
 
 Gmail/Workspace SMTP from Railway often fails (datacentre IP blocks / timeouts)
 even with a valid App Password. Prefer ``RESEND_API_KEY`` + a verified domain.
+
+Reads ``RESEND_API_KEY`` from the process environment at send time (not only
+from the Flask config snapshot) so Railway variable updates are reliable.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import smtplib
 from email.message import EmailMessage
 
@@ -19,17 +23,36 @@ SMTP_TIMEOUT_SEC = 10
 RESEND_TIMEOUT_SEC = 15
 
 
-def mail_configured() -> bool:
-    """True when Resend or full SMTP credentials are available."""
+def _resend_api_key() -> str:
+    """Live env first, then Flask config (local / tests)."""
+    return (
+        os.environ.get("RESEND_API_KEY")
+        or current_app.config.get("RESEND_API_KEY")
+        or ""
+    ).strip()
+
+
+def mail_backend() -> str:
+    """Return ``resend``, ``smtp``, or ``none`` (no secrets)."""
+    if _resend_api_key():
+        cfg = current_app.config
+        if cfg.get("MAIL_DEFAULT_SENDER") or cfg.get("CONTACT_EMAIL"):
+            return "resend"
+        return "none"
     cfg = current_app.config
-    if cfg.get("RESEND_API_KEY"):
-        return bool(cfg.get("MAIL_DEFAULT_SENDER") or cfg.get("CONTACT_EMAIL"))
-    return bool(
+    if (
         cfg.get("MAIL_SERVER")
         and cfg.get("MAIL_DEFAULT_SENDER")
         and cfg.get("MAIL_USERNAME")
         and cfg.get("MAIL_PASSWORD")
-    )
+    ):
+        return "smtp"
+    return "none"
+
+
+def mail_configured() -> bool:
+    """True when Resend or full SMTP credentials are available."""
+    return mail_backend() != "none"
 
 
 def _from_header() -> str:
@@ -50,11 +73,12 @@ def send_email(
     reply_to: str | None = None,
 ) -> bool:
     """Send a plain-text email. Returns True on success."""
-    if not mail_configured():
+    backend = mail_backend()
+    if backend == "none":
         log.warning("Mail not configured; skipped send: %s", subject)
         return False
 
-    if current_app.config.get("RESEND_API_KEY"):
+    if backend == "resend":
         return _send_via_resend(to=to, subject=subject, body=body, reply_to=reply_to)
     return _send_via_smtp(to=to, subject=subject, body=body, reply_to=reply_to)
 
@@ -66,7 +90,7 @@ def _send_via_resend(
     body: str,
     reply_to: str | None,
 ) -> bool:
-    api_key = (current_app.config.get("RESEND_API_KEY") or "").strip()
+    api_key = _resend_api_key()
     payload: dict = {
         "from": _from_header(),
         "to": [to],
@@ -77,6 +101,7 @@ def _send_via_resend(
         payload["reply_to"] = reply_to
 
     try:
+        log.info("Sending email via Resend to %s subject=%r", to, subject)
         resp = requests.post(
             "https://api.resend.com/emails",
             headers={
@@ -124,6 +149,7 @@ def _send_via_smtp(
     use_ssl = port == 465 or bool(cfg.get("MAIL_USE_SSL"))
 
     try:
+        log.info("Sending email via SMTP to %s via %s:%s", to, host, port)
         if use_ssl:
             with smtplib.SMTP_SSL(host, port, timeout=SMTP_TIMEOUT_SEC) as smtp:
                 smtp.ehlo()

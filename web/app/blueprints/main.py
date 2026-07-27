@@ -31,4 +31,7 @@ def set_units():
 
 @bp.get("/health")
 def health():
-    return {"status": "ok"}
+    from app.mail import mail_backend
+
+    # mail_backend is resend | smtp | none — no secrets, for deploy smoke checks.
+    return {"status": "ok", "mail_backend": mail_backend()}

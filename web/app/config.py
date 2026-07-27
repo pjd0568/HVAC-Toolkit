@@ -2,15 +2,16 @@ import os
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-# Load repo-root and web/ `.env` for local dev (no-op if python-dotenv missing
-# or files absent). Production (Railway) injects env vars directly.
+# Load repo-root and web/ `.env` for local dev only. Never override existing
+# process env (Railway injects vars; override=True would wipe them).
 try:
     from dotenv import load_dotenv
 
-    _web_dir = Path(__file__).resolve().parent.parent  # web/
-    _repo_root = _web_dir.parent
-    load_dotenv(_repo_root / ".env")
-    load_dotenv(_web_dir / ".env", override=True)
+    if not os.environ.get("RAILWAY_ENVIRONMENT"):
+        _web_dir = Path(__file__).resolve().parent.parent  # web/
+        _repo_root = _web_dir.parent
+        load_dotenv(_repo_root / ".env")
+        load_dotenv(_web_dir / ".env")
 except ImportError:
     pass
 
