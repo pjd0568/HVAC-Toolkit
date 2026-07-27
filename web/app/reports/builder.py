@@ -30,10 +30,10 @@ from reportlab.platypus import (
 
 # Palette matched to app/static/css/app.css :root, so the PDF reads as the same
 # product as the web app.
-_INK = colors.HexColor("#16202E")
-_MUTED = colors.HexColor("#697687")
-_LINE = colors.HexColor("#E1E7F0")
-_BLUE_SOFT = colors.HexColor("#E9F1FA")
+_INK = colors.HexColor("#12151A")
+_MUTED = colors.HexColor("#5A636E")
+_LINE = colors.HexColor("#C5CCD5")
+_BLUE_SOFT = colors.HexColor("#D5E2EC")
 
 _PAGE_MARGIN = 16 * mm
 _CONTENT_WIDTH = A4[0] - 2 * _PAGE_MARGIN

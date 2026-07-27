@@ -32,7 +32,7 @@ _TILE_URL = "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
 def render_location_map_png(lat: float, lon: float, zoom: int = DEFAULT_ZOOM) -> bytes:
     """A small PNG snapshot centred on (lat, lon) with a single marker."""
     m = StaticMap(MAP_WIDTH, MAP_HEIGHT, url_template=_TILE_URL)
-    m.add_marker(CircleMarker((lon, lat), "#2F6FB2", 16))
+    m.add_marker(CircleMarker((lon, lat), "#1A4F7A", 16))
     image = m.render(zoom=zoom)
     buf = io.BytesIO()
     image.save(buf, format="PNG")

@@ -45,42 +45,42 @@
      gridlines regardless of unit system. */
   const tStep = CHART.t_step;
   for (let t = Math.ceil(CHART.t_min / tStep) * tStep; t <= CHART.t_max + 1e-9; t += tStep) {
-    add("line", { x1: x(t), y1: M.top, x2: x(t), y2: M.top + ph, stroke: "#E3E7ED", "stroke-width": 1 });
-    text(t.toFixed(tStep < 1 ? 1 : 0), { x: x(t), y: M.top + ph + 18, "text-anchor": "middle", "font-size": 11, fill: "#64707F" });
+    add("line", { x1: x(t), y1: M.top, x2: x(t), y2: M.top + ph, stroke: "#C5CCD5", "stroke-width": 1 });
+    text(t.toFixed(tStep < 1 ? 1 : 0), { x: x(t), y: M.top + ph + 18, "text-anchor": "middle", "font-size": 11, fill: "#5A636E" });
   }
   const wStep = CHART.w_step;
   for (let w = 0; w <= CHART.w_max + 1e-9; w += wStep) {
-    add("line", { x1: M.left, y1: y(w), x2: M.left + pw, y2: y(w), stroke: "#E3E7ED", "stroke-width": 1 });
-    text(w.toFixed(0), { x: M.left + pw + 8, y: y(w) + 4, "font-size": 11, fill: "#64707F" });
+    add("line", { x1: M.left, y1: y(w), x2: M.left + pw, y2: y(w), stroke: "#C5CCD5", "stroke-width": 1 });
+    text(w.toFixed(0), { x: M.left + pw + 8, y: y(w) + 4, "font-size": 11, fill: "#5A636E" });
   }
-  text(`Dry-bulb temperature (${CHART.t_sym})`, { x: M.left + pw / 2, y: H - 8, "text-anchor": "middle", "font-size": 12, fill: "#1B2531" });
-  text(CHART.w_sym, { x: M.left + pw + 30, y: M.top + 12, "font-size": 11, fill: "#64707F" });
+  text(`Dry-bulb temperature (${CHART.t_sym})`, { x: M.left + pw / 2, y: H - 8, "text-anchor": "middle", "font-size": 12, fill: "#12151A" });
+  text(CHART.w_sym, { x: M.left + pw + 30, y: M.top + 12, "font-size": 11, fill: "#5A636E" });
 
   /* RH curves */
   for (const rh in CHART.rh_curves) {
-    path(CHART.rh_curves[rh], { stroke: "#C3CEDA", "stroke-width": 1, "stroke-dasharray": "4 3" }, plot);
+    path(CHART.rh_curves[rh], { stroke: "#A8B0BA", "stroke-width": 1, "stroke-dasharray": "4 3" }, plot);
     const c = CHART.rh_curves[rh];
     let lp = null;
     for (const p of c) if (p[1] <= CHART.w_max * 0.97) lp = p;
-    if (lp) text(rh + "%", { x: x(lp[0]) - 20, y: y(lp[1]) - 4, "font-size": 10, fill: "#8B99A9" }, el);
+    if (lp) text(rh + "%", { x: x(lp[0]) - 20, y: y(lp[1]) - 4, "font-size": 10, fill: "#6B7380" }, el);
   }
 
   /* saturation curve */
-  path(CHART.sat, { stroke: "#2B5C8A", "stroke-width": 2 }, plot);
+  path(CHART.sat, { stroke: "#1A4F7A", "stroke-width": 2 }, plot);
 
   /* process segments */
   for (const seg of CHART.segments) {
     const a = CHART.points[seg[0]], b = CHART.points[seg[1]];
     add("line", {
       x1: x(a.t), y1: y(a.w), x2: x(b.t), y2: y(b.w),
-      stroke: "#3E77AE", "stroke-width": 2.5, "stroke-linecap": "round",
+      stroke: "#00A99D", "stroke-width": 2.5, "stroke-linecap": "round",
     }, plot);
   }
 
   /* Dashed red guide lines to both axes, one pair per point, each labelled with
      the pre-formatted value from the payload -- mirrors the PDF chart
      (app.reports.chart) so the on-screen and downloaded charts read the same. */
-  const GUIDE = "#D6484A";
+  const GUIDE = "#C94444";
   CHART.points.forEach(p => {
     const px = x(p.t), py = y(p.w), yAxisBottom = y(0);
     add("line", {
@@ -103,9 +103,9 @@
 
   /* state points + labels */
   CHART.points.forEach(p => {
-    add("circle", { cx: x(p.t), cy: y(p.w), r: 5, fill: "#1B2531", stroke: "#fff", "stroke-width": 1.5 });
+    add("circle", { cx: x(p.t), cy: y(p.w), r: 5, fill: "#12151A", stroke: "#fff", "stroke-width": 1.5 });
     text(p.label, {
-      x: x(p.t) + 8, y: y(p.w) - 8, "font-size": 12, "font-weight": 700, fill: "#1B2531",
+      x: x(p.t) + 8, y: y(p.w) - 8, "font-size": 12, "font-weight": 700, fill: "#12151A",
       stroke: "#FFFFFF", "stroke-width": 3, "paint-order": "stroke",
     });
   });

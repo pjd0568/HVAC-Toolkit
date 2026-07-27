@@ -27,13 +27,13 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
 # Match the app's own palette (see app/static/css/app.css :root).
-_INK = "#16202E"
-_MUTED = "#697687"
-_LINE = "#C9D3E0"
-_GRID = "#E1E7F0"
-_POINT = "#2E6FB2"   # --blue
-_PROCESS = "#2AA36B"  # --green
-_GUIDE = "#D6484A"    # --tl-red
+_INK = "#12151A"
+_MUTED = "#5A636E"
+_LINE = "#C5CCD5"
+_GRID = "#D5DAE0"
+_POINT = "#1A4F7A"   # --blue
+_PROCESS = "#00A99D"  # --green
+_GUIDE = "#C94444"    # --tl-red
 
 
 def render_chart(payload: dict, *, width_in: float = 7.2, height_in: float = 4.4,
