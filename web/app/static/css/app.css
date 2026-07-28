@@ -350,6 +350,9 @@ td.num { font-family: Consolas, monospace; text-align: right; }
   min-width: 0;
 }
 .psychro-inputs-stack > .panel { margin: 0; max-width: none; }
+.psychro-layout:has(.psychro-inputs-stack) {
+  align-items: start;
+}
 .psychro-inputs .panel-body { padding: 14px 16px 16px; }
 .psychro-inputs .section-label { margin: 14px 0 8px; }
 .psychro-inputs .section-label:first-child { margin-top: 0; }
