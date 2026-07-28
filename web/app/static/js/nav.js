@@ -1,8 +1,9 @@
-/* Collapsible sidebar nav groups — remembers open/closed in localStorage. */
+/* Collapsible sidebar nav groups — remembers open/closed in localStorage.
+   Default: collapsed. Section with the active page stays open. */
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "hvac-nav-groups";
+  var STORAGE_KEY = "hvac-nav-groups-v2";
   var nav = document.getElementById("sidebar-nav");
   if (!nav) return;
 
@@ -38,7 +39,7 @@
     } else if (Object.prototype.hasOwnProperty.call(state, id)) {
       expanded = !!state[id];
     } else {
-      expanded = true; // default open
+      expanded = false; // default collapsed
     }
     setExpanded(group, expanded);
 

@@ -6,7 +6,7 @@
 <title>{% block title %}{{ brand_name }}{% endblock %}</title>
 <link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-3">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-4">
 {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -31,8 +31,8 @@
       </a>
     </div>
 
-    <div class="nav-group" data-nav-group data-nav-id="site-data">
-      <button type="button" class="nav-group-toggle" aria-expanded="true">
+    <div class="nav-group collapsed" data-nav-group data-nav-id="site-data">
+      <button type="button" class="nav-group-toggle" aria-expanded="false">
         <span class="nav-group-label">Site Data</span>
         <span class="nav-chevron" aria-hidden="true"></span>
       </button>
@@ -44,8 +44,8 @@
       </div>
     </div>
 
-    <div class="nav-group" data-nav-group data-nav-id="psychrometrics">
-      <button type="button" class="nav-group-toggle" aria-expanded="true">
+    <div class="nav-group collapsed" data-nav-group data-nav-id="psychrometrics">
+      <button type="button" class="nav-group-toggle" aria-expanded="false">
         <span class="nav-group-label">Psychrometrics</span>
         <span class="nav-chevron" aria-hidden="true"></span>
       </button>
@@ -57,8 +57,8 @@
       </div>
     </div>
 
-    <div class="nav-group" data-nav-group data-nav-id="air-distribution">
-      <button type="button" class="nav-group-toggle" aria-expanded="true">
+    <div class="nav-group collapsed" data-nav-group data-nav-id="air-distribution">
+      <button type="button" class="nav-group-toggle" aria-expanded="false">
         <span class="nav-group-label">Air Distribution</span>
         <span class="nav-chevron" aria-hidden="true"></span>
       </button>
@@ -67,8 +67,8 @@
       </div>
     </div>
 
-    <div class="nav-group" data-nav-group data-nav-id="hydronics">
-      <button type="button" class="nav-group-toggle" aria-expanded="true">
+    <div class="nav-group collapsed" data-nav-group data-nav-id="hydronics">
+      <button type="button" class="nav-group-toggle" aria-expanded="false">
         <span class="nav-group-label">Hydronics</span>
         <span class="nav-chevron" aria-hidden="true"></span>
       </button>
@@ -77,8 +77,8 @@
       </div>
     </div>
 
-    <div class="nav-group" data-nav-group data-nav-id="utilities">
-      <button type="button" class="nav-group-toggle" aria-expanded="true">
+    <div class="nav-group collapsed" data-nav-group data-nav-id="utilities">
+      <button type="button" class="nav-group-toggle" aria-expanded="false">
         <span class="nav-group-label">Utilities</span>
         <span class="nav-chevron" aria-hidden="true"></span>
       </button>
@@ -89,8 +89,8 @@
       </div>
     </div>
 
-    <div class="nav-group" data-nav-group data-nav-id="reference">
-      <button type="button" class="nav-group-toggle" aria-expanded="true">
+    <div class="nav-group collapsed" data-nav-group data-nav-id="reference">
+      <button type="button" class="nav-group-toggle" aria-expanded="false">
         <span class="nav-group-label">Reference</span>
         <span class="nav-chevron" aria-hidden="true"></span>
       </button>
@@ -196,7 +196,7 @@
   </div>
 </main>
 
-<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nav.js') }}?v=steel-4"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>
