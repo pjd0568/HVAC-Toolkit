@@ -854,7 +854,7 @@ def report():
         result_rows = _duct_result_rows(circular, rectangular, flat_oval, U)
         pdf = build_pdf(meta, input_rows=input_rows, result_rows=result_rows)
 
-    return pdf_response(pdf, "duct-sizing.pdf")
+    return pdf_response(pdf, meta=meta, fallback="duct-sizing")
 
 
 @bp.route("/api/state", methods=["GET"])

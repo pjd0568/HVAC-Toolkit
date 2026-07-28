@@ -375,7 +375,7 @@ def single_point_report():
     ]
     meta = _report_meta_from_form("Psychrometrics - Single Point")
     pdf = build_pdf(meta, input_rows, result_rows, chart_png)
-    return _pdf_response(pdf, "psychrometrics-single-point.pdf")
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-single-point")
 
 
 @bp.route("/chart.png", methods=["POST"])
@@ -500,7 +500,7 @@ def mixed_air_report():
         ))
     meta = _report_meta_from_form("Psychrometrics - Mixed Air")
     pdf = build_pdf(meta, input_rows, result_rows, chart_png)
-    return _pdf_response(pdf, "psychrometrics-mixed-air.pdf")
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-mixed-air")
 
 
 @bp.route("/mixed-air/chart.png", methods=["POST"])
@@ -625,7 +625,7 @@ def cooling_coil_report():
         result_rows.append(("Frost Risk", "Yes — apparatus dew point at or below freezing", ""))
     meta = _report_meta_from_form("Psychrometrics - Cooling Coil")
     pdf = build_pdf(meta, input_rows, result_rows, chart_png)
-    return _pdf_response(pdf, "psychrometrics-cooling-coil.pdf")
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-cooling-coil")
 
 
 @bp.route("/cooling-coil/chart.png", methods=["POST"])
@@ -793,7 +793,7 @@ def ahu_report():
         result_rows.append(("Warning", w, ""))
     meta = _report_meta_from_form("Psychrometrics - AHU Design")
     pdf = build_pdf(meta, input_rows, result_rows, chart_png)
-    return _pdf_response(pdf, "psychrometrics-ahu-design.pdf")
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-ahu-design")
 
 
 @bp.route("/ahu/chart.png", methods=["POST"])

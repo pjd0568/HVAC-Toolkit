@@ -874,4 +874,4 @@ def report():
         result_rows=result_rows,
         extra_tables=extra,
     )
-    return pdf_response(pdf, "pipe-sizing-report.pdf")
+    return pdf_response(pdf, meta=meta, fallback="pipe-sizing-report")
