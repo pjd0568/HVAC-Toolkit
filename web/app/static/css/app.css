@@ -652,6 +652,10 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   padding: 9px 16px; font-size: 13px; font-weight: 650; text-decoration: none;
   color: var(--muted); border: 1px solid transparent; border-bottom: none;
   border-radius: 8px 8px 0 0; margin-bottom: -1px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 0;
+}
+.mode-tab input[type="radio"] {
+  position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;
 }
 .mode-tab:hover { color: var(--ink); background: var(--panel); }
 .mode-tab.active {

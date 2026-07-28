@@ -153,6 +153,65 @@ def test_adiabatic_humidify():
         proc.adiabatic_humidify(s, 1.0, 1.5)
 
 
+# -- Desiccant dehumidification --------------------------------------------------
+
+def test_desiccant_isenthalpic():
+    s = psy.state(25.0, rh=0.60)
+    w_out = 0.006
+    r = proc.desiccant_dehumidify(s, 1.0, w_out=w_out, eta_d=1.0)
+    assert r.state.w == pytest.approx(w_out)
+    assert r.state.h == pytest.approx(s.h, abs=1e-6)
+    assert r.state.t_db > s.t_db
+    assert r.delta_w == pytest.approx(s.w - w_out)
+    assert r.moisture_removed == pytest.approx(s.w - w_out)
+    assert r.q_total == pytest.approx(0.0, abs=1e-9)
+    assert r.dh_adsorption == pytest.approx(0.0, abs=1e-9)
+
+
+def test_desiccant_efficiency_raises_enthalpy():
+    s = psy.state(25.0, rh=0.60)
+    w_out = 0.006
+    ideal = proc.desiccant_dehumidify(s, 1.0, w_out=w_out, eta_d=1.0)
+    real = proc.desiccant_dehumidify(s, 1.0, w_out=w_out, eta_d=0.85)
+    assert real.state.h > ideal.state.h
+    assert real.state.t_db > ideal.state.t_db
+    assert real.dh_adsorption == pytest.approx(
+        (1.0 - 0.85) * 2501.0 * (s.w - w_out), rel=1e-9
+    )
+    assert real.q_total == pytest.approx(real.dh_adsorption, rel=1e-9)
+
+
+def test_desiccant_from_moisture_duty():
+    s = psy.state(28.0, rh=0.50)
+    m_da = 2.0
+    removed = 0.01  # kg/s
+    r = proc.desiccant_dehumidify(s, m_da, moisture_removed=removed, eta_d=1.0)
+    assert r.moisture_removed == pytest.approx(removed)
+    assert r.state.w == pytest.approx(s.w - removed / m_da)
+    assert r.state.h == pytest.approx(s.h, abs=1e-6)
+
+
+def test_desiccant_from_rh_target():
+    s = psy.state(24.0, rh=0.55)
+    r = proc.desiccant_dehumidify(s, 1.0, rh_out=0.20, eta_d=1.0)
+    assert r.state.rh == pytest.approx(0.20, abs=1e-4)
+    assert r.state.w < s.w
+    assert r.state.t_db > s.t_db
+    assert r.state.h == pytest.approx(s.h, abs=1e-4)
+
+
+def test_desiccant_validation():
+    s = psy.state(22.0, rh=0.5)
+    with pytest.raises(ValueError):
+        proc.desiccant_dehumidify(s, 1.0, w_out=s.w * 1.1)
+    with pytest.raises(ValueError):
+        proc.desiccant_dehumidify(s, 1.0, w_out=0.005, eta_d=0.0)
+    with pytest.raises(ValueError):
+        proc.desiccant_dehumidify(s, 1.0, w_out=0.005, rh_out=0.2)
+    with pytest.raises(ValueError):
+        proc.desiccant_dehumidify(s, 1.0, moisture_removed=s.w * 1.0 + 1.0)
+
+
 # -- AHU simulation ---------------------------------------------------------------
 
 def test_ahu_winter_full_fresh_air():

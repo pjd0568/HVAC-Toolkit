@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% from "_state_row.html" import state_cells with context %}
+{% from "_state_input.html" import state_input with context %}
+{% from "_site_conditions.html" import site_conditions with context %}
+{% from "_report_form.html" import report_form with context %}
+{% block page_title %}Psychrometrics - Desiccant Dehumidification{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="psychro-layout">
+  <form method="post" class="psychro-inputs panel" id="desiccant-form">
+    <div class="panel-head">Desiccant dehumidifier</div>
+    <div class="panel-body">
+      <div class="mode-tabs">
+        <label class="mode-tab {{ 'active' if form.mode != 'duty' }}">
+          <input type="radio" name="mode" value="state" {{ 'checked' if form.mode != 'duty' }}>
+          State target
+        </label>
+        <label class="mode-tab {{ 'active' if form.mode == 'duty' }}">
+          <input type="radio" name="mode" value="duty" {{ 'checked' if form.mode == 'duty' }}>
+          Duty &amp; airflow
+        </label>
+      </div>
+
+      {{ site_conditions(form, pressure) }}
+
+      <div class="section-label">Entering air</div>
+      <div class="form-grid psychro-stack">
+        {{ state_input("on", "Entering", form, second_properties) }}
+        <div><label>Airflow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
+      </div>
+
+      <div id="mode-state-fields" {% if form.mode == 'duty' %}style="display:none"{% endif %}>
+        <div class="section-label">Leaving moisture target</div>
+        <div class="form-grid psychro-stack">
+          <div>
+            <label>Target Property</label>
+            <select name="target_prop" id="target_prop">
+              <option value="w" {{ 'selected' if form.target_prop == 'w' }}>Humidity Ratio ({{ U.sym('humidity_ratio') }})</option>
+              <option value="rh" {{ 'selected' if form.target_prop == 'rh' }}>Relative Humidity (%)</option>
+            </select>
+          </div>
+          <div>
+            <label>Target Value</label>
+            <input name="target_val" value="{{ form.target_val }}">
+          </div>
+        </div>
+      </div>
+
+      <div id="mode-duty-fields" {% if form.mode != 'duty' %}style="display:none"{% endif %}>
+        <div class="section-label">Moisture removal duty</div>
+        <div class="form-grid psychro-stack">
+          <div>
+            <label>Latent Removal ({{ U.sym('moisture_rate') }})</label>
+            <input name="moisture_duty" value="{{ form.moisture_duty }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">Wheel / process</div>
+      <div class="form-grid psychro-stack">
+        <div>
+          <label>Desiccant Efficiency η<sub>d</sub> (%)</label>
+          <input name="eta_d" value="{{ form.eta_d }}" inputmode="decimal">
+          <div class="suffix">100% = ideal isenthalpic. Lower values add heat of adsorption above the enthalpy line.</div>
+        </div>
+      </div>
+
+      <div class="psychro-actions">
+        <button class="btn-accent" type="submit">Calculate</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
+  </div>
+
+  {% if result %}
+  <div class="psychro-results panel">
+    <div class="panel-head">Process result</div>
+    <table class="results">
+      <tr><th></th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th></tr>
+      <tr><td>Entering</td>{{ state_cells(on) }}</tr>
+      <tr><td>Leaving</td>{{ state_cells(result.state) }}</tr>
+    </table>
+    <table class="results">
+      <tr><td>ΔW (in − out)</td><td class="num">{{ U.html('humidity_ratio', result.delta_w) }}</td></tr>
+      <tr><td>Moisture removed</td><td class="num"><strong>{{ U.html('moisture_rate', result.moisture_removed) }}</strong></td></tr>
+      <tr><td>Desiccant efficiency η<sub>d</sub></td><td class="num">{{ '%.0f'|format(result.eta_d * 100) }}%</td></tr>
+      <tr><td>Adsorption Δh</td><td class="num">{{ U.html('enthalpy', result.dh_adsorption) }}</td></tr>
+      <tr><td>Process heat to air</td><td class="num">{{ U.html('power', result.q_total) }}</td></tr>
+      <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', m_da) }}</td></tr>
+    </table>
+    <div class="note-banner" style="margin:14px 16px 16px;">
+      {% if result.eta_d >= 0.999 %}
+      Ideal isenthalpic process: leaving enthalpy matches entering
+      ({{ U.html('enthalpy', result.h_in) }}). Dry-bulb rises as moisture falls.
+      {% else %}
+      Near-isenthalpic: η<sub>d</sub> = {{ '%.0f'|format(result.eta_d * 100) }}% adds
+      {{ U.html('enthalpy', result.dh_adsorption) }} of adsorption / wheel heat above the
+      pure enthalpy line, so leaving air is hotter than the ideal case.
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if result %}
+<details class="notes">
+  <summary>Desiccant application notes</summary>
+  <div class="notes-body">
+    <p><strong>Process.</strong> Desiccant dehumidification follows (or sits slightly above)
+    a constant-enthalpy line toward hotter, drier air. Latent heat released by
+    adsorption/absorption appears as a sensible temperature rise.</p>
+    <p><strong>Ideal vs real.</strong> η<sub>d</sub> = 100% holds h<sub>2</sub> = h<sub>1</sub>.
+    Lower efficiency adds heat of adsorption:
+    Δh = (1 − η<sub>d</sub>) · h<sub>fg</sub> · (W<sub>1</sub> − W<sub>2</sub>),
+    with h<sub>fg</sub> = 2501 kJ/kg.</p>
+    <p><strong>Mode A — state target.</strong> Set entering air and a leaving humidity
+    ratio or RH; the tool solves leaving dry-bulb on the process line.</p>
+    <p><strong>Mode B — duty &amp; airflow.</strong> Set entering air, airflow and moisture
+    removal rate; leaving W follows from the dry-air mass balance, then dry-bulb from
+    the enthalpy model.</p>
+    <p><strong>After the wheel.</strong> Leaving air is typically too warm for supply —
+    a cooling coil or heat exchanger downstream is usually required to trim dry-bulb
+    without undoing the dehumidification.</p>
+  </div>
+</details>
+
+{{ report_form(url_for('psychro.desiccant_report'), form, url_for('psychro.desiccant_chart_png')) }}
+{% endif %}
+
+<script>
+(function () {
+  var form = document.getElementById('desiccant-form');
+  if (!form) return;
+  function syncMode() {
+    var mode = (form.querySelector('input[name="mode"]:checked') || {}).value || 'state';
+    var stateFields = document.getElementById('mode-state-fields');
+    var dutyFields = document.getElementById('mode-duty-fields');
+    if (stateFields) stateFields.style.display = mode === 'duty' ? 'none' : '';
+    if (dutyFields) dutyFields.style.display = mode === 'duty' ? '' : 'none';
+    form.querySelectorAll('.mode-tab').forEach(function (tab) {
+      var input = tab.querySelector('input[type="radio"]');
+      tab.classList.toggle('active', !!(input && input.checked));
+    });
+  }
+  form.querySelectorAll('input[name="mode"]').forEach(function (el) {
+    el.addEventListener('change', syncMode);
+  });
+  syncMode();
+})();
+</script>
+
+{% endblock %}

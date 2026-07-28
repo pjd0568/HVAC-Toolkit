@@ -487,6 +487,33 @@ Q_total = m_da · (h_out − h_in)
 
 ---
 
+### 2.6b Desiccant dehumidification
+
+**What it does:** Isenthalpic / near-isenthalpic drying. Leaving dry-bulb rises as
+moisture falls; optional ηd < 1 adds heat of adsorption above the isenthalpic line.
+
+**Formulas:**
+
+```
+h_out = h_in + (1 − η_d) · 2501 · (W_in − W_out)     # kJ/kg
+state_out = state(h=h_out, w=W_out, p)                 # solves T_db
+ΔW = W_in − W_out
+moisture_removed = m_da · ΔW                           # kg/s
+Q_total = m_da · (h_out − h_in)                        # 0 when η_d = 1
+```
+
+Mode B: `W_out = W_in − moisture_removed / m_da`. RH target: bisect W_out on the
+process line until leaving RH matches.
+
+**Source:** `desiccant_dehumidify`
+
+**Validation:** `m_da > 0`; `0 < η_d ≤ 1`; exactly one of `w_out` / `rh_out` /
+`moisture_removed`; `W_out < W_in`.
+
+**Reference:** SPEC-ahu-processes — desiccant section.
+
+---
+
 ### 2.7 Fan sensible gain
 
 **What it does:** Temperature rise across fan at constant moisture.

@@ -60,6 +60,150 @@ class AdiabaticResult:
     q_total: float
 
 
+@dataclass(frozen=True)
+class DesiccantResult:
+    """Outlet of a desiccant dehumidifier (isenthalpic / near-isenthalpic)."""
+
+    state: PsychroState
+    delta_w: float  # kg/kg, W_in − W_out (> 0 when drying)
+    moisture_removed: float  # kg/s dry-basis water removed
+    eta_d: float
+    h_in: float
+    h_out: float
+    q_total: float  # kW to the airstream; 0 when ηd = 1 (ideal isenthalpic)
+    dh_adsorption: float  # kJ/kg dry air, h_out − h_in
+
+
+# Latent heat of vaporization used in the ASHRAE moist-air enthalpy equation (kJ/kg).
+_H_FG = 2501.0
+
+
+def desiccant_dehumidify(
+    state_in: PsychroState,
+    m_da: float,
+    *,
+    w_out: float | None = None,
+    rh_out: float | None = None,
+    moisture_removed: float | None = None,
+    eta_d: float = 1.0,
+) -> DesiccantResult:
+    """Desiccant (solid/liquid) dehumidification — isenthalpic or near-isenthalpic.
+
+    Water vapour is adsorbed/absorbed and the latent heat appears as a sensible
+    temperature rise. Ideal model (``eta_d = 1``): constant enthalpy
+    ``h_out = h_in``. Real-world (``eta_d < 1``): additional heat of adsorption
+    / wheel heat carryover raises leaving enthalpy above the isenthalpic line::
+
+        h_out = h_in + (1 − η_d) · h_fg · (W_in − W_out)
+
+    Provide exactly one leaving-moisture contract:
+    - ``w_out`` — target humidity ratio (kg/kg), or
+    - ``rh_out`` — target leaving RH (0–1), solved with the enthalpy model, or
+    - ``moisture_removed`` — water removal rate (kg/s); then
+      ``W_out = W_in − moisture_removed / m_da``.
+    """
+    if m_da <= 0:
+        raise ValueError("mass flow must be positive")
+    if not (0.0 < eta_d <= 1.0):
+        raise ValueError("desiccant efficiency must be in (0, 1]")
+
+    n_targets = sum(x is not None for x in (w_out, rh_out, moisture_removed))
+    if n_targets != 1:
+        raise ValueError("provide exactly one of w_out, rh_out, or moisture_removed")
+
+    if moisture_removed is not None:
+        if moisture_removed <= 0:
+            raise ValueError("moisture removal rate must be positive")
+        w_out = state_in.w - moisture_removed / m_da
+        if w_out < 0:
+            raise ValueError(
+                "moisture removal exceeds the water content of the airstream"
+            )
+
+    if w_out is not None:
+        if w_out >= state_in.w * (1.0 - 1e-12):
+            raise ValueError(
+                "leaving humidity ratio must be below the entering value"
+            )
+        if w_out < 0:
+            raise ValueError("leaving humidity ratio cannot be negative")
+        s_out = _desiccant_outlet(state_in, w_out, eta_d)
+    else:
+        assert rh_out is not None
+        if not (0.0 < rh_out <= 1.0):
+            raise ValueError("leaving RH must be in (0, 1]")
+        s_out = _desiccant_outlet_for_rh(state_in, rh_out, eta_d)
+        w_out = s_out.w
+
+    delta_w = state_in.w - w_out
+    removed = m_da * delta_w
+    dh = s_out.h - state_in.h
+    return DesiccantResult(
+        state=s_out,
+        delta_w=delta_w,
+        moisture_removed=removed,
+        eta_d=eta_d,
+        h_in=state_in.h,
+        h_out=s_out.h,
+        q_total=m_da * dh,
+        dh_adsorption=dh,
+    )
+
+
+def _desiccant_outlet(
+    state_in: PsychroState, w_out: float, eta_d: float
+) -> PsychroState:
+    """Leaving state at ``w_out`` on the (near-)isenthalpic process line."""
+    dh_extra = (1.0 - eta_d) * _H_FG * (state_in.w - w_out)
+    h_out = state_in.h + dh_extra
+    return psy.state(h=h_out, w=w_out, p=state_in.p)
+
+
+def _desiccant_w_floor(h_out: float, p: float) -> float:
+    """Lowest humidity ratio that still resolves under ``state(h, w)``."""
+    # Dew-point correlation needs p_w above sat(T_MIN).
+    w_dp = psy.saturation_humidity_ratio(psy.T_MIN, p) * 1.001
+    # dry_bulb_from_enthalpy must stay ≤ T_MAX as W falls (T rises).
+    denom = _H_FG + psy.T_MAX * 1.86
+    w_tmax = max(0.0, (h_out - psy.T_MAX * 1.006) / denom)
+    return max(w_dp, w_tmax) + 1e-9
+
+
+def _desiccant_outlet_for_rh(
+    state_in: PsychroState, rh_out: float, eta_d: float
+) -> PsychroState:
+    """Solve ``W_out`` so the near-isenthalpic outlet lands at ``rh_out``."""
+    # Lower W → higher T on the process line → lower RH. Bracket W below W_in.
+    hi = state_in.w * (1.0 - 1e-9)
+    # Floor uses the ideal (lowest) leaving enthalpy for the driest reachable state.
+    h_at_floor = state_in.h  # ηd=1 lower bound; extra heat only raises T further
+    lo = _desiccant_w_floor(h_at_floor, state_in.p)
+    if lo >= hi:
+        raise ValueError("entering state leaves no valid desiccant process range")
+    s_hi = _desiccant_outlet(state_in, hi, eta_d)
+    s_lo = _desiccant_outlet(state_in, lo, eta_d)
+    if rh_out > s_hi.rh + 1e-9:
+        raise ValueError(
+            "target leaving RH is above the near-isenthalpic process line "
+            "at the entering moisture — lower the RH target or raise ηd"
+        )
+    if rh_out < s_lo.rh - 1e-9:
+        raise ValueError(
+            "target leaving RH is below what the process can reach at this "
+            "entering condition"
+        )
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        s_mid = _desiccant_outlet(state_in, mid, eta_d)
+        if s_mid.rh > rh_out:
+            hi = mid
+        else:
+            lo = mid
+        if hi - lo < 1e-12:
+            break
+    return _desiccant_outlet(state_in, 0.5 * (lo + hi), eta_d)
+
+
 # ── Elementary processes ───────────────────────────────────────────────────────
 
 def _saturated_state_at_enthalpy(h: float, p: float) -> PsychroState:

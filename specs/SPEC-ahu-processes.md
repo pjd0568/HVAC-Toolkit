@@ -93,6 +93,30 @@ water_rate = m_da·(w_out − w_in). Enthalpy change is small and non-zero (wet-
 not enthalpy, is conserved exactly); report q_total for completeness.
 `AdiabaticResult(state, water_rate, q_total)`
 
+### `desiccant_dehumidify(state_in, m_da, *, w_out | rh_out | moisture_removed, eta_d=1) -> DesiccantResult`
+Desiccant (solid wheel / liquid) dehumidification. Adsorption/absorption removes
+water vapour; latent heat appears as a dry-bulb rise. Ideal model is
+**isenthalpic** (`η_d = 1` → `h_out = h_in`). Real-world (`0 < η_d < 1`) adds heat
+of adsorption / wheel heat carryover above the isenthalpic line:
+
+```
+h_out = h_in + (1 − η_d) · h_fg · (W_in − W_out)     # h_fg = 2501 kJ/kg
+T_out from state(h=h_out, w=W_out)                   # ASHRAE HOF eqn 30 inverse
+```
+
+Provide exactly one leaving-moisture contract:
+- `w_out` — target humidity ratio (kg/kg), Mode A moisture target; or
+- `rh_out` — target leaving RH (0–1), solved on the process line; or
+- `moisture_removed` — water removal rate (kg/s), Mode B:
+  `W_out = W_in − moisture_removed / m_da`.
+
+Validation: `m_da > 0`; `0 < η_d ≤ 1`; `W_out < W_in` and `W_out ≥ 0`; RH target
+must be reachable on the process line.
+
+`DesiccantResult(state, delta_w, moisture_removed, eta_d, h_in, h_out, q_total,
+dh_adsorption)` with `delta_w = W_in − W_out`, `q_total = m_da·(h_out − h_in)`
+(zero when ideal).
+
 ### `fan_gain(state_in, m_da, power_kw | dt) -> ProcessResult`
 Sensible pick-up across a fan at constant moisture content. Given absorbed power:
 ΔT = P / (m_da · c_p,moist), with c_p,moist = 1.006 + 1.86·W kJ/kg·K (the moist-air
@@ -204,6 +228,11 @@ the interaction is consistent everywhere.
   w_off > w_on raises.
 - **Steam:** 20 °C/30% to w giving 50% RH: t unchanged (±0.01), steam_rate > 0.
 - **Adiabatic:** 28 °C/30%, ε = 0.85: t_wb conserved (±0.05 K), t drops, w rises.
+- **Desiccant isenthalpic:** 25 °C/60% → W_out = 0.006 at ηd = 1, 1 kg/s: h conserved
+  (±1e-6), T_out > T_in, moisture_removed = ΔW, q_total = 0.
+- **Desiccant ηd < 1:** same duty at ηd = 0.85: h_out > h_in by (1−ηd)·2501·ΔW;
+  T_out above the ideal isenthalpic leaving temperature.
+- **Desiccant Mode B:** moisture_removed sets W_out = W_in − ṁ_w / m_da.
 - **AHU chain:** winter case (OA −5/90%, RA 21/50%, 30% OA, frost coil to 5 °C,
   reheat to 21 °C, steam to 40% RH at 21 °C): stage list ordered, each stage's
   inlet = previous stage's outlet, net heating > 0, moisture added > 0.

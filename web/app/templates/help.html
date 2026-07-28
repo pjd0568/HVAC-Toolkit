@@ -168,6 +168,40 @@
       <div class="help-note">A <strong>frost risk</strong> banner appears if the ADP is at or below freezing (the coil surface could ice up) — options are glycol protection, a DX defrost strategy or face-and-bypass control.</div>
     </section>
 
+    <!-- ═══════════════ DESICCANT ═══════════════ -->
+    <section class="help-section" id="desiccant" data-help-section
+             data-keywords="desiccant dehumidification wheel isenthalpic adsorption silica gel enthalpy moisture removal latent duty">
+      <h2 class="help-h">Psychrometrics — Desiccant Dehumidification</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Model a desiccant dehumidifier as an isenthalpic (or near-isenthalpic) process: moisture falls, dry-bulb rises along the enthalpy line.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>When you need deep dehumidification beyond what a chilled-water coil can reach, or want the leaving state and moisture-removal rate of a desiccant wheel / liquid desiccant contactor.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Mode</dt><dd><strong>State target</strong> — set leaving humidity ratio or RH. <strong>Duty &amp; airflow</strong> — set moisture removal rate; leaving W follows from the mass balance.</dd>
+        <dt>Entering air</dt><dd>Dry bulb + second property, plus airflow through the wheel.</dd>
+        <dt>Desiccant efficiency η<sub>d</sub></dt><dd>100% = ideal isenthalpic (h<sub>2</sub> = h<sub>1</sub>). Lower values add heat of adsorption above the enthalpy line.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Choose State target or Duty &amp; airflow.</li>
+        <li>Enter site altitude and the entering air condition + flow.</li>
+        <li>Enter the leaving moisture target (or removal duty) and η<sub>d</sub>.</li>
+        <li>Press <strong>Calculate</strong>. Leaving dry-bulb, RH and moisture removed appear with the process line on the chart.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <dl class="help-io">
+        <dt>Leaving state</dt><dd>Hotter and drier than entering — dry-bulb is solved from the (near-)isenthalpic model.</dd>
+        <dt>ΔW / moisture removed</dt><dd>Humidity-ratio drop and the corresponding water removal rate at the entered airflow.</dd>
+        <dt>Adsorption Δh</dt><dd>Extra enthalpy above the ideal line when η<sub>d</sub> &lt; 100%.</dd>
+      </dl>
+
+      <div class="help-note">Leaving air is usually too warm for direct supply — plan a downstream cooling coil or heat exchanger to trim dry-bulb without re-humidifying.</div>
+    </section>
+
     <!-- ═══════════════ AHU DESIGN ═══════════════ -->
     <section class="help-section" id="ahu" data-help-section
              data-keywords="ahu air handling unit supply condition off-unit outdoor return mix on-coil off-coil reheat preheat coil duty fan gain blow through draw through sfp specific fan power reachability frost stages">

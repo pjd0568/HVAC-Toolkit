@@ -1,4 +1,4 @@
-"""Psychrometrics tools: single point, mixed air, cooling coil, AHU supply design.
+"""Psychrometrics tools: single point, mixed air, cooling coil, desiccant, AHU.
 
 Each tool has a page route (renders the on-screen form + results) and a sibling
 `/report` route (POST-only, generates a PDF). Both call the same `_run_*` helper
@@ -813,3 +813,156 @@ def ahu_chart_png():
     if png is None:
         return Response(f"Could not generate chart image: {err}", status=500)
     return _png_response(png, "psychrometrics-ahu-design-chart.png")
+
+
+# -- Desiccant dehumidification ------------------------------------------------------
+
+_DESICCANT_DEFAULTS = {
+    "mode": "state",
+    "on_t": "28", "on_prop": "rh", "on_val": "50",
+    "flow": "5000",
+    "target_prop": "w", "target_val": "0.006",  # kg/kg → 6 g/kg SI display
+    "moisture_duty": "0.0055555556",  # kg/s → 20 kg/h SI display
+    "eta_d": "100",
+    "altitude": "0",
+}
+_DESICCANT_FIELD_UNITS = {
+    "on_t": "temperature",
+    "flow": "vol_flow",
+    "target_val": "humidity_ratio",  # only when target_prop == w; RH is %
+    "moisture_duty": "moisture_rate",
+    "altitude": "altitude",
+}
+
+
+def _run_desiccant(form, U):
+    pressure = _resolve_pressure(form, U)
+    on = _state_from_form(form, "on", pressure, U)
+    m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
+    eta_d = _f(form, "eta_d") / 100.0
+    mode = form.get("mode", "state")
+
+    if mode == "duty":
+        removed = U.to_si("moisture_rate", _f(form, "moisture_duty"))
+        result = proc.desiccant_dehumidify(
+            on, m_da, moisture_removed=removed, eta_d=eta_d
+        )
+    else:
+        prop = form.get("target_prop", "w")
+        if prop == "rh":
+            result = proc.desiccant_dehumidify(
+                on, m_da, rh_out=_f(form, "target_val") / 100.0, eta_d=eta_d
+            )
+        else:
+            w_out = U.to_si("humidity_ratio", _f(form, "target_val"))
+            result = proc.desiccant_dehumidify(
+                on, m_da, w_out=w_out, eta_d=eta_d
+            )
+
+    points = [
+        {"label": "IN", "t": on.t_db, "w": on.w},
+        {"label": "OUT", "t": result.state.t_db, "w": result.state.w},
+    ]
+    segments = [(0, 1)]
+    return pressure, on, m_da, result, points, segments
+
+
+@bp.route("/desiccant", methods=["GET", "POST"])
+@require_module("psychro.desiccant")
+def desiccant():
+    U = current_view()
+    result = None
+    error = None
+    on = None
+    m_da = None
+    pressure = None
+    points, segments = [], []
+    if request.method != "POST":
+        form = _display_defaults(_DESICCANT_DEFAULTS, _DESICCANT_FIELD_UNITS, U)
+        # target_val default is humidity ratio; RH mode would be percent — keep w default.
+        _paste_slot_into(form, "on", U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+    else:
+        form = {k: request.form.get(k, d) for k, d in _DESICCANT_DEFAULTS.items()}
+        try:
+            pressure, on, m_da, result, points, segments = _run_desiccant(form, U)
+        except ValueError as exc:
+            error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
+    return render_template(
+        "desiccant.html", active="psychro_desiccant", form=form,
+        second_properties=_second_properties(U), on=on, m_da=m_da,
+        result=result, chart=chart, error=error, pressure=pressure,
+    )
+
+
+@bp.route("/desiccant/report", methods=["POST"])
+@require_module("psychro.desiccant")
+def desiccant_report():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _DESICCANT_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_desiccant(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate report: {exc}", status=400)
+
+    chart_png = _safe_chart_png(points, segments, U.system)
+    sp = _second_properties(U)
+    mode = form.get("mode", "state")
+    input_rows = (
+        _site_condition_rows(form, pressure, U)
+        + _state_input_rows("on", "Entering", form, sp, U)
+        + [("Entering Flow", form["flow"], U.sym("vol_flow"))]
+        + [("Mode", "Duty & airflow" if mode == "duty" else "State point target", "")]
+    )
+    if mode == "duty":
+        input_rows.append(
+            ("Moisture Removal Duty", form["moisture_duty"], U.sym("moisture_rate"))
+        )
+    else:
+        tprop = form.get("target_prop", "w")
+        if tprop == "rh":
+            input_rows.append(("Target Leaving RH", form["target_val"], "%"))
+        else:
+            input_rows.append(
+                ("Target Leaving Humidity Ratio", form["target_val"], U.sym("humidity_ratio"))
+            )
+    input_rows.append(("Desiccant Efficiency ηd", form["eta_d"], "%"))
+
+    result_rows = [
+        ("Leaving Dry Bulb", U.fmt("temperature", result.state.t_db), U.sym("temperature")),
+        ("Leaving RH", f"{result.state.rh * 100:.1f}", "%"),
+        ("Leaving Humidity Ratio", U.fmt("humidity_ratio", result.state.w), U.sym("humidity_ratio")),
+        ("Leaving Enthalpy", U.fmt("enthalpy", result.state.h), U.sym("enthalpy")),
+        ("ΔW (in − out)", U.fmt("humidity_ratio", result.delta_w), U.sym("humidity_ratio")),
+        ("Moisture Removed", U.fmt("moisture_rate", result.moisture_removed), U.sym("moisture_rate")),
+        ("Adsorption Δh", U.fmt("enthalpy", result.dh_adsorption), U.sym("enthalpy")),
+        ("Process Heat to Air", U.fmt("power", result.q_total), U.sym("power")),
+        ("Dry-air Mass Flow", U.fmt("mass_flow", m_da), U.sym("mass_flow")),
+    ]
+    meta = _report_meta_from_form("Psychrometrics - Desiccant Dehumidification")
+    pdf = build_pdf(meta, input_rows, result_rows, chart_png)
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-desiccant")
+
+
+@bp.route("/desiccant/chart.png", methods=["POST"])
+@require_module("psychro.desiccant")
+def desiccant_chart_png():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _DESICCANT_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_desiccant(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate chart: {exc}", status=400)
+
+    png, err = _chart_png_or_500(points, segments, U.system)
+    if png is None:
+        return Response(f"Could not generate chart image: {err}", status=500)
+    return _png_response(png, "psychrometrics-desiccant-chart.png")
