@@ -356,7 +356,19 @@ td.num { font-family: Consolas, monospace; text-align: right; }
 }
 .psychro-inputs input,
 .psychro-inputs select { padding: 7px 9px; }
-.psychro-actions { margin-top: 12px; }
+.psychro-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.psychro-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
 .psychro-chart .panel-body {
   padding: 10px 12px 14px;
   min-height: 280px;
@@ -365,26 +377,27 @@ td.num { font-family: Consolas, monospace; text-align: right; }
   justify-content: center;
 }
 .psychro-chart-svg { width: 100%; height: auto; display: block; }
-.psychro-chart-placeholder {
-  width: 100%;
-  min-height: 260px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed var(--line);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 13px;
-  text-align: center;
-  padding: 24px;
+.psychro-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0;
 }
-.psychro-chart-placeholder p { margin: 0; }
+.psychro-point-block {
+  border-right: 1px solid var(--line);
+  padding: 0;
+}
+.psychro-point-block:last-child { border-right: none; }
+.psychro-point-label {
+  font-size: 12px; font-weight: 800; letter-spacing: .04em;
+  color: var(--green-ink); padding: 12px 16px 0;
+}
 .psychro-results .results td,
 .psychro-results .results th { padding: 8px 16px; }
 @media (max-width: 900px) {
   .psychro-layout { grid-template-columns: 1fr; }
   .psychro-chart .panel-body { min-height: 220px; }
+  .psychro-point-block { border-right: none; border-bottom: 1px solid var(--line); }
+  .psychro-point-block:last-child { border-bottom: none; }
 }
 
 /* Value + unit pairing (see app/units.py UnitView.html) -- a fixed, CSS-driven

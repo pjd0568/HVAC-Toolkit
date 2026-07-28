@@ -6,7 +6,7 @@ for the actual calculation, so the numbers in the PDF can never drift from the
 numbers on screen -- one calculation, two consumers. See specs/SPEC-pdf-report.md.
 """
 
-from flask import Blueprint, Response, current_app, render_template, request
+from flask import Blueprint, Response, current_app, redirect, render_template, request, session, url_for
 
 from hvac_engine import processes as proc
 from hvac_engine import psychrometrics as psy
@@ -22,6 +22,11 @@ from app.reports.helpers import report_meta_from_form as _report_meta_from_form
 from app.units import current_view
 
 bp = Blueprint("psychro", __name__)
+
+# Session-backed plotted points on Single Point (A, then optional B).
+_SINGLE_POINT_SESSION_KEY = "psychro_single_points"
+_SINGLE_POINT_MAX = 2
+_SINGLE_POINT_LABELS = ("A", "B")
 
 
 # Shared second-variable selector, consistent across every module. Dry-bulb
@@ -219,10 +224,48 @@ _SINGLE_POINT_DEFAULTS = {
 _SINGLE_POINT_FIELD_UNITS = {"s_t": "temperature", "altitude": "altitude"}
 
 
+def _state_to_session(label: str, state: psy.PsychroState) -> dict:
+    """Serialize a PsychroState for the Single Point session list."""
+    return {
+        "label": label,
+        "t_db": state.t_db,
+        "t_wb": state.t_wb,
+        "t_dp": state.t_dp,
+        "w": state.w,
+        "rh": state.rh,
+        "h": state.h,
+        "v": state.v,
+        "rho": state.rho,
+        "p_w": state.p_w,
+        "p": state.p,
+    }
+
+
+def _get_saved_points() -> list[dict]:
+    raw = session.get(_SINGLE_POINT_SESSION_KEY) or []
+    if not isinstance(raw, list):
+        return []
+    return [p for p in raw if isinstance(p, dict) and "label" in p][:_SINGLE_POINT_MAX]
+
+
+def _set_saved_points(points: list[dict]) -> None:
+    session[_SINGLE_POINT_SESSION_KEY] = points[:_SINGLE_POINT_MAX]
+
+
+def _clear_saved_points() -> None:
+    session.pop(_SINGLE_POINT_SESSION_KEY, None)
+
+
+def _chart_points_and_segments(saved: list[dict]):
+    points = [{"label": p["label"], "t": p["t_db"], "w": p["w"]} for p in saved]
+    segments = [(0, 1)] if len(saved) >= 2 else []
+    return points, segments
+
+
 def _run_single_point(form, U):
     pressure = _resolve_pressure(form, U)
     result = _state_from_form(form, "s", pressure, U)
-    points = [{"label": "1", "t": result.t_db, "w": result.w}]
+    points = [{"label": "A", "t": result.t_db, "w": result.w}]
     segments = []
     return pressure, result, points, segments
 
@@ -231,13 +274,38 @@ def _run_single_point(form, U):
 @require_module("psychro.single_point")
 def single_point():
     U = current_view()
-    result = None
     error = None
     pressure = None
+    saved = _get_saved_points()
+
     if request.method == "POST":
+        action = request.form.get("action", "calculate")
         form = {k: request.form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}
+
+        if action == "reset":
+            _clear_saved_points()
+            return redirect(url_for("psychro.single_point"))
+
         try:
-            pressure, result, points, segments = _run_single_point(form, U)
+            pressure, result, _, _ = _run_single_point(form, U)
+            entry = _state_to_session("A", result)
+            if action == "add_b":
+                if not saved:
+                    # No Point A yet — treat as first calculate.
+                    _set_saved_points([entry])
+                else:
+                    entry["label"] = "B"
+                    _set_saved_points([saved[0], entry])
+            else:
+                # Calculate: set/replace Point A; keep B if present.
+                entry["label"] = "A"
+                if len(saved) >= 2:
+                    b = dict(saved[1])
+                    b["label"] = "B"
+                    _set_saved_points([entry, b])
+                else:
+                    _set_saved_points([entry])
+            saved = _get_saved_points()
         except ValueError as exc:
             error = str(exc)
             try:
@@ -247,14 +315,27 @@ def single_point():
     else:
         form = _display_defaults(_SINGLE_POINT_DEFAULTS, _SINGLE_POINT_FIELD_UNITS, U)
         _paste_slot_into(form, "s", U)
-        pressure = _resolve_pressure(form, U)
-    chart = None
-    if result:
-        chart = chart_payload(points, segments, system=U.system)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+
+    if pressure is None:
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = psy.P_ATM if hasattr(psy, "P_ATM") else 101.325
+
+    chart_pts, chart_segs = _chart_points_and_segments(saved)
+    p_chart = pressure if pressure is not None else 101.325
+    chart = chart_payload(chart_pts, chart_segs, p=p_chart, system=U.system)
+
     return render_template(
         "psychro.html", active="psychro", form=form,
-        second_properties=_second_properties(U), result=result, error=error,
+        second_properties=_second_properties(U), saved_points=saved, error=error,
         chart=chart, pressure=pressure,
+        can_add_b=len(saved) >= 1,
+        has_points=len(saved) >= 1,
     )
 
 
