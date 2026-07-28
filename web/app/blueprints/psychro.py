@@ -240,6 +240,10 @@ def single_point():
             pressure, result, points, segments = _run_single_point(form, U)
         except ValueError as exc:
             error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
     else:
         form = _display_defaults(_SINGLE_POINT_DEFAULTS, _SINGLE_POINT_FIELD_UNITS, U)
         _paste_slot_into(form, "s", U)
@@ -355,6 +359,10 @@ def mixed_air():
             chart = chart_payload(points, segments, system=U.system)
         except ValueError as exc:
             error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
     return render_template(
         "mixed_air.html", active="psychro_mix", form=form,
         second_properties=_second_properties(U), result=result, mres=mres,
@@ -477,6 +485,10 @@ def cooling_coil():
             chart = chart_payload(points, segments, system=U.system)
         except ValueError as exc:
             error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
     return render_template(
         "coil.html", active="psychro_coil", form=form,
         second_properties=_second_properties(U), on=on, m_da=m_da,
@@ -625,6 +637,10 @@ def ahu():
         except ValueError as exc:
             result = None
             error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
     return render_template(
         "ahu.html", active="psychro_ahu", form=form,
         second_properties=_second_properties(U), result=result, m_da=m_da,
