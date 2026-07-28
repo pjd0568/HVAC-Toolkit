@@ -77,7 +77,7 @@ body {
   border-right: 1px solid var(--side-line);
   display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0;
 }
-.logo { display: flex; align-items: center; gap: 10px; padding: 18px 16px 14px; }
+.logo { display: flex; align-items: center; gap: 10px; padding: 14px 12px 12px; }
 .logo-mark {
   width: 48px; height: 48px; border-radius: 9px;
   background: linear-gradient(135deg, var(--blue), var(--green));
@@ -88,8 +88,13 @@ body {
   width: 48px; height: 48px; display: block; flex-shrink: 0;
   border-radius: 8px; background: #F8F8F8;
 }
-.logo-name { color: var(--side-title); font-weight: 700; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; }
-.logo-tag { font-size: 9px; color: var(--side-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+.logo-link {
+  display: block; width: 100%; text-decoration: none; color: inherit; min-width: 0;
+}
+.logo-link .brand-lockup {
+  display: block; width: 100%; height: auto;
+  border-radius: 6px; background: #F8F8F8;
+}
 
 .nav-group { padding: 12px 12px 2px; }
 .nav-group-label {
@@ -187,9 +192,6 @@ body {
 .foot-email {
   color: var(--side-title); font-weight: 600; font-size: 11px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;
-}
-.logo-link {
-  display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;
 }
 .sidebar-logout { margin-left: auto; }
 .linkish {
@@ -1164,11 +1166,6 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 }
 
 .coming-hero { padding: clamp(24px, 5vw, 48px) 0 40px; max-width: 720px; }
-.home-hero-banner {
-  display: block; width: 100%; max-width: 720px; height: auto;
-  margin: 0 0 28px; border-radius: 10px;
-  background: #F8F8F8; border: 1px solid var(--line);
-}
 .coming-eyebrow {
   font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase;
   color: var(--green-ink); margin-bottom: 12px;
