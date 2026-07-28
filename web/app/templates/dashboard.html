@@ -2,8 +2,6 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
 
-{# Suite-card dashboard (trial). Revert commit "dashboard: suite cards…" to restore flat tiles. #}
-
 <div class="greeting">Welcome</div>
 <div class="greeting-sub">Choose a suite to start — every calculator also lives in the sidebar.</div>
 
@@ -15,7 +13,7 @@
       <div class="tool-ico" aria-hidden="true">〜</div>
       <div>
         <h2 class="suite-name">Psychrometrics</h2>
-        <p class="suite-desc">Moist-air states, mixing, coils, desiccant drying and AHU supply design.</p>
+        <p class="suite-desc">Moist-air states, mixing, coils, desiccant, heat &amp; humidify, and AHU supply design.</p>
       </div>
     </div>
     <ul class="suite-links">
@@ -23,6 +21,7 @@
       <li><a href="{{ url_for('psychro.mixed_air') }}">Mixed Air</a></li>
       <li><a href="{{ url_for('psychro.cooling_coil') }}">Cooling Coil</a></li>
       <li><a href="{{ url_for('psychro.desiccant') }}">Desiccant</a></li>
+      <li><a href="{{ url_for('psychro.heat_humidify') }}">Heat &amp; Humidify</a></li>
       <li><a href="{{ url_for('psychro.ahu') }}">AHU Design</a></li>
     </ul>
   </article>

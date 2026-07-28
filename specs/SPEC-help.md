@@ -16,7 +16,7 @@ user is currently on).
 
 Getting Started (app-wide: units toggle, memory slots, PDF/PNG export, shareable
 URLs), Weather & Design Conditions, Psychrometrics (Single Point, Mixed Air,
-Cooling Coil, Desiccant Dehumidification, AHU Design), Duct Sizing (+ Index Leg), Unit Converter, Design
+Cooling Coil, Desiccant Dehumidification, Heating & Humidification, AHU Design), Duct Sizing (+ Index Leg), Unit Converter, Design
 Guides, Projects, and Pipe Sizing (including Stage 2 system pressure-drop builder).
 
 ## Design

@@ -212,6 +212,50 @@ def test_desiccant_validation():
         proc.desiccant_dehumidify(s, 1.0, moisture_removed=s.w * 1.0 + 1.0)
 
 
+# -- Heat + steam humidification -------------------------------------------------
+
+def test_heat_humidify_state_mode():
+    s1 = psy.state(5.0, rh=0.80)
+    t2, w2 = 22.0, 0.008
+    r = proc.heat_and_humidify(s1, 1.0, t_out=t2, w_out=w2)
+    assert r.state_x.t_db == pytest.approx(t2)
+    assert r.state_x.w == pytest.approx(s1.w)
+    assert r.state.t_db == pytest.approx(t2, abs=0.01)
+    assert r.state.w == pytest.approx(w2)
+    assert r.q_sensible > 0 and r.q_latent > 0
+    assert r.q_total == pytest.approx(r.q_sensible + r.q_latent, rel=1e-9)
+    assert r.steam_rate == pytest.approx(w2 - s1.w)
+
+
+def test_heat_humidify_duty_mode_roundtrip():
+    s1 = psy.state(8.0, rh=0.70)
+    r0 = proc.heat_and_humidify(s1, 1.5, t_out=20.0, w_out=0.0075)
+    r1 = proc.heat_and_humidify(
+        s1, 1.5, q_sensible=r0.q_sensible, steam_rate=r0.steam_rate
+    )
+    assert r1.state.t_db == pytest.approx(r0.state.t_db, abs=0.05)
+    assert r1.state.w == pytest.approx(r0.state.w, abs=1e-7)
+
+
+def test_heat_humidify_heat_only():
+    s1 = psy.state(10.0, rh=0.5)
+    r = proc.heat_and_humidify(s1, 1.0, t_out=25.0, w_out=s1.w)
+    assert r.steam_rate == pytest.approx(0.0, abs=1e-12)
+    assert r.q_latent == pytest.approx(0.0, abs=1e-9)
+    assert r.state.w == pytest.approx(s1.w)
+    assert r.state_x.t_db == pytest.approx(25.0)
+
+
+def test_heat_humidify_validation():
+    s1 = psy.state(15.0, rh=0.4)
+    with pytest.raises(ValueError, match="heating only"):
+        proc.heat_and_humidify(s1, 1.0, t_out=10.0, w_out=0.01)
+    with pytest.raises(ValueError, match="cannot dry"):
+        proc.heat_and_humidify(s1, 1.0, t_out=20.0, w_out=s1.w * 0.5)
+    with pytest.raises(ValueError):
+        proc.heat_and_humidify(s1, 1.0, q_sensible=0.0, steam_rate=0.0)
+
+
 # -- AHU simulation ---------------------------------------------------------------
 
 def test_ahu_winter_full_fresh_air():

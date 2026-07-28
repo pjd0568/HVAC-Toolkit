@@ -445,6 +445,106 @@ def steam_humidify(
     return HumidifyResult(state=s_out, steam_rate=steam, q_latent=q_latent)
 
 
+@dataclass(frozen=True)
+class HeatHumidifyResult:
+    """Sensible heat then isothermal steam humidification (AHU winter path)."""
+
+    state_x: PsychroState  # after heating coil, before humidifier (T2, W1)
+    state: PsychroState  # final leaving (T2, W2)
+    q_sensible: float  # kW heating coil
+    q_latent: float  # kW steam / latent to airstream
+    q_total: float
+    steam_rate: float  # kg/s
+
+
+def heat_and_humidify(
+    state_in: PsychroState,
+    m_da: float,
+    *,
+    t_out: float | None = None,
+    w_out: float | None = None,
+    q_sensible: float | None = None,
+    steam_rate: float | None = None,
+) -> HeatHumidifyResult:
+    """Sensible heating at constant W, then isothermal steam humidification.
+
+    Process path on the psychrometric chart::
+
+        (1) ──constant W──► (X) ──constant T──► (2)
+              heating coil         steam
+
+    Mode A — state targets: provide ``t_out`` and ``w_out``.
+    Mode B — duties: provide ``q_sensible`` (kW) and ``steam_rate`` (kg/s);
+    either may be zero if the other is positive.
+
+    Sensible duty uses moist-air enthalpy at constant W (equivalent to
+    ``m · (1.006 + 1.86·W) · ΔT``). Latent duty is the isothermal steam
+    enthalpy rise (≈ ``m_w · h_fg``).
+    """
+    if m_da <= 0:
+        raise ValueError("mass flow must be positive")
+
+    state_mode = t_out is not None and w_out is not None
+    duty_mode = q_sensible is not None and steam_rate is not None
+    if state_mode == duty_mode:
+        raise ValueError(
+            "provide either t_out + w_out (state mode) or "
+            "q_sensible + steam_rate (duty mode)"
+        )
+
+    if duty_mode:
+        assert q_sensible is not None and steam_rate is not None
+        if q_sensible < -1e-12:
+            raise ValueError("sensible heating duty cannot be negative")
+        if steam_rate < -1e-12:
+            raise ValueError("steam rate cannot be negative")
+        if q_sensible <= 1e-12 and steam_rate <= 1e-12:
+            raise ValueError("provide a positive heating duty and/or steam rate")
+        cp = 1.006 + 1.86 * state_in.w
+        t_out = state_in.t_db + q_sensible / (m_da * cp)
+        w_out = state_in.w + steam_rate / m_da
+
+    assert t_out is not None and w_out is not None
+    if t_out < state_in.t_db - 1e-9:
+        raise ValueError(
+            "leaving dry bulb is below entering — this process is heating only"
+        )
+    if w_out < state_in.w * (1.0 - 1e-9):
+        raise ValueError(
+            "leaving humidity ratio is below entering — steam humidification "
+            "cannot dry the air"
+        )
+
+    # State X: heated to t_out at constant W1 (may equal state_in if no heat).
+    if abs(t_out - state_in.t_db) < 1e-9:
+        state_x = state_in
+        q_s = 0.0
+    else:
+        heated = sensible(state_in, m_da, t_out)
+        state_x = heated.state
+        q_s = heated.q_total
+
+    # State 2: isothermal steam to w_out (may equal X if no steam).
+    if abs(w_out - state_in.w) < 1e-12:
+        state_2 = state_x
+        steam = 0.0
+        q_l = 0.0
+    else:
+        hum = steam_humidify(state_x, m_da, w_out)
+        state_2 = hum.state
+        steam = hum.steam_rate
+        q_l = hum.q_latent
+
+    return HeatHumidifyResult(
+        state_x=state_x,
+        state=state_2,
+        q_sensible=q_s,
+        q_latent=q_l,
+        q_total=q_s + q_l,
+        steam_rate=steam,
+    )
+
+
 def adiabatic_humidify(
     state_in: PsychroState, m_da: float, effectiveness: float
 ) -> AdiabaticResult:

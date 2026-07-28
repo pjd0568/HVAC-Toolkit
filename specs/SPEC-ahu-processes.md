@@ -117,6 +117,31 @@ must be reachable on the process line.
 dh_adsorption)` with `delta_w = W_in − W_out`, `q_total = m_da·(h_out − h_in)`
 (zero when ideal).
 
+### `heat_and_humidify(state_in, m_da, *, t_out+w_out | q_sensible+steam_rate) -> HeatHumidifyResult`
+Sensible heating at constant W, then isothermal steam humidification — the common
+AHU winter path:
+
+```
+(1) ──constant W──► (X) ──constant T──► (2)
+      heating coil         steam
+```
+
+Mode A (state): `t_out`, `w_out` with `t_out ≥ t_in` and `w_out ≥ w_in`.
+Intermediate X is `(t_out, W_in)`.
+
+Mode B (duty): `q_sensible` (kW) and `steam_rate` (kg/s); either may be zero if
+the other is positive. Leaving temperature from moist-air cp:
+`t_out = t_in + q_sensible / (m_da · (1.006 + 1.86·W_in))`;
+`W_out = W_in + steam_rate / m_da`.
+
+Duties from enthalpy (consistent with `sensible` / `steam_humidify`):
+- q_sensible = m_da·(h_X − h_in)
+- q_latent = m_da·(h_2 − h_X)  (≈ ṁ_w · h_fg)
+- q_total = q_sensible + q_latent
+- steam_rate = m_da·(W_out − W_in)
+
+`HeatHumidifyResult(state_x, state, q_sensible, q_latent, q_total, steam_rate)`
+
 ### `fan_gain(state_in, m_da, power_kw | dt) -> ProcessResult`
 Sensible pick-up across a fan at constant moisture content. Given absorbed power:
 ΔT = P / (m_da · c_p,moist), with c_p,moist = 1.006 + 1.86·W kJ/kg·K (the moist-air
@@ -233,6 +258,9 @@ the interaction is consistent everywhere.
 - **Desiccant ηd < 1:** same duty at ηd = 0.85: h_out > h_in by (1−ηd)·2501·ΔW;
   T_out above the ideal isenthalpic leaving temperature.
 - **Desiccant Mode B:** moisture_removed sets W_out = W_in − ṁ_w / m_da.
+- **Heat+humidify state:** 5 °C/80% → 22 °C / W=0.008 at 1 kg/s: state X at
+  (22 °C, W_in); steam_rate = ΔW; q_total = q_s + q_l > 0.
+- **Heat+humidify duty round-trip:** state-mode duties reproduce T2/W2 in duty mode.
 - **AHU chain:** winter case (OA −5/90%, RA 21/50%, 30% OA, frost coil to 5 °C,
   reheat to 21 °C, steam to 40% RH at 21 °C): stage list ordered, each stage's
   inlet = previous stage's outlet, net heating > 0, moisture added > 0.

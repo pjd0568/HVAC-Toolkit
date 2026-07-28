@@ -202,6 +202,37 @@
       <div class="help-note">Leaving air is usually too warm for direct supply — plan a downstream cooling coil or heat exchanger to trim dry-bulb without re-humidifying.</div>
     </section>
 
+    <!-- ═══════════════ HEAT + HUMIDIFY ═══════════════ -->
+    <section class="help-section" id="heat-humidify" data-help-section
+             data-keywords="heating humidification steam heat humidify winter coil isothermal sensible latent">
+      <h2 class="help-h">Psychrometrics — Heating &amp; Humidification</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Two-stage winter path: sensible heating at constant moisture, then isothermal steam humidification at constant dry-bulb.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>When an AHU must both raise temperature and add humidity — the usual heating-coil then steam-humidifier sequence.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Mode</dt><dd><strong>State target</strong> — enter leaving dry-bulb and moisture. <strong>Duty &amp; airflow</strong> — enter heating kW and steam rate.</dd>
+        <dt>Entering air</dt><dd>State 1 plus airflow.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Choose State target or Duty &amp; airflow.</li>
+        <li>Enter site altitude, entering condition and flow.</li>
+        <li>Enter the leaving target (or heating duty + steam rate).</li>
+        <li>Press <strong>Calculate</strong>. States 1 → X → 2 appear on the chart with coil and steam duties.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <dl class="help-io">
+        <dt>State X</dt><dd>After the heating coil: leaving dry-bulb at entering humidity ratio.</dd>
+        <dt>State 2</dt><dd>After steam: same dry-bulb as X, higher moisture.</dd>
+        <dt>Sensible / latent / total</dt><dd>Heating-coil duty, steam enthalpy to the airstream, and their sum.</dd>
+      </dl>
+    </section>
+
     <!-- ═══════════════ AHU DESIGN ═══════════════ -->
     <section class="help-section" id="ahu" data-help-section
              data-keywords="ahu air handling unit supply condition off-unit outdoor return mix on-coil off-coil reheat preheat coil duty fan gain blow through draw through sfp specific fan power reachability frost stages">

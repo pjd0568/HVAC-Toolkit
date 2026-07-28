@@ -1,4 +1,4 @@
-"""Psychrometrics tools: single point, mixed air, cooling coil, desiccant, AHU.
+"""Psychrometrics tools: single point, mixed air, coils, desiccant, heat+humidify, AHU.
 
 Each tool has a page route (renders the on-screen form + results) and a sibling
 `/report` route (POST-only, generates a PDF). Both call the same `_run_*` helper
@@ -966,3 +966,146 @@ def desiccant_chart_png():
     if png is None:
         return Response(f"Could not generate chart image: {err}", status=500)
     return _png_response(png, "psychrometrics-desiccant-chart.png")
+
+
+# -- Sensible heating + steam humidification -----------------------------------------
+
+_HEAT_HUMIDIFY_DEFAULTS = {
+    "mode": "state",
+    "on_t": "5", "on_prop": "rh", "on_val": "80",
+    "off_t": "22", "off_prop": "rh", "off_val": "50",
+    "flow": "5000",
+    "q_sensible": "50",  # kW (canonical = display for SI power)
+    "steam_rate": "0.0055555556",  # kg/s → 20 kg/h
+    "altitude": "0",
+}
+_HEAT_HUMIDIFY_FIELD_UNITS = {
+    "on_t": "temperature", "off_t": "temperature",
+    "flow": "vol_flow",
+    "q_sensible": "power",
+    "steam_rate": "moisture_rate",
+    "altitude": "altitude",
+}
+
+
+def _run_heat_humidify(form, U):
+    pressure = _resolve_pressure(form, U)
+    on = _state_from_form(form, "on", pressure, U)
+    m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
+    mode = form.get("mode", "state")
+
+    if mode == "duty":
+        q_s = U.to_si("power", _f(form, "q_sensible"))
+        steam = U.to_si("moisture_rate", _f(form, "steam_rate"))
+        result = proc.heat_and_humidify(
+            on, m_da, q_sensible=q_s, steam_rate=steam
+        )
+    else:
+        off = _state_from_form(form, "off", pressure, U)
+        result = proc.heat_and_humidify(
+            on, m_da, t_out=off.t_db, w_out=off.w
+        )
+
+    points = [
+        {"label": "1", "t": on.t_db, "w": on.w},
+        {"label": "X", "t": result.state_x.t_db, "w": result.state_x.w},
+        {"label": "2", "t": result.state.t_db, "w": result.state.w},
+    ]
+    segments = [(0, 1), (1, 2)]
+    return pressure, on, m_da, result, points, segments
+
+
+@bp.route("/heat-humidify", methods=["GET", "POST"])
+@require_module("psychro.heat_humidify")
+def heat_humidify():
+    U = current_view()
+    result = None
+    error = None
+    on = None
+    m_da = None
+    pressure = None
+    points, segments = [], []
+    if request.method != "POST":
+        form = _display_defaults(_HEAT_HUMIDIFY_DEFAULTS, _HEAT_HUMIDIFY_FIELD_UNITS, U)
+        _paste_slot_into(form, "on", U)
+        _paste_slot_into(form, "off", U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+    else:
+        form = {k: request.form.get(k, d) for k, d in _HEAT_HUMIDIFY_DEFAULTS.items()}
+        try:
+            pressure, on, m_da, result, points, segments = _run_heat_humidify(form, U)
+        except ValueError as exc:
+            error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
+    return render_template(
+        "heat_humidify.html", active="psychro_heat_humidify", form=form,
+        second_properties=_second_properties(U), on=on, m_da=m_da,
+        result=result, chart=chart, error=error, pressure=pressure,
+    )
+
+
+@bp.route("/heat-humidify/report", methods=["POST"])
+@require_module("psychro.heat_humidify")
+def heat_humidify_report():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _HEAT_HUMIDIFY_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_heat_humidify(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate report: {exc}", status=400)
+
+    chart_png = _safe_chart_png(points, segments, U.system)
+    sp = _second_properties(U)
+    mode = form.get("mode", "state")
+    input_rows = (
+        _site_condition_rows(form, pressure, U)
+        + _state_input_rows("on", "Entering", form, sp, U)
+        + [("Entering Flow", form["flow"], U.sym("vol_flow"))]
+        + [("Mode", "Duty & airflow" if mode == "duty" else "State point target", "")]
+    )
+    if mode == "duty":
+        input_rows += [
+            ("Sensible Heating Duty", form["q_sensible"], U.sym("power")),
+            ("Steam Rate", form["steam_rate"], U.sym("moisture_rate")),
+        ]
+    else:
+        input_rows += _state_input_rows("off", "Leaving target", form, sp, U)
+
+    result_rows = [
+        ("State X Dry Bulb", U.fmt("temperature", result.state_x.t_db), U.sym("temperature")),
+        ("State X Humidity Ratio", U.fmt("humidity_ratio", result.state_x.w), U.sym("humidity_ratio")),
+        ("Leaving Dry Bulb", U.fmt("temperature", result.state.t_db), U.sym("temperature")),
+        ("Leaving RH", f"{result.state.rh * 100:.1f}", "%"),
+        ("Leaving Humidity Ratio", U.fmt("humidity_ratio", result.state.w), U.sym("humidity_ratio")),
+        ("Sensible Heating", U.fmt("power", result.q_sensible), U.sym("power")),
+        ("Latent / Steam Duty", U.fmt("power", result.q_latent), U.sym("power")),
+        ("Total Heat to Air", U.fmt("power", result.q_total), U.sym("power")),
+        ("Steam Injection Rate", U.fmt("moisture_rate", result.steam_rate), U.sym("moisture_rate")),
+        ("Dry-air Mass Flow", U.fmt("mass_flow", m_da), U.sym("mass_flow")),
+    ]
+    meta = _report_meta_from_form("Psychrometrics - Heating & Humidification")
+    pdf = build_pdf(meta, input_rows, result_rows, chart_png)
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-heat-humidify")
+
+
+@bp.route("/heat-humidify/chart.png", methods=["POST"])
+@require_module("psychro.heat_humidify")
+def heat_humidify_chart_png():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _HEAT_HUMIDIFY_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_heat_humidify(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate chart: {exc}", status=400)
+
+    png, err = _chart_png_or_500(points, segments, U.system)
+    if png is None:
+        return Response(f"Could not generate chart image: {err}", status=500)
+    return _png_response(png, "psychrometrics-heat-humidify-chart.png")

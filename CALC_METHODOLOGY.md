@@ -514,6 +514,31 @@ process line until leaving RH matches.
 
 ---
 
+### 2.6c Sensible heating + steam humidification
+
+**What it does:** Two-stage process — heat at constant W to state X, then
+isothermal steam to state 2.
+
+**Formulas:**
+
+```
+state_X = state(t_out, w=W_in)
+Q_sensible = m_da · (h_X − h_in)
+state_2 = state(t_out, w=W_out)          # isothermal steam
+steam_rate = m_da · (W_out − W_in)
+Q_latent = m_da · (h_2 − h_X)
+Q_total = Q_sensible + Q_latent
+```
+
+Duty mode: `t_out = t_in + Q_s / (m_da · (1.006 + 1.86·W_in))`,
+`W_out = W_in + steam_rate / m_da`.
+
+**Source:** `heat_and_humidify`
+
+**Reference:** SPEC-ahu-processes — heat_and_humidify.
+
+---
+
 ### 2.7 Fan sensible gain
 
 **What it does:** Temperature rise across fan at constant moisture.
