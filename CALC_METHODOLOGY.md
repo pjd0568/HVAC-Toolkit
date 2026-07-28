@@ -487,6 +487,28 @@ Q_total = m_da · (h_out − h_in)
 
 ---
 
+### 2.6a Adiabatic / evaporative cooling (calculator API)
+
+**What it does:** Same constant wet-bulb process as §2.6, with Mode A
+(effectiveness or leaving RH) and Mode B (sensible cooling duty → ε).
+
+**Formulas:**
+
+```
+ε = (T_db1 − T_db2) / (T_db1 − T_wb1)
+state_out = state(T_db2, twb=T_wb1, p)
+Q_sensible = m_da · (1.006 + 1.86·W_in) · (T_db1 − T_db2)   # positive cooling
+water_rate = m_da · (W_out − W_in)
+```
+
+Duty mode rejects T_db2 &lt; T_wb1.
+
+**Source:** `adiabatic_cool`
+
+**Reference:** SPEC-ahu-processes — adiabatic_cool.
+
+---
+
 ### 2.6b Desiccant dehumidification
 
 **What it does:** Isenthalpic / near-isenthalpic drying. Leaving dry-bulb rises as

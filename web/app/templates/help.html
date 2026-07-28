@@ -233,6 +233,31 @@
       </dl>
     </section>
 
+    <!-- ═══════════════ ADIABATIC COOL ═══════════════ -->
+    <section class="help-section" id="adiabatic-cool" data-help-section
+             data-keywords="adiabatic cooling evaporative cooler spray washer wet bulb saturation effectiveness media">
+      <h2 class="help-h">Psychrometrics — Adiabatic Cooling</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Direct evaporative cooling along the constant wet-bulb line — dry-bulb falls, moisture rises, enthalpy nearly constant.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>For direct evaporative coolers, spray washers or evaporative media when you need the leaving state, water use and media effectiveness.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Mode</dt><dd><strong>State / effectiveness</strong> — set media ε or a leaving RH. <strong>Duty &amp; airflow</strong> — set the required sensible cooling capacity.</dd>
+        <dt>Entering air</dt><dd>Hot/dry state plus airflow. Cooling potential is T<sub>db</sub> − T<sub>wb</sub>.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Choose mode and enter site altitude, entering condition and flow.</li>
+        <li>Enter media effectiveness, leaving RH, or required cooling capacity.</li>
+        <li>Press <strong>Calculate</strong>. Leaving state, ε, cooling effect and water evaporation appear with the wet-bulb process line on the chart.</li>
+      </ol>
+
+      <div class="help-note">Leaving dry-bulb cannot go below the entering wet-bulb — that is the thermodynamic limit (ε = 100%).</div>
+    </section>
+
     <!-- ═══════════════ AHU DESIGN ═══════════════ -->
     <section class="help-section" id="ahu" data-help-section
              data-keywords="ahu air handling unit supply condition off-unit outdoor return mix on-coil off-coil reheat preheat coil duty fan gain blow through draw through sfp specific fan power reachability frost stages">

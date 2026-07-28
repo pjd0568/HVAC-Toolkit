@@ -560,6 +560,116 @@ def adiabatic_humidify(
     return AdiabaticResult(state=s_out, water_rate=water, q_total=q_total)
 
 
+@dataclass(frozen=True)
+class AdiabaticCoolResult:
+    """Direct evaporative / adiabatic cooler along constant wet-bulb."""
+
+    state: PsychroState
+    effectiveness: float  # saturation efficiency ε in (0, 1]
+    water_rate: float  # kg/s evaporated into the airstream
+    delta_w: float  # kg/kg, W_out − W_in
+    q_sensible: float  # kW cooling effect (positive when air is cooled)
+    q_total: float  # kW enthalpy change (≈ 0 on the wet-bulb line)
+
+
+def adiabatic_cool(
+    state_in: PsychroState,
+    m_da: float,
+    *,
+    effectiveness: float | None = None,
+    rh_out: float | None = None,
+    q_sensible: float | None = None,
+) -> AdiabaticCoolResult:
+    """Direct evaporative cooling on the constant wet-bulb line.
+
+    No external heat transfer: dry-bulb falls and moisture rises toward the
+    entering wet-bulb. Extent is set by saturation effectiveness::
+
+        ε = (T_db1 − T_db2) / (T_db1 − T_wb1)
+
+    Provide exactly one of:
+    - ``effectiveness`` — media saturation efficiency in (0, 1], or
+    - ``rh_out`` — target leaving RH (0–1) on the wet-bulb line, or
+    - ``q_sensible`` — required sensible cooling effect (kW, positive);
+      leaving dry-bulb from moist-air cp, then ε follows. Raises if the
+      required T_db2 is below the entering wet-bulb limit.
+    """
+    if m_da <= 0:
+        raise ValueError("mass flow must be positive")
+
+    n = sum(x is not None for x in (effectiveness, rh_out, q_sensible))
+    if n != 1:
+        raise ValueError(
+            "provide exactly one of effectiveness, rh_out, or q_sensible"
+        )
+
+    twb = state_in.t_wb
+    t1 = state_in.t_db
+    approach = t1 - twb
+    if approach < 1e-9:
+        raise ValueError(
+            "entering air is already at the wet-bulb temperature — "
+            "no evaporative cooling potential"
+        )
+
+    if effectiveness is not None:
+        if not (0.0 < effectiveness <= 1.0):
+            raise ValueError("effectiveness must be in (0, 1]")
+        t_out = t1 - effectiveness * approach
+    elif q_sensible is not None:
+        if q_sensible <= 0:
+            raise ValueError("sensible cooling capacity must be positive")
+        cp = 1.006 + 1.86 * state_in.w
+        t_out = t1 - q_sensible / (m_da * cp)
+        if t_out < twb - 1e-9:
+            raise ValueError(
+                "Required temperature below thermodynamic wet-bulb limit"
+            )
+        effectiveness = (t1 - t_out) / approach
+    else:
+        assert rh_out is not None
+        if not (0.0 < rh_out <= 1.0):
+            raise ValueError("leaving RH must be in (0, 1]")
+        # Along constant Twb, RH rises as Tdb falls. Bracket T in [Twb, T1].
+        s_sat = psy.state(twb, twb=twb, p=state_in.p)  # ε = 1
+        if rh_out < state_in.rh - 1e-9:
+            raise ValueError(
+                "target leaving RH is below the entering RH — evaporative "
+                "cooling increases RH along the wet-bulb line"
+            )
+        if rh_out > s_sat.rh + 1e-9:
+            raise ValueError(
+                "target leaving RH exceeds saturation at the entering wet-bulb"
+            )
+        lo, hi = twb, t1
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            s_mid = psy.state(mid, twb=twb, p=state_in.p)
+            if s_mid.rh < rh_out:
+                hi = mid
+            else:
+                lo = mid
+            if hi - lo < 1e-9:
+                break
+        t_out = 0.5 * (lo + hi)
+        effectiveness = (t1 - t_out) / approach
+
+    s_out = psy.state(t_out, twb=twb, p=state_in.p)
+    delta_w = s_out.w - state_in.w
+    water = m_da * delta_w
+    cp = 1.006 + 1.86 * state_in.w
+    q_s = m_da * cp * (t1 - t_out)
+    q_total = m_da * (s_out.h - state_in.h)
+    return AdiabaticCoolResult(
+        state=s_out,
+        effectiveness=effectiveness,
+        water_rate=water,
+        delta_w=delta_w,
+        q_sensible=q_s,
+        q_total=q_total,
+    )
+
+
 def fan_gain(
     state_in: PsychroState,
     m_da: float,

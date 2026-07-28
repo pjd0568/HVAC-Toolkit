@@ -153,6 +153,46 @@ def test_adiabatic_humidify():
         proc.adiabatic_humidify(s, 1.0, 1.5)
 
 
+# -- Adiabatic / evaporative cooling ---------------------------------------------
+
+def test_adiabatic_cool_effectiveness():
+    s = psy.state(35.0, rh=0.20)
+    r = proc.adiabatic_cool(s, 1.0, effectiveness=0.85)
+    assert r.effectiveness == pytest.approx(0.85)
+    assert r.state.t_wb == pytest.approx(s.t_wb, abs=0.05)
+    assert r.state.t_db == pytest.approx(
+        s.t_db - 0.85 * (s.t_db - s.t_wb), abs=0.05
+    )
+    assert r.state.w > s.w
+    assert r.q_sensible > 0
+    assert r.water_rate > 0
+
+
+def test_adiabatic_cool_duty_mode():
+    s = psy.state(32.0, rh=0.25)
+    r0 = proc.adiabatic_cool(s, 2.0, effectiveness=0.80)
+    r1 = proc.adiabatic_cool(s, 2.0, q_sensible=r0.q_sensible)
+    assert r1.state.t_db == pytest.approx(r0.state.t_db, abs=0.05)
+    assert r1.effectiveness == pytest.approx(r0.effectiveness, abs=1e-3)
+
+
+def test_adiabatic_cool_rh_target():
+    s = psy.state(30.0, rh=0.25)
+    r = proc.adiabatic_cool(s, 1.0, rh_out=0.70)
+    assert r.state.rh == pytest.approx(0.70, abs=1e-3)
+    assert r.state.t_wb == pytest.approx(s.t_wb, abs=0.05)
+    assert 0.0 < r.effectiveness <= 1.0
+
+
+def test_adiabatic_cool_below_wetbulb_raises():
+    s = psy.state(30.0, rh=0.30)
+    # Demand more cooling than wet-bulb approach allows.
+    cp = 1.006 + 1.86 * s.w
+    q_too_much = 1.0 * cp * (s.t_db - s.t_wb) * 1.2
+    with pytest.raises(ValueError, match="wet-bulb limit"):
+        proc.adiabatic_cool(s, 1.0, q_sensible=q_too_much)
+
+
 # -- Desiccant dehumidification --------------------------------------------------
 
 def test_desiccant_isenthalpic():

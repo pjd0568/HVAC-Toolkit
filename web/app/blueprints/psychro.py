@@ -1,4 +1,5 @@
-"""Psychrometrics tools: single point, mixed air, coils, desiccant, heat+humidify, AHU.
+"""Psychrometrics tools: single point, mixed air, coils, desiccant, heat+humidify,
+adiabatic cool, AHU.
 
 Each tool has a page route (renders the on-screen form + results) and a sibling
 `/report` route (POST-only, generates a PDF). Both call the same `_run_*` helper
@@ -1109,3 +1110,151 @@ def heat_humidify_chart_png():
     if png is None:
         return Response(f"Could not generate chart image: {err}", status=500)
     return _png_response(png, "psychrometrics-heat-humidify-chart.png")
+
+
+# -- Adiabatic / evaporative cooling -------------------------------------------------
+
+_ADIABATIC_COOL_DEFAULTS = {
+    "mode": "state",
+    "on_t": "35", "on_prop": "rh", "on_val": "20",
+    "flow": "5000",
+    "target_kind": "effectiveness",  # effectiveness | rh
+    "effectiveness": "85",
+    "rh_out": "70",
+    "q_sensible": "20",  # kW cooling effect — within wet-bulb approach at defaults
+    "altitude": "0",
+}
+_ADIABATIC_COOL_FIELD_UNITS = {
+    "on_t": "temperature",
+    "flow": "vol_flow",
+    "q_sensible": "power",
+    "altitude": "altitude",
+}
+
+
+def _run_adiabatic_cool(form, U):
+    pressure = _resolve_pressure(form, U)
+    on = _state_from_form(form, "on", pressure, U)
+    m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
+    mode = form.get("mode", "state")
+
+    if mode == "duty":
+        q_s = U.to_si("power", _f(form, "q_sensible"))
+        result = proc.adiabatic_cool(on, m_da, q_sensible=q_s)
+    else:
+        kind = form.get("target_kind", "effectiveness")
+        if kind == "rh":
+            result = proc.adiabatic_cool(
+                on, m_da, rh_out=_f(form, "rh_out") / 100.0
+            )
+        else:
+            result = proc.adiabatic_cool(
+                on, m_da, effectiveness=_f(form, "effectiveness") / 100.0
+            )
+
+    # Chart: IN → OUT along wet-bulb, plus WB saturation marker.
+    wb_sat = psy.state(on.t_wb, twb=on.t_wb, p=pressure)
+    points = [
+        {"label": "IN", "t": on.t_db, "w": on.w},
+        {"label": "OUT", "t": result.state.t_db, "w": result.state.w},
+        {"label": "WB", "t": wb_sat.t_db, "w": wb_sat.w},
+    ]
+    segments = [(0, 1), (1, 2)]
+    return pressure, on, m_da, result, points, segments
+
+
+@bp.route("/adiabatic-cool", methods=["GET", "POST"])
+@require_module("psychro.adiabatic_cool")
+def adiabatic_cool():
+    U = current_view()
+    result = None
+    error = None
+    on = None
+    m_da = None
+    pressure = None
+    points, segments = [], []
+    if request.method != "POST":
+        form = _display_defaults(
+            _ADIABATIC_COOL_DEFAULTS, _ADIABATIC_COOL_FIELD_UNITS, U
+        )
+        _paste_slot_into(form, "on", U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+    else:
+        form = {k: request.form.get(k, d) for k, d in _ADIABATIC_COOL_DEFAULTS.items()}
+        try:
+            pressure, on, m_da, result, points, segments = _run_adiabatic_cool(form, U)
+        except ValueError as exc:
+            error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
+    return render_template(
+        "adiabatic_cool.html", active="psychro_adiabatic_cool", form=form,
+        second_properties=_second_properties(U), on=on, m_da=m_da,
+        result=result, chart=chart, error=error, pressure=pressure,
+    )
+
+
+@bp.route("/adiabatic-cool/report", methods=["POST"])
+@require_module("psychro.adiabatic_cool")
+def adiabatic_cool_report():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _ADIABATIC_COOL_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_adiabatic_cool(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate report: {exc}", status=400)
+
+    chart_png = _safe_chart_png(points, segments, U.system)
+    sp = _second_properties(U)
+    mode = form.get("mode", "state")
+    input_rows = (
+        _site_condition_rows(form, pressure, U)
+        + _state_input_rows("on", "Entering", form, sp, U)
+        + [("Entering Flow", form["flow"], U.sym("vol_flow"))]
+        + [("Mode", "Duty & airflow" if mode == "duty" else "State / effectiveness", "")]
+    )
+    if mode == "duty":
+        input_rows.append(
+            ("Sensible Cooling Duty", form["q_sensible"], U.sym("power"))
+        )
+    elif form.get("target_kind") == "rh":
+        input_rows.append(("Target Leaving RH", form["rh_out"], "%"))
+    else:
+        input_rows.append(("Media Effectiveness", form["effectiveness"], "%"))
+
+    result_rows = [
+        ("Leaving Dry Bulb", U.fmt("temperature", result.state.t_db), U.sym("temperature")),
+        ("Leaving RH", f"{result.state.rh * 100:.1f}", "%"),
+        ("Leaving Humidity Ratio", U.fmt("humidity_ratio", result.state.w), U.sym("humidity_ratio")),
+        ("Entering Wet Bulb", U.fmt("temperature", on.t_wb), U.sym("temperature")),
+        ("Saturation Effectiveness ε", f"{result.effectiveness * 100:.1f}", "%"),
+        ("Sensible Cooling Effect", U.fmt("power", result.q_sensible), U.sym("power")),
+        ("Water Evaporation Rate", U.fmt("moisture_rate", result.water_rate), U.sym("moisture_rate")),
+        ("ΔW (out − in)", U.fmt("humidity_ratio", result.delta_w), U.sym("humidity_ratio")),
+        ("Dry-air Mass Flow", U.fmt("mass_flow", m_da), U.sym("mass_flow")),
+    ]
+    meta = _report_meta_from_form("Psychrometrics - Adiabatic Cooling")
+    pdf = build_pdf(meta, input_rows, result_rows, chart_png)
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-adiabatic-cool")
+
+
+@bp.route("/adiabatic-cool/chart.png", methods=["POST"])
+@require_module("psychro.adiabatic_cool")
+def adiabatic_cool_chart_png():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _ADIABATIC_COOL_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_adiabatic_cool(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate chart: {exc}", status=400)
+
+    png, err = _chart_png_or_500(points, segments, U.system)
+    if png is None:
+        return Response(f"Could not generate chart image: {err}", status=500)
+    return _png_response(png, "psychrometrics-adiabatic-cool-chart.png")

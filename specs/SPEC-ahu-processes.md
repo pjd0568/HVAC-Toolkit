@@ -93,6 +93,28 @@ water_rate = m_da·(w_out − w_in). Enthalpy change is small and non-zero (wet-
 not enthalpy, is conserved exactly); report q_total for completeness.
 `AdiabaticResult(state, water_rate, q_total)`
 
+### `adiabatic_cool(state_in, m_da, *, effectiveness | rh_out | q_sensible) -> AdiabaticCoolResult`
+Direct evaporative / adiabatic cooling on the constant wet-bulb line (nearly
+constant enthalpy). Saturation effectiveness:
+
+```
+ε = (T_db1 − T_db2) / (T_db1 − T_wb1)
+T_db2 = T_db1 − ε · (T_db1 − T_wb1)
+state_2 = state(T_db2, twb=T_wb1)
+```
+
+Provide exactly one of:
+- `effectiveness` in (0, 1] — media saturation efficiency; or
+- `rh_out` — leaving RH on the wet-bulb line; or
+- `q_sensible` (kW, positive cooling effect) — duty mode:
+  `T_db2 = T_db1 − q_sensible / (m_da · (1.006 + 1.86·W_in))`;
+  raise if `T_db2 < T_wb1` ("Required temperature below thermodynamic wet-bulb limit").
+
+Outputs: leaving state, ε, `water_rate = m_da·(W_2−W_in)`,
+`q_sensible = m_da·c_p·(T_db1−T_db2)`, `q_total ≈ 0`.
+
+`AdiabaticCoolResult(state, effectiveness, water_rate, delta_w, q_sensible, q_total)`
+
 ### `desiccant_dehumidify(state_in, m_da, *, w_out | rh_out | moisture_removed, eta_d=1) -> DesiccantResult`
 Desiccant (solid wheel / liquid) dehumidification. Adsorption/absorption removes
 water vapour; latent heat appears as a dry-bulb rise. Ideal model is
@@ -253,6 +275,8 @@ the interaction is consistent everywhere.
   w_off > w_on raises.
 - **Steam:** 20 °C/30% to w giving 50% RH: t unchanged (±0.01), steam_rate > 0.
 - **Adiabatic:** 28 °C/30%, ε = 0.85: t_wb conserved (±0.05 K), t drops, w rises.
+- **Adiabatic cool duty:** q_sensible round-trips with effectiveness mode; T_db2 below
+  T_wb1 raises "wet-bulb limit".
 - **Desiccant isenthalpic:** 25 °C/60% → W_out = 0.006 at ηd = 1, 1 kg/s: h conserved
   (±1e-6), T_out > T_in, moisture_removed = ΔW, q_total = 0.
 - **Desiccant ηd < 1:** same duty at ηd = 0.85: h_out > h_in by (1−ηd)·2501·ΔW;
