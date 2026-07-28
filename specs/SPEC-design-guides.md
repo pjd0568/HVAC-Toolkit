@@ -53,4 +53,5 @@ cooling process, cross-linked from the Cooling Coil and AHU Design tools.
 | Slug | Title | Notes |
 |------|-------|-------|
 | `cooling-coil-design` | Cooling Coil Design… | Original v1.0 article |
+| `steam-humidification` | Thermodynamics of Steam Humidification… | Energy balance, isothermal vs enthalpy-slope models; linked from Heat & Humidify |
 | `pipe-sizing-design-limits` | Pipe Sizing Design Limits… | Moved off the Pipe Sizing page (20 Jul 2026) so the calculator stays lean; linked from the traffic-light legend |

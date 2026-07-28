@@ -25,6 +25,18 @@ GUIDES = [
         "template": "guides/cooling_coil_design.html",
     },
     {
+        "slug": "steam-humidification",
+        "title": "Thermodynamics of Steam Humidification in HVAC Systems",
+        "summary": (
+            "Why steam humidification is drawn as isothermal on the chart even though "
+            "enthalpy rises; mass and energy balances, the small dry-bulb drift, and "
+            "when to use the ideal model versus a full enthalpy-slope solution."
+        ),
+        "disc": "air",
+        "read_mins": 8,
+        "template": "guides/steam_humidification.html",
+    },
+    {
         "slug": "pipe-sizing-design-limits",
         "title": "Pipe Sizing Design Limits: Velocity and Pressure-Gradient Bands",
         "summary": (
