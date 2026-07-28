@@ -7,42 +7,61 @@
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-<div class="panel" style="max-width:920px;">
-  <div class="panel-head">Inputs</div>
-  <div class="panel-body">
-    <form method="post">
+<div class="psychro-layout">
+  {# NW — compact vertical inputs #}
+  <form method="post" class="psychro-inputs panel">
+    <div class="panel-head">Inputs</div>
+    <div class="panel-body">
       {{ site_conditions(form, pressure) }}
 
       <div class="section-label">State</div>
-      <div class="form-grid four">
+      <div class="form-grid psychro-stack">
         {{ state_input("s", "State", form, second_properties) }}
       </div>
 
-      <div style="margin-top:16px;">
+      <div class="psychro-actions">
         <button class="btn-accent" type="submit">Calculate</button>
       </div>
-    </form>
+    </div>
+  </form>
+
+  {# NE — chart (placeholder until Calculate) #}
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% if chart %}
+      <svg id="psychart" class="psychro-chart-svg" viewBox="0 0 760 500" aria-label="Psychrometric chart"></svg>
+      <script>const CHART = {{ chart|tojson }};</script>
+      <script src="{{ url_for('static', filename='js/psychart.js') }}"></script>
+      {% else %}
+      <div class="psychro-chart-placeholder">
+        <p>Calculate to plot the state</p>
+      </div>
+      {% endif %}
+    </div>
   </div>
+
+  {# S — full-width results #}
+  {% if result %}
+  <div class="psychro-results panel">
+    <div class="panel-head">Resolved state</div>
+    <table class="results">
+      <tr><th>Property</th><th>Value</th></tr>
+      <tr><td>Dry-bulb temperature</td><td class="num">{{ U.html('temperature', result.t_db, 2) }}</td></tr>
+      <tr><td>Wet-bulb temperature</td><td class="num">{{ U.html('temperature', result.t_wb, 2) }}</td></tr>
+      <tr><td>Dew-point temperature</td><td class="num">{% if result.t_dp < -273 %}<span class="suffix">— (dry air)</span>{% else %}{{ U.html('temperature', result.t_dp, 2) }}{% endif %}</td></tr>
+      <tr><td>Relative humidity</td><td class="num"><span class="valunit"><span class="v">{{ '%.1f'|format(result.rh * 100) }}</span><span class="u">%</span></span></td></tr>
+      <tr><td>Humidity ratio</td><td class="num">{{ U.html('humidity_ratio', result.w, suffix='dry air') }}</td></tr>
+      <tr><td>Specific enthalpy</td><td class="num">{{ U.html('enthalpy', result.h, 2, suffix='dry air') }}</td></tr>
+      <tr><td>Specific volume</td><td class="num">{{ U.html('specific_volume', result.v, suffix='dry air') }}</td></tr>
+      <tr><td>Density</td><td class="num">{{ U.html('density', result.rho) }}</td></tr>
+      <tr><td>Vapour pressure</td><td class="num">{{ U.html('pressure', result.p_w, 4) }}</td></tr>
+    </table>
+  </div>
+  {% endif %}
 </div>
 
 {% if result %}
-<div class="section-label">Resolved state</div>
-<div class="panel" style="max-width:640px;">
-  <table class="results">
-    <tr><th>Property</th><th>Value</th></tr>
-    <tr><td>Dry-bulb temperature</td><td class="num">{{ U.html('temperature', result.t_db, 2) }}</td></tr>
-    <tr><td>Wet-bulb temperature</td><td class="num">{{ U.html('temperature', result.t_wb, 2) }}</td></tr>
-    <tr><td>Dew-point temperature</td><td class="num">{% if result.t_dp < -273 %}<span class="suffix">— (dry air)</span>{% else %}{{ U.html('temperature', result.t_dp, 2) }}{% endif %}</td></tr>
-    <tr><td>Relative humidity</td><td class="num"><span class="valunit"><span class="v">{{ '%.1f'|format(result.rh * 100) }}</span><span class="u">%</span></span></td></tr>
-    <tr><td>Humidity ratio</td><td class="num">{{ U.html('humidity_ratio', result.w, suffix='dry air') }}</td></tr>
-    <tr><td>Specific enthalpy</td><td class="num">{{ U.html('enthalpy', result.h, 2, suffix='dry air') }}</td></tr>
-    <tr><td>Specific volume</td><td class="num">{{ U.html('specific_volume', result.v, suffix='dry air') }}</td></tr>
-    <tr><td>Density</td><td class="num">{{ U.html('density', result.rho) }}</td></tr>
-    <tr><td>Vapour pressure</td><td class="num">{{ U.html('pressure', result.p_w, 4) }}</td></tr>
-  </table>
-</div>
-{% include "_chart.html" %}
-
 {{ report_form(url_for('psychro.single_point_report'), form, url_for('psychro.single_point_chart_png')) }}
 {% endif %}
 

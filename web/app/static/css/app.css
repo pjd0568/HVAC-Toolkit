@@ -322,9 +322,70 @@ input[readonly] { background: var(--bg); cursor: default; }
 
 table.results { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.results td, table.results th { padding: 10px 18px; text-align: left; border-bottom: 1px solid #EEF1F5; }
-table.results th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+/* No text-transform: uppercase — unit symbols must keep SI case (kJ/kg, kW, kg/h). */
+table.results th { font-size: 11px; letter-spacing: .3px; color: var(--muted); font-weight: 700; }
 table.results tr:last-child td { border-bottom: none; }
 td.num { font-family: Consolas, monospace; text-align: right; }
+
+/* ── Psychrometrics Single Point: NW inputs / NE chart / S results ── */
+.psychro-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  max-width: 1100px;
+}
+.psychro-inputs,
+.psychro-chart,
+.psychro-results { margin: 0; max-width: none; }
+.psychro-results { grid-column: 1 / -1; }
+.psychro-inputs .panel-body { padding: 14px 16px 16px; }
+.psychro-inputs .section-label { margin: 14px 0 8px; }
+.psychro-inputs .form-grid,
+.psychro-inputs .form-grid.four,
+.psychro-inputs .form-grid.psychro-stack {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  max-width: none;
+  margin-bottom: 10px;
+}
+.psychro-inputs label {
+  min-height: 0;
+  margin-bottom: 4px;
+  line-height: 1.25;
+}
+.psychro-inputs input,
+.psychro-inputs select { padding: 7px 9px; }
+.psychro-actions { margin-top: 12px; }
+.psychro-chart .panel-body {
+  padding: 10px 12px 14px;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.psychro-chart-svg { width: 100%; height: auto; display: block; }
+.psychro-chart-placeholder {
+  width: 100%;
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+}
+.psychro-chart-placeholder p { margin: 0; }
+.psychro-results .results td,
+.psychro-results .results th { padding: 8px 16px; }
+@media (max-width: 900px) {
+  .psychro-layout { grid-template-columns: 1fr; }
+  .psychro-chart .panel-body { min-height: 220px; }
+}
 
 /* Value + unit pairing (see app/units.py UnitView.html) -- a fixed, CSS-driven
    gap between the number and its unit, and a distinct muted/smaller style for
