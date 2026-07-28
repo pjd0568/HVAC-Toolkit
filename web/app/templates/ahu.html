@@ -7,54 +7,66 @@
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-<div class="psychro-layout psychro-layout-tall">
-  <form method="post" class="psychro-inputs panel">
-    <div class="panel-head">Design to a supply condition</div>
-    <div class="panel-body">
-      {{ site_conditions(form, pressure) }}
+<div class="psychro-layout">
+  <form method="post" class="psychro-inputs psychro-inputs-stack">
+    <div class="panel">
+      <div class="panel-head">Air on</div>
+      <div class="panel-body">
+        {{ site_conditions(form, pressure) }}
 
-      <div class="section-label">Outdoor Air</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("oa", "Outdoor Air", form, second_properties) }}
-        <div><label>Outdoor Air Fraction (%)</label><input name="oa_frac" value="{{ form.oa_frac }}"></div>
-      </div>
+        <div class="section-label">Outdoor Air</div>
+        <div class="form-grid psychro-stack">
+          {{ state_input("oa", "Outdoor Air", form, second_properties) }}
+          <div><label>Outdoor Air Fraction (%)</label><input name="oa_frac" value="{{ form.oa_frac }}"></div>
+        </div>
 
-      <div class="section-label">Return Air</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("ra", "Return Air", form, second_properties) }}
-      </div>
-
-      <div class="section-label">Required Supply — off-unit, into the room</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("sup", "Supply", form, second_properties) }}
-        <div><label>Supply Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
-      </div>
-
-      <div class="section-label">Cooling coil model</div>
-      <div class="form-grid psychro-stack">
-        <div>
-          <label>Off-coil RH target (%)</label>
-          <input name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
-          <div class="suffix">Default 90% — typical wet-coil practice. Use 100% for idealised CF = 1.</div>
+        <div class="section-label">Return Air</div>
+        <div class="form-grid psychro-stack">
+          {{ state_input("ra", "Return Air", form, second_properties) }}
         </div>
       </div>
+    </div>
 
-      <div class="section-label">Supply Fan — leave off to ignore fan gain</div>
-      <div class="form-grid psychro-stack">
-        <div>
-          <label>Fan Position</label>
-          <select name="fan_pos">
-            <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
-            <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before coil</option>
-            <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after reheat</option>
-          </select>
+    <div class="panel">
+      <div class="panel-head">Air off — required supply</div>
+      <div class="panel-body">
+        <p class="psychro-hint" style="margin-top:0;">Off-unit condition delivered into the room.</p>
+        <div class="form-grid psychro-stack">
+          {{ state_input("sup", "Supply", form, second_properties) }}
+          <div><label>Supply Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
         </div>
-        <div><label>Fan SFP (W per l/s)</label><input name="fan_sfp" value="{{ form.fan_sfp }}"></div>
-        <div><label>Fan Power (kW) — overrides SFP</label><input name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP"></div>
       </div>
+    </div>
 
-      <div class="psychro-actions">
-        <button class="btn-accent" type="submit">Design</button>
+    <div class="panel">
+      <div class="panel-head">Cooling coil &amp; fan</div>
+      <div class="panel-body">
+        <div class="section-label">Cooling coil model</div>
+        <div class="form-grid psychro-stack">
+          <div>
+            <label>Off-coil RH target (%)</label>
+            <input name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
+            <div class="suffix">Default 90% — typical wet-coil practice. Use 100% for idealised CF = 1.</div>
+          </div>
+        </div>
+
+        <div class="section-label">Supply fan — leave off to ignore fan gain</div>
+        <div class="form-grid psychro-stack">
+          <div>
+            <label>Fan Position</label>
+            <select name="fan_pos">
+              <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
+              <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before coil</option>
+              <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after reheat</option>
+            </select>
+          </div>
+          <div><label>Fan SFP (W per l/s)</label><input name="fan_sfp" value="{{ form.fan_sfp }}"></div>
+          <div><label>Fan Power (kW) — overrides SFP</label><input name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP"></div>
+        </div>
+
+        <div class="psychro-actions">
+          <button class="btn-accent" type="submit">Design</button>
+        </div>
       </div>
     </div>
   </form>

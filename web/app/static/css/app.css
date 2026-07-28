@@ -342,16 +342,17 @@ td.num { font-family: Consolas, monospace; text-align: right; }
 .psychro-results { margin: 0; max-width: none; }
 .psychro-results { grid-column: 1 / -1; }
 .psychro-span { grid-column: 1 / -1; max-width: none; }
-.psychro-layout-tall {
-  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
-  align-items: start;
+/* AHU (and similar): several input panels stacked in the left column */
+.psychro-inputs-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
-.psychro-layout-tall .psychro-chart {
-  position: sticky;
-  top: 72px;
-}
+.psychro-inputs-stack > .panel { margin: 0; max-width: none; }
 .psychro-inputs .panel-body { padding: 14px 16px 16px; }
 .psychro-inputs .section-label { margin: 14px 0 8px; }
+.psychro-inputs .section-label:first-child { margin-top: 0; }
 .psychro-inputs .form-grid,
 .psychro-inputs .form-grid.four,
 .psychro-inputs .form-grid.psychro-stack {
