@@ -339,6 +339,15 @@ td.num { font-family: Consolas, monospace; text-align: right; }
 .psychro-chart,
 .psychro-results { margin: 0; max-width: none; }
 .psychro-results { grid-column: 1 / -1; }
+.psychro-span { grid-column: 1 / -1; max-width: none; }
+.psychro-layout-tall {
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  align-items: start;
+}
+.psychro-layout-tall .psychro-chart {
+  position: sticky;
+  top: 72px;
+}
 .psychro-inputs .panel-body { padding: 14px 16px 16px; }
 .psychro-inputs .section-label { margin: 14px 0 8px; }
 .psychro-inputs .form-grid,

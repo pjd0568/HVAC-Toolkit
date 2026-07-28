@@ -38,13 +38,10 @@
     </div>
   </form>
 
-  {# NE — chart always drawn (blank until points are calculated) #}
   <div class="psychro-chart panel">
     <div class="panel-head">Psychrometric chart</div>
     <div class="panel-body">
-      <svg id="psychart" class="psychro-chart-svg" viewBox="0 0 760 500" aria-label="Psychrometric chart"></svg>
-      <script>const CHART = {{ chart|tojson }};</script>
-      <script src="{{ url_for('static', filename='js/psychart.js') }}?v=steel-6"></script>
+      {% include "_psychro_chart_embed.html" %}
     </div>
   </div>
 

@@ -8,45 +8,55 @@
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-<div class="panel" style="max-width:920px;">
-  <div class="panel-head">Airstreams</div>
-  <div class="panel-body">
-    <form method="post">
+<div class="psychro-layout">
+  <form method="post" class="psychro-inputs panel">
+    <div class="panel-head">Airstreams</div>
+    <div class="panel-body">
       {{ site_conditions(form, pressure) }}
 
       <div class="section-label">Stream A</div>
-      <div class="form-grid four">
+      <div class="form-grid psychro-stack">
         {{ state_input("a", "Stream A", form, second_properties) }}
         <div><label>Stream A Flow ({{ U.sym('vol_flow') }})</label><input name="flow_a" value="{{ form.flow_a }}"></div>
       </div>
 
       <div class="section-label">Stream B</div>
-      <div class="form-grid four">
+      <div class="form-grid psychro-stack">
         {{ state_input("b", "Stream B", form, second_properties) }}
         <div><label>Stream B Flow ({{ U.sym('vol_flow') }})</label><input name="flow_b" value="{{ form.flow_b }}"></div>
       </div>
 
-      <div style="margin-top:16px;"><button class="btn-accent" type="submit">Calculate</button></div>
-    </form>
+      <div class="psychro-actions">
+        <button class="btn-accent" type="submit">Calculate</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
   </div>
+
+  {% if mres %}
+  {% if mres.fog %}
+  <div class="warn-banner psychro-span">Mixed condition falls in the fog region — settled to saturation.
+  Condensate: {{ U.html('moisture_rate', mres.condensate) }}.</div>
+  {% endif %}
+  <div class="psychro-results panel">
+    <div class="panel-head">Result</div>
+    <table class="results">
+      <tr><th>Stream</th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th><th>{{ U.sym('mass_flow') }} dry air</th></tr>
+      <tr><td>A</td>{{ state_cells(result.a) }}<td class="num">{{ U.html('mass_flow', result.m_a) }}</td></tr>
+      <tr><td>B</td>{{ state_cells(result.b) }}<td class="num">{{ U.html('mass_flow', result.m_b) }}</td></tr>
+      <tr><td><strong>Mixed</strong></td>{{ state_cells(mres.state) }}<td class="num">{{ U.html('mass_flow', mres.m_da) }}</td></tr>
+    </table>
+  </div>
+  {% endif %}
 </div>
 
 {% if mres %}
-{% if mres.fog %}
-<div class="warn-banner">Mixed condition falls in the fog region — settled to saturation.
-Condensate: {{ U.html('moisture_rate', mres.condensate) }}.</div>
-{% endif %}
-<div class="section-label">Result</div>
-<div class="panel" style="max-width:720px;">
-  <table class="results">
-    <tr><th>Stream</th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th><th>{{ U.sym('mass_flow') }} dry air</th></tr>
-    <tr><td>A</td>{{ state_cells(result.a) }}<td class="num">{{ U.html('mass_flow', result.m_a) }}</td></tr>
-    <tr><td>B</td>{{ state_cells(result.b) }}<td class="num">{{ U.html('mass_flow', result.m_b) }}</td></tr>
-    <tr><td><strong>Mixed</strong></td>{{ state_cells(mres.state) }}<td class="num">{{ U.html('mass_flow', mres.m_da) }}</td></tr>
-  </table>
-</div>
-{% include "_chart.html" %}
-
 {{ report_form(url_for('psychro.mixed_air_report'), form, url_for('psychro.mixed_air_chart_png')) }}
 {% endif %}
 

@@ -7,40 +7,40 @@
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-<div class="panel" style="max-width:920px;">
-  <div class="panel-head">Design to a supply condition</div>
-  <div class="panel-body">
-    <form method="post">
+<div class="psychro-layout psychro-layout-tall">
+  <form method="post" class="psychro-inputs panel">
+    <div class="panel-head">Design to a supply condition</div>
+    <div class="panel-body">
       {{ site_conditions(form, pressure) }}
 
       <div class="section-label">Outdoor Air</div>
-      <div class="form-grid four">
+      <div class="form-grid psychro-stack">
         {{ state_input("oa", "Outdoor Air", form, second_properties) }}
         <div><label>Outdoor Air Fraction (%)</label><input name="oa_frac" value="{{ form.oa_frac }}"></div>
       </div>
 
       <div class="section-label">Return Air</div>
-      <div class="form-grid four">
+      <div class="form-grid psychro-stack">
         {{ state_input("ra", "Return Air", form, second_properties) }}
       </div>
 
       <div class="section-label">Required Supply — off-unit, into the room</div>
-      <div class="form-grid four">
+      <div class="form-grid psychro-stack">
         {{ state_input("sup", "Supply", form, second_properties) }}
         <div><label>Supply Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
       </div>
 
       <div class="section-label">Cooling coil model</div>
-      <div class="form-grid four">
+      <div class="form-grid psychro-stack">
         <div>
           <label>Off-coil RH target (%)</label>
           <input name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
-          <div class="suffix">Default 90% — matches typical wet-coil / Cooling Coil tool practice. Use 100% for idealised CF = 1 (saturated at supply dew point).</div>
+          <div class="suffix">Default 90% — typical wet-coil practice. Use 100% for idealised CF = 1.</div>
         </div>
       </div>
 
       <div class="section-label">Supply Fan — leave off to ignore fan gain</div>
-      <div class="form-grid four">
+      <div class="form-grid psychro-stack">
         <div>
           <label>Fan Position</label>
           <select name="fan_pos">
@@ -52,46 +52,58 @@
         <div><label>Fan SFP (W per l/s)</label><input name="fan_sfp" value="{{ form.fan_sfp }}"></div>
         <div><label>Fan Power (kW) — overrides SFP</label><input name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP"></div>
       </div>
-      <div style="margin-top:16px;"><button class="btn-accent" type="submit">Design</button></div>
-    </form>
+
+      <div class="psychro-actions">
+        <button class="btn-accent" type="submit">Design</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
   </div>
+
+  {% if result %}
+  {% for w in result.warnings %}
+  <div class="warn-banner psychro-span">{{ w }}</div>
+  {% endfor %}
+
+  <div class="psychro-results panel">
+    <div class="panel-head">Derived stages</div>
+    <table class="results">
+      <tr><th></th><th>Stage</th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th><th>Duty {{ U.sym('power') }}</th><th>Moisture {{ U.sym('moisture_rate') }}</th></tr>
+      {% for s in result.stages %}
+      <tr>
+        <td><strong>{{ s.label }}</strong></td>
+        <td>{{ s.name }}{% if s.note %} <span class="note-flag" title="{{ s.note }}">!</span>{% endif %}</td>
+        <td class="num">{{ U.html('temperature', s.state.t_db) }}</td>
+        <td class="num"><span class="valunit"><span class="v">{{ '%.0f'|format(s.state.rh * 100) }}</span><span class="u">%</span></span></td>
+        <td class="num">{{ U.html('humidity_ratio', s.state.w) }}</td>
+        <td class="num">{{ U.html('enthalpy', s.state.h) }}</td>
+        <td class="num">{% if s.q_total %}{{ U.html('power', s.q_total, sign=True) }}{% else %}—{% endif %}</td>
+        <td class="num">{% if s.moisture %}{{ U.html('moisture_rate', s.moisture, sign=True) }}{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <table class="results">
+      <tr><td>Total cooling (coil duty)</td><td class="num"><strong>{{ U.html('power', -result.cooling_total) }}</strong></td></tr>
+      <tr><td>Total heating (reheat + preheat)</td><td class="num"><strong>{{ U.html('power', result.heating_total) }}</strong></td></tr>
+      <tr><td>Moisture added / removed</td><td class="num"><span class="valunit"><span class="v">{{ U.fmt('moisture_rate', result.moisture_added) }} / {{ U.fmt('moisture_rate', result.moisture_removed) }}</span><span class="u">{{ U.sym('moisture_rate') }}</span></span></td></tr>
+      <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', result.m_da) }}</td></tr>
+    </table>
+    <div class="note-banner" style="margin:14px 16px 16px;">
+      Coil duty assumes {{ form.coil_rh_off }}% off-coil RH at the supply moisture content
+      {% if form.coil_rh_off == '100' %}(idealised contact factor = 1, saturated at the supply dew point){% else %}(same idealisation as the Cooling Coil tool’s typical 90–95% wet-coil leaving condition){% endif %}.
+      Duties are not directly comparable to a run that used a different off-coil RH.
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 {% if result %}
-{% for w in result.warnings %}<div class="warn-banner">{{ w }}</div>{% endfor %}
-
-<div class="section-label">Derived stages</div>
-<div class="panel" style="max-width:820px;">
-  <table class="results">
-    <tr><th></th><th>Stage</th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th><th>Duty {{ U.sym('power') }}</th><th>Moisture {{ U.sym('moisture_rate') }}</th></tr>
-    {% for s in result.stages %}
-    <tr>
-      <td><strong>{{ s.label }}</strong></td>
-      <td>{{ s.name }}{% if s.note %} <span class="note-flag" title="{{ s.note }}">!</span>{% endif %}</td>
-      <td class="num">{{ U.html('temperature', s.state.t_db) }}</td>
-      <td class="num"><span class="valunit"><span class="v">{{ '%.0f'|format(s.state.rh * 100) }}</span><span class="u">%</span></span></td>
-      <td class="num">{{ U.html('humidity_ratio', s.state.w) }}</td>
-      <td class="num">{{ U.html('enthalpy', s.state.h) }}</td>
-      <td class="num">{% if s.q_total %}{{ U.html('power', s.q_total, sign=True) }}{% else %}—{% endif %}</td>
-      <td class="num">{% if s.moisture %}{{ U.html('moisture_rate', s.moisture, sign=True) }}{% else %}—{% endif %}</td>
-    </tr>
-    {% endfor %}
-  </table>
-  <table class="results">
-    <tr><td>Total cooling (coil duty)</td><td class="num"><strong>{{ U.html('power', -result.cooling_total) }}</strong></td></tr>
-    <tr><td>Total heating (reheat + preheat)</td><td class="num"><strong>{{ U.html('power', result.heating_total) }}</strong></td></tr>
-    <tr><td>Moisture added / removed</td><td class="num"><span class="valunit"><span class="v">{{ U.fmt('moisture_rate', result.moisture_added) }} / {{ U.fmt('moisture_rate', result.moisture_removed) }}</span><span class="u">{{ U.sym('moisture_rate') }}</span></span></td></tr>
-    <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', result.m_da) }}</td></tr>
-  </table>
-  <div class="note-banner" style="margin:14px 0 0;">
-    Coil duty assumes {{ form.coil_rh_off }}% off-coil RH at the supply moisture content
-    {% if form.coil_rh_off == '100' %}(idealised contact factor = 1, saturated at the supply dew point){% else %}(same idealisation as the Cooling Coil tool’s typical 90–95% wet-coil leaving condition){% endif %}.
-    Duties are not directly comparable to a run that used a different off-coil RH.
-  </div>
-</div>
-
-{% include "_chart.html" %}
-
 <details class="notes">
   <summary>Design method &amp; notes</summary>
   <div class="notes-body">

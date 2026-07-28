@@ -262,6 +262,12 @@ def _chart_points_and_segments(saved: list[dict]):
     return points, segments
 
 
+def _chart_or_blank(points=None, segments=None, pressure=None, system="SI"):
+    """Always return a chart payload — empty points draw blank axes on page load."""
+    p = pressure if pressure is not None else psy.P_ATM
+    return chart_payload(points or [], segments or [], p=p, system=system)
+
+
 def _run_single_point(form, U):
     pressure = _resolve_pressure(form, U)
     result = _state_from_form(form, "s", pressure, U)
@@ -327,8 +333,7 @@ def single_point():
             pressure = psy.P_ATM
 
     chart_pts, chart_segs = _chart_points_and_segments(saved)
-    p_chart = pressure if pressure is not None else psy.P_ATM
-    chart = chart_payload(chart_pts, chart_segs, p=p_chart, system=U.system)
+    chart = _chart_or_blank(chart_pts, chart_segs, pressure, U.system)
 
     return render_template(
         "psychro.html", active="psychro", form=form,
@@ -425,25 +430,28 @@ def mixed_air():
     result = None
     error = None
     mres = None
-    chart = None
     pressure = None
+    points, segments = [], []
     if request.method != "POST":
         form = _display_defaults(_MIXED_AIR_DEFAULTS, _MIXED_AIR_FIELD_UNITS, U)
         _paste_slot_into(form, "a", U)
         _paste_slot_into(form, "b", U)
-        pressure = _resolve_pressure(form, U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
     else:
         form = {k: request.form.get(k, d) for k, d in _MIXED_AIR_DEFAULTS.items()}
         try:
             pressure, sa, sb, ma, mb, mres, points, segments = _run_mixed_air(form, U)
             result = {"a": sa, "b": sb, "m_a": ma, "m_b": mb}
-            chart = chart_payload(points, segments, system=U.system)
         except ValueError as exc:
             error = str(exc)
             try:
                 pressure = _resolve_pressure(form, U)
             except ValueError:
                 pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
     return render_template(
         "mixed_air.html", active="psychro_mix", form=form,
         second_properties=_second_properties(U), result=result, mres=mres,
@@ -552,24 +560,27 @@ def cooling_coil():
     error = None
     on = None
     m_da = None
-    chart = None
     pressure = None
+    points, segments = [], []
     if request.method != "POST":
         form = _display_defaults(_COOLING_COIL_DEFAULTS, _COOLING_COIL_FIELD_UNITS, U)
         _paste_slot_into(form, "on", U)
         _paste_slot_into(form, "off", U)
-        pressure = _resolve_pressure(form, U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
     else:
         form = {k: request.form.get(k, d) for k, d in _COOLING_COIL_DEFAULTS.items()}
         try:
             pressure, on, m_da, result, points, segments = _run_cooling_coil(form, U)
-            chart = chart_payload(points, segments, system=U.system)
         except ValueError as exc:
             error = str(exc)
             try:
                 pressure = _resolve_pressure(form, U)
             except ValueError:
                 pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
     return render_template(
         "coil.html", active="psychro_coil", form=form,
         second_properties=_second_properties(U), on=on, m_da=m_da,
@@ -702,19 +713,21 @@ def ahu():
     result = None
     error = None
     m_da = None
-    chart = None
     pressure = None
+    pts, segs = [], []
     if request.method != "POST":
         form = _display_defaults(_AHU_DEFAULTS, _AHU_FIELD_UNITS, U)
         _paste_slot_into(form, "oa", U)
         _paste_slot_into(form, "ra", U)
         _paste_slot_into(form, "sup", U)
-        pressure = _resolve_pressure(form, U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
     else:
         form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
         try:
             pressure, m_da, result, pts, segs = _run_ahu(form, U)
-            chart = chart_payload(pts, segs, system=U.system)
         except ValueError as exc:
             result = None
             error = str(exc)
@@ -722,6 +735,7 @@ def ahu():
                 pressure = _resolve_pressure(form, U)
             except ValueError:
                 pressure = None
+    chart = _chart_or_blank(pts, segs, pressure, U.system)
     return render_template(
         "ahu.html", active="psychro_ahu", form=form,
         second_properties=_second_properties(U), result=result, m_da=m_da,
