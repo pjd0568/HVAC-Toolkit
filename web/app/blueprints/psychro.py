@@ -324,10 +324,10 @@ def single_point():
         try:
             pressure = _resolve_pressure(form, U)
         except ValueError:
-            pressure = psy.P_ATM if hasattr(psy, "P_ATM") else 101.325
+            pressure = psy.P_ATM
 
     chart_pts, chart_segs = _chart_points_and_segments(saved)
-    p_chart = pressure if pressure is not None else 101.325
+    p_chart = pressure if pressure is not None else psy.P_ATM
     chart = chart_payload(chart_pts, chart_segs, p=p_chart, system=U.system)
 
     return render_template(
