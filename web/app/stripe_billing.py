@@ -30,7 +30,7 @@ STRIPE_MANAGED_PAYMENTS_VERSION = "2026-02-25.preview"
 PRICE_UNIT_AMOUNT_PENCE = 950
 PRICE_CURRENCY = "gbp"
 
-PRODUCT_NAME = "HVAC Toolkit — Full suite"
+PRODUCT_NAME = "hvac-calcs.app — Full suite"
 PRODUCT_DESCRIPTION = (
     f"Full HVAC calculator suite — psychrometrics, duct and pipe sizing, "
     f"unit converter, and more. £{PRICE_MONTHLY_GBP}/month after a "

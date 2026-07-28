@@ -77,16 +77,16 @@ body {
   border-right: 1px solid var(--side-line);
   display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0;
 }
-.logo { display: flex; align-items: center; gap: 10px; padding: 20px 18px 16px; }
+.logo { display: flex; align-items: center; gap: 10px; padding: 18px 16px 14px; }
 .logo-mark {
-  width: 32px; height: 32px; border-radius: 9px;
+  width: 48px; height: 48px; border-radius: 9px;
   background: linear-gradient(135deg, var(--blue), var(--green));
   display: flex; align-items: center; justify-content: center;
   color: white; font-weight: 800; font-size: 15px;
 }
 .logo-mark-img {
-  width: 32px; height: 32px; display: block; flex-shrink: 0;
-  border-radius: 9px;
+  width: 48px; height: 48px; display: block; flex-shrink: 0;
+  border-radius: 8px; background: #F8F8F8;
 }
 .logo-name { color: var(--side-title); font-weight: 700; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; }
 .logo-tag { font-size: 9px; color: var(--side-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
@@ -990,7 +990,7 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
   min-width: 0; flex: 1 1 auto;
 }
 .marketing-brand .brand-lockup {
-  display: block; width: min(100%, 360px); height: auto;
+  display: block; width: min(100%, 420px); height: auto;
 }
 .marketing-brand-text { display: flex; flex-direction: column; }
 .marketing-nav {
@@ -1080,7 +1080,12 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
   background: var(--blue-soft); color: var(--blue-ink); font-weight: 650;
 }
 
-.coming-hero { padding: clamp(24px, 5vw, 48px) 0 40px; max-width: 640px; }
+.coming-hero { padding: clamp(24px, 5vw, 48px) 0 40px; max-width: 720px; }
+.home-hero-banner {
+  display: block; width: 100%; max-width: 720px; height: auto;
+  margin: 0 0 28px; border-radius: 10px;
+  background: #F8F8F8; border: 1px solid var(--line);
+}
 .coming-eyebrow {
   font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase;
   color: var(--green-ink); margin-bottom: 12px;

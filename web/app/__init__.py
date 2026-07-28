@@ -106,8 +106,9 @@ def create_app(config_class: type = Config) -> Flask:
     def inject_brand():
         from flask import url_for
 
-        mark = app.config.get("BRAND_MARK", "images/brand/icon.svg")
-        lockup = app.config.get("BRAND_LOCKUP", "images/brand/lockup-tagline.svg")
+        mark = app.config.get("BRAND_MARK", "images/brand/icon.png")
+        lockup = app.config.get("BRAND_LOCKUP", "images/brand/lockup-tagline.png")
+        hero = app.config.get("BRAND_HERO", "images/brand/home-hero.png")
         favicon = app.config.get("BRAND_FAVICON", "images/brand/favicon-32.png")
         apple = app.config.get(
             "BRAND_APPLE_TOUCH", "images/brand/apple-touch-icon.png"
@@ -123,6 +124,7 @@ def create_app(config_class: type = Config) -> Flask:
             "registration_open": app.config.get("REGISTRATION_OPEN", False),
             "brand_mark_url": _brand_url(mark),
             "brand_lockup_url": _brand_url(lockup),
+            "brand_hero_url": _brand_url(hero),
             "brand_favicon_url": _brand_url(favicon),
             "brand_apple_touch_url": _brand_url(apple),
             "public_base_url": app.config.get(
@@ -234,7 +236,7 @@ def create_app(config_class: type = Config) -> Flask:
                 err=True,
             )
             raise SystemExit(1)
-        brand = app.config.get("BRAND_NAME", "HVAC Toolkit")
+        brand = app.config.get("BRAND_NAME", "hvac-calcs.app")
         ok = send_email(
             to=to_address,
             subject=f"{brand} — test email",

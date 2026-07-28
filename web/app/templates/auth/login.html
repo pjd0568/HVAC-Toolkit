@@ -3,7 +3,7 @@
 {% block content %}
 <section class="auth-panel">
   <h1>Log in</h1>
-  <p class="coming-section-lead">Access the {{ brand_name }} toolkit.</p>
+  <p class="coming-section-lead">Access the {{ brand_name }} calculators.</p>
   <form method="post" action="{{ url_for('auth.login_post') }}" class="auth-form">
     <input type="hidden" name="next" value="{{ next or '' }}">
     <label>

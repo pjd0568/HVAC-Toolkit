@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 def _brand() -> str:
-    return current_app.config.get("BRAND_NAME", "HVAC Toolkit")
+    return current_app.config.get("BRAND_NAME", "hvac-calcs.app")
 
 
 def _contact() -> str:

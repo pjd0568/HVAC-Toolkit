@@ -9,8 +9,8 @@ services:
       PORT: "8000"
       DATABASE_URL: postgresql://app:app@db:5432/app
       SECRET_KEY: ${SECRET_KEY:-dev-compose-change-me}
-      BRAND_NAME: ${BRAND_NAME:-HVAC Toolkit}
-      BRAND_TAG: ${BRAND_TAG:-working title}
+      BRAND_NAME: ${BRAND_NAME:-hvac-calcs.app}
+      BRAND_TAG: ${BRAND_TAG:-Psychrometrics, Ducts & Pipework. Simplified.}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

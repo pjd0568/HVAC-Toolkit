@@ -58,7 +58,7 @@ def mail_configured() -> bool:
 def _from_header() -> str:
     cfg = current_app.config
     sender = (cfg.get("MAIL_DEFAULT_SENDER") or cfg.get("CONTACT_EMAIL") or "").strip()
-    brand = (cfg.get("BRAND_NAME") or "HVAC Toolkit").strip()
+    brand = (cfg.get("BRAND_NAME") or "hvac-calcs.app").strip()
     # Resend accepts "Name <email@domain>"
     if "<" in sender:
         return sender

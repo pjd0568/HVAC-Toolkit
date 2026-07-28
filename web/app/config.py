@@ -55,8 +55,8 @@ def database_url_from_env() -> str:
 
 class Config:
     # Brand is a single variable — swap here (or via env) when the name lands.
-    BRAND_NAME = os.environ.get("BRAND_NAME", "HVAC Toolkit")
-    BRAND_TAG = os.environ.get("BRAND_TAG", "working title")
+    BRAND_NAME = os.environ.get("BRAND_NAME", "hvac-calcs.app")
+    BRAND_TAG = os.environ.get("BRAND_TAG", "Psychrometrics, Ducts & Pipework. Simplified.")
 
     # PDF report header logo. Empty env → packaged V2 mark; missing file → text-only
     # header (see web/app/reports/builder.py). Override with a company logo path later.
@@ -67,10 +67,11 @@ class Config:
     # Static brand mark paths (relative to the Flask static folder). Swap files in
     # static/images/brand/ to rebrand without template edits.
     # Bump when replacing brand files so Cloudflare/browser caches refresh.
-    BRAND_ASSET_VERSION = os.environ.get("BRAND_ASSET_VERSION", "20260725b")
+    BRAND_ASSET_VERSION = os.environ.get("BRAND_ASSET_VERSION", "20260728a")
 
-    BRAND_MARK = os.environ.get("BRAND_MARK", "images/brand/icon.svg")
-    BRAND_LOCKUP = os.environ.get("BRAND_LOCKUP", "images/brand/lockup-tagline.svg")
+    BRAND_MARK = os.environ.get("BRAND_MARK", "images/brand/icon.png")
+    BRAND_LOCKUP = os.environ.get("BRAND_LOCKUP", "images/brand/lockup-tagline.png")
+    BRAND_HERO = os.environ.get("BRAND_HERO", "images/brand/home-hero.png")
     BRAND_FAVICON = os.environ.get("BRAND_FAVICON", "images/brand/favicon-32.png")
     BRAND_APPLE_TOUCH = os.environ.get(
         "BRAND_APPLE_TOUCH", "images/brand/apple-touch-icon.png"

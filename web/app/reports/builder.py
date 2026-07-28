@@ -75,10 +75,12 @@ def _header(meta: ReportMeta, styles: dict) -> Table:
     left: list = []
     if meta.logo_path:
         try:
-            left.append(Image(meta.logo_path, width=28 * mm, height=28 * mm, kind="proportional"))
+            # Wide lockup (icon + wordmark); proportional fit in the header band.
+            left.append(Image(meta.logo_path, width=62 * mm, height=18 * mm, kind="proportional"))
         except Exception:
             pass  # missing/unreadable logo -- fall back to text-only header
-    left.append(Paragraph(meta.brand_name, styles["brand"]))
+    if not left:
+        left.append(Paragraph(meta.brand_name, styles["brand"]))
     left.append(Paragraph(meta.tool_title, styles["title"]))
 
     meta_rows = [
