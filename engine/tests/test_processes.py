@@ -64,29 +64,48 @@ def test_sensible_cooling_below_dew_point_raises():
 # -- Cooling coil ----------------------------------------------------------------
 
 def test_coil_worked_case():
+    """ADP + off-coil T locks moisture on the ON→ADP chord (~90% RH leaving)."""
     on = psy.state(28.0, rh=0.5)
-    r = proc.cooling_coil(on, 1.0, 12.0, 0.90)
-    assert r.q_total == pytest.approx(-27.0, abs=1.5)
+    r = proc.cooling_coil(on, 1.0, t_adp=9.0, t_off=12.0)
+    assert r.q_total == pytest.approx(-26.4, abs=1.5)
     assert r.q_sensible < 0 and r.q_latent < 0
     assert 0.0 < r.shr < 1.0
     assert r.condensate > 0.0
-    assert r.t_adp is not None and 4.0 < r.t_adp < 12.0
+    assert r.t_adp == pytest.approx(9.0)
+    assert 0.88 < r.state.rh < 0.93
     assert r.contact_factor is not None and 0.0 < r.contact_factor <= 1.0
     assert r.bypass_factor == pytest.approx(1.0 - r.contact_factor)
+    assert r.bypass_factor == pytest.approx((12.0 - 9.0) / (28.0 - 9.0))
     assert not r.frost_risk
+
+
+def test_coil_from_bypass_factor():
+    on = psy.state(28.0, rh=0.5)
+    r = proc.cooling_coil(on, 1.0, t_adp=9.0, bypass_factor=0.2)
+    assert r.state.t_db == pytest.approx(9.0 + 0.2 * (28.0 - 9.0))
+    assert r.bypass_factor == pytest.approx(0.2)
+    assert r.state.rh < 1.0
+
+
+def test_coil_legacy_off_coil_rh():
+    """AHU-style t_off + rh_off solves ADP then uses the forward chord model."""
+    on = psy.state(28.0, rh=0.5)
+    r = proc.cooling_coil(on, 1.0, t_off=12.0, rh_off=0.90)
+    assert r.state.rh == pytest.approx(0.90, abs=1e-6)
+    assert r.t_adp is not None and 4.0 < r.t_adp < 12.0
+    assert r.q_total == pytest.approx(-27.0, abs=1.5)
 
 
 def test_coil_energy_consistency():
     on = psy.state(26.0, rh=0.55)
-    r = proc.cooling_coil(on, 2.5, 11.0, 0.92)
+    r = proc.cooling_coil(on, 2.5, t_adp=8.0, t_off=11.0)
     assert r.q_total == pytest.approx(r.q_sensible + r.q_latent, rel=1e-9)
     assert r.q_total == pytest.approx(2.5 * (r.state.h - on.h), rel=1e-9)
 
 
 def test_coil_frost_case():
-    # Dry inlet air with a low off-coil target drives the ADP below freezing.
     on = psy.state(16.0, rh=0.3)
-    r = proc.cooling_coil(on, 1.0, 2.0, 0.70)
+    r = proc.cooling_coil(on, 1.0, t_adp=-2.0, t_off=2.0)
     assert r.t_adp is not None and r.t_adp <= 0.0
     assert r.frost_risk
 
@@ -94,17 +113,20 @@ def test_coil_frost_case():
 def test_coil_validation():
     on = psy.state(24.0, rh=0.5)
     with pytest.raises(ValueError):
-        proc.cooling_coil(on, 1.0, 25.0, 0.9)
+        proc.cooling_coil(on, 1.0, t_adp=10.0, t_off=25.0)
+    with pytest.raises(ValueError, match="apparatus dew point"):
+        proc.cooling_coil(on, 1.0, t_adp=10.0, t_off=8.0)
     with pytest.raises(ValueError, match="cannot\\s+humidify"):
-        proc.cooling_coil(on, 1.0, 22.0, 0.95)
+        proc.cooling_coil(on, 1.0, t_off=22.0, rh_off=0.95)
 
 
 def test_dry_coil_sensible_only():
     on = psy.state(24.0, rh=0.3)  # dew point ~5 degC
-    r = proc.cooling_coil(on, 1.0, 15.0, psy.relative_humidity(15.0, on.w, on.p))
+    r = proc.cooling_coil(on, 1.0, t_adp=on.t_dp + 2.0, t_off=15.0)
     assert r.condensate == pytest.approx(0.0, abs=1e-9)
     assert r.q_latent == pytest.approx(0.0, abs=1e-6)
     assert r.shr == pytest.approx(1.0, abs=1e-6)
+    assert r.state.w == pytest.approx(on.w, abs=1e-12)
 
 
 # -- Humidification --------------------------------------------------------------

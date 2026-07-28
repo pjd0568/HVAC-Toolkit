@@ -115,20 +115,82 @@ def sensible(state_in: PsychroState, m_da: float, t_out: float) -> ProcessResult
 def cooling_coil(
     state_on: PsychroState,
     m_da: float,
-    t_off: float,
-    rh_off: float,
+    *,
+    t_adp: float | None = None,
+    t_off: float | None = None,
+    bypass_factor: float | None = None,
+    rh_off: float | None = None,
 ) -> CoilResult:
-    """Dehumidifying (or dry) cooling coil defined by its off-coil condition."""
+    """Real-world ADP / bypass-factor cooling coil.
+
+    A coil cannot set dry-bulb and moisture independently. The process is the
+    straight psychrometric chord from air-on ``(T1, W1)`` to the apparatus dew
+    point on the saturation curve; off-coil air sits on that chord.
+
+    Provide **apparatus dew point** ``t_adp`` plus either:
+    - ``t_off`` — how far along the chord (BF follows), or
+    - ``bypass_factor`` — BF in ``[0, 1)`` (``t_off`` follows).
+
+    Legacy convenience: ``t_off`` + ``rh_off`` (no ``t_adp``) solves for the ADP
+    that places the leaving state at that RH on the chord — used by AHU
+    simulation when only an off-coil RH assumption is known.
+    """
     if m_da <= 0:
         raise ValueError("mass flow must be positive")
-    if t_off >= state_on.t_db:
-        raise ValueError("off-coil temperature must be below on-coil temperature")
-    s_off = psy.state(t_off, rh=rh_off, p=state_on.p)
-    if s_off.w > state_on.w * (1.0 + 1e-9):
-        raise ValueError(
-            "off-coil moisture content exceeds on-coil: a cooling coil cannot "
-            "humidify — reduce off-coil RH or raise off-coil temperature"
+
+    if t_adp is None:
+        if t_off is None or rh_off is None:
+            raise ValueError(
+                "cooling coil requires t_adp with t_off or bypass_factor "
+                "(or legacy t_off + rh_off)"
+            )
+        if t_off >= state_on.t_db:
+            raise ValueError("off-coil temperature must be below on-coil temperature")
+        t_adp = _solve_adp_for_leaving_rh(state_on, t_off, rh_off)
+        return cooling_coil(
+            state_on, m_da, t_adp=t_adp, t_off=t_off
         )
+
+    if t_adp >= state_on.t_db - 1e-9:
+        raise ValueError("apparatus dew point must be below on-coil dry bulb")
+
+    if bypass_factor is not None and t_off is not None:
+        raise ValueError("provide t_off or bypass_factor, not both")
+    if bypass_factor is None and t_off is None:
+        raise ValueError("provide t_off or bypass_factor with t_adp")
+
+    if bypass_factor is not None:
+        if not (0.0 <= bypass_factor < 1.0):
+            raise ValueError("bypass factor must be in [0, 1)")
+        t_off = t_adp + bypass_factor * (state_on.t_db - t_adp)
+    else:
+        assert t_off is not None
+        if t_off > state_on.t_db + 1e-9:
+            raise ValueError("off-coil temperature must be at or below on-coil temperature")
+        if t_off < t_adp - 1e-9:
+            raise ValueError(
+                "off-coil temperature cannot be below the apparatus dew point"
+            )
+        denom = state_on.t_db - t_adp
+        bypass_factor = (t_off - t_adp) / denom if abs(denom) > 1e-12 else 0.0
+
+    bf = float(bypass_factor)
+    cf = 1.0 - bf
+    p = state_on.p
+    wet = t_adp < state_on.t_dp - 1e-9
+
+    if wet:
+        w_adp = psy.saturation_humidity_ratio(t_adp, p)
+        w_off = w_adp + bf * (state_on.w - w_adp)
+        s_off = psy.state(t_off, w=w_off, p=p)
+    else:
+        # ADP at or above entering dew point → dry coil, constant moisture.
+        if t_off < state_on.t_dp - 1e-6:
+            raise ValueError(
+                "dry-coil off-coil temperature is below the entering dew point; "
+                "lower the apparatus dew point to dehumidify, or raise t_off"
+            )
+        s_off = psy.state(t_off, w=state_on.w, p=p)
 
     q_total = m_da * (s_off.h - state_on.h)
     q_sensible = m_da * (
@@ -136,15 +198,8 @@ def cooling_coil(
     )
     q_latent = q_total - q_sensible
     shr = q_sensible / q_total if q_total != 0 else 1.0
-    condensate = m_da * (state_on.w - s_off.w)
-
-    t_adp = _apparatus_dew_point(state_on, s_off)
-    if t_adp is not None and abs(state_on.t_db - t_adp) > 1e-9:
-        cf = (state_on.t_db - t_off) / (state_on.t_db - t_adp)
-        bf = 1.0 - cf
-    else:
-        cf = bf = None
-    frost = t_adp is not None and t_adp <= 0.0
+    condensate = m_da * max(state_on.w - s_off.w, 0.0)
+    frost = t_adp <= 0.0
 
     return CoilResult(
         state=s_off,
@@ -158,6 +213,34 @@ def cooling_coil(
         bypass_factor=bf,
         frost_risk=frost,
     )
+
+
+def _solve_adp_for_leaving_rh(
+    s_on: PsychroState, t_off: float, rh_off: float
+) -> float:
+    """Find ADP so the forward coil model leaves at ``(t_off, rh_off)``.
+
+    Used when only an off-coil RH design assumption is available (AHU sim).
+    Extends the chord through air-on and the prescribed off-coil point to the
+    saturation curve (same geometry as the forward ADP model).
+    """
+    if not (0.0 < rh_off <= 1.0):
+        raise ValueError("off-coil RH must be in (0, 1]")
+    s_off = psy.state(t_off, rh=rh_off, p=s_on.p)
+    if s_off.w > s_on.w * (1.0 + 1e-9):
+        raise ValueError(
+            "off-coil moisture content exceeds on-coil: a cooling coil cannot "
+            "humidify — reduce off-coil RH or raise off-coil temperature"
+        )
+    if abs(s_off.w - s_on.w) < 1e-12:
+        return s_on.t_dp
+    t_adp = _apparatus_dew_point(s_on, s_off)
+    if t_adp is None:
+        raise ValueError(
+            "no apparatus dew point on the saturation curve for this off-coil "
+            "state — the process is effectively dry / too shallow to dehumidify"
+        )
+    return t_adp
 
 
 def _apparatus_dew_point(
@@ -179,15 +262,9 @@ def _apparatus_dew_point(
         w_line = s_on.w + (t - s_on.t_db) * slope
         return w_line - psy.saturation_humidity_ratio(t, p)
 
-    # A saturated off-coil condition IS the apparatus dew point.
     if s_off.rh >= 1.0 - 1e-9:
         return s_off.t_db
 
-    # Subsaturated points sit below the saturation curve, so f(t_off) < 0.
-    # Extending the line to lower temperatures, W_s(t) falls away exponentially
-    # and the line crosses it at the ADP (f becomes >= 0). Walk down for the
-    # sign change, then bisect. No crossing above T_MIN -> no ADP (line steeper
-    # than the curve; effectively a dry/sensible process).
     hi = s_off.t_db
     lo = hi
     step = 1.0
@@ -197,7 +274,7 @@ def _apparatus_dew_point(
             break
         step *= 2.0
     if f(lo) < 0.0:
-        return None  # no intersection within the valid range
+        return None
 
     for _ in range(200):
         mid = 0.5 * (lo + hi)
@@ -370,7 +447,7 @@ def simulate_ahu(
             current = r.state
 
     if coil_t_off is not None:
-        c = cooling_coil(current, m_da, coil_t_off, coil_rh_off)
+        c = cooling_coil(current, m_da, t_off=coil_t_off, rh_off=coil_rh_off)
         note = ""
         if c.frost_risk:
             frost = True

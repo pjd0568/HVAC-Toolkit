@@ -523,11 +523,11 @@ def mixed_air_chart_png():
 
 _COOLING_COIL_DEFAULTS = {
     "on_t": "28", "on_prop": "rh", "on_val": "50", "flow": "5000",
-    "off_t": "12", "off_prop": "rh", "off_val": "90",
+    "adp_t": "9", "off_t": "12",
     "altitude": "0",
 }
 _COOLING_COIL_FIELD_UNITS = {
-    "on_t": "temperature", "off_t": "temperature",
+    "on_t": "temperature", "adp_t": "temperature", "off_t": "temperature",
     "flow": "vol_flow", "altitude": "altitude",
 }
 
@@ -535,9 +535,10 @@ _COOLING_COIL_FIELD_UNITS = {
 def _run_cooling_coil(form, U):
     pressure = _resolve_pressure(form, U)
     on = _state_from_form(form, "on", pressure, U)
-    off_state = _state_from_form(form, "off", pressure, U)
+    t_adp = U.to_si("temperature", _f(form, "adp_t"))
+    t_off = U.to_si("temperature", _f(form, "off_t"))
     m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
-    result = proc.cooling_coil(on, m_da, off_state.t_db, off_state.rh)
+    result = proc.cooling_coil(on, m_da, t_adp=t_adp, t_off=t_off)
     points = [
         {"label": "ON", "t": on.t_db, "w": on.w},
         {"label": "OFF", "t": result.state.t_db, "w": result.state.w},
@@ -548,7 +549,8 @@ def _run_cooling_coil(form, U):
             "label": "ADP", "t": result.t_adp,
             "w": psy.saturation_humidity_ratio(result.t_adp, pressure),
         })
-        segments.append((1, 2))
+        # Full chord ON→ADP with OFF sitting on the line.
+        segments = [(0, 2)]
     return pressure, on, m_da, result, points, segments
 
 
@@ -565,7 +567,6 @@ def cooling_coil():
     if request.method != "POST":
         form = _display_defaults(_COOLING_COIL_DEFAULTS, _COOLING_COIL_FIELD_UNITS, U)
         _paste_slot_into(form, "on", U)
-        _paste_slot_into(form, "off", U)
         try:
             pressure = _resolve_pressure(form, U)
         except ValueError:
@@ -604,11 +605,13 @@ def cooling_coil_report():
         _site_condition_rows(form, pressure, U)
         + _state_input_rows("on", "On-coil", form, sp, U)
         + [("On-coil Flow", form['flow'], U.sym('vol_flow'))]
-        + _state_input_rows("off", "Off-coil", form, sp, U)
+        + [("Apparatus Dew Point", form['adp_t'], U.sym('temperature'))]
+        + [("Off-coil Dry Bulb", form['off_t'], U.sym('temperature'))]
     )
     result_rows = [
         ("On-coil Dry Bulb", U.fmt('temperature', on.t_db), U.sym('temperature')),
         ("Off-coil Dry Bulb", U.fmt('temperature', result.state.t_db), U.sym('temperature')),
+        ("Off-coil RH", f"{result.state.rh * 100:.1f}", "%"),
         ("Total Cooling", U.fmt('power', -result.q_total), U.sym('power')),
         ("Sensible / Latent",
          f"{U.fmt('power', -result.q_sensible)} / {U.fmt('power', -result.q_latent)}", U.sym('power')),

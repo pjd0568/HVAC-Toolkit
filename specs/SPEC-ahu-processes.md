@@ -50,24 +50,31 @@ supersaturated (for cooling, t_out ≥ dew point; otherwise the caller wants
 `cooling_coil`). q = m_da·(h_out − h_in).
 `ProcessResult(state, q_sensible, q_latent=0, q_total)`
 
-### `cooling_coil(state_on, m_da, t_off, rh_off) -> CoilResult`
-Dehumidifying coil defined by its off-coil condition (the practical design input:
-off-coil dry bulb + off-coil RH, typically 0.90–0.95 for a wet coil).
-Validation: t_off < t_on; w_off ≤ w_on (a coil cannot humidify); if w_off = w_on the
-process is sensible-only (dry coil) and ADP/CF are reported from the dry process line.
+### `cooling_coil(state_on, m_da, *, t_adp, t_off | bypass_factor) -> CoilResult`
+Real-world apparatus-dew-point / bypass-factor coil. A cooling coil cannot set
+dry-bulb and moisture independently: air-on `(T1, W1)` and ADP on the saturation
+curve lock a straight process chord; off-coil air sits on that chord.
 
+Provide **`t_adp`** plus either **`t_off`** (how far along the chord) or
+**`bypass_factor`** in `[0, 1)`:
+- `BF = (T_off − T_ADP) / (T_on − T_ADP)`  (or rearrange for `T_off` when BF given)
+- Wet coil (`T_ADP` < entering dew point):
+  `W_off = W_ADP + BF · (W_on − W_ADP)` with `W_ADP = W_s(T_ADP)`
+- Dry coil (`T_ADP` ≥ entering dew point): constant-`W` sensible cooling to `T_off`
+- Leaving RH is a **result** (typically ~0.90–0.95 for a wet coil), not an input.
+
+Legacy convenience for AHU simulation: `t_off` + `rh_off` (no `t_adp`) solves for
+the ADP at the saturation intersection of the chord through the prescribed
+off-coil point, then runs the forward model.
+
+Duties:
 - q_total = m_da·(h_off − h_on)  (negative)
-- q_sensible = m_da·(h(t_off, w_on) − h(t_on, w_on))  (cooling at constant w to t_off)
+- q_sensible = m_da·(h(t_off, w_on) − h(t_on, w_on))
 - q_latent = q_total − q_sensible
 - SHR = q_sensible / q_total
 - condensate = m_da·(w_on − w_off)
-- **ADP**: intersection of the straight line through (t_on, w_on)→(t_off, w_off),
-  extended, with the saturation curve: solve f(t) = w_line(t) − W_s(t) = 0 by
-  bisection below t_off. If the line does not intersect (shallow slope), report
-  ADP = None and CF from temperatures cannot be formed → contact_factor = None.
-- contact factor CF = (t_on − t_off)/(t_on − t_adp); bypass factor BF = 1 − CF.
-- **frost_risk = True if ADP ≤ 0 °C** (coil surface temperature at or below freezing
-  → condensate can freeze; flag for glycol/DX defrost/face-bypass consideration).
+- contact factor CF = 1 − BF
+- **frost_risk = True if ADP ≤ 0 °C**
 
 `CoilResult(state, q_sensible, q_latent, q_total, shr, condensate, t_adp,
 contact_factor, bypass_factor, frost_risk)`
@@ -187,14 +194,14 @@ the interaction is consistent everywhere.
   supersaturated, result is saturated (rh = 1.0) and condensate ≥ 0.
 - **Sensible energy balance:** 1 kg/s heated 10→30 °C at w = 0.005:
   q = h(30, 0.005) − h(10, 0.005) ≈ 20.3 kW (±0.3). Cooling below dew point raises.
-- **Coil worked case:** 28 °C/50% → 12 °C/90% at 1 kg/s dry air:
-  q_total ≈ −(h_on − h_off) with h_on ≈ 58.4, h_off ≈ 31.4 → ≈ −27 kW (±1);
-  condensate = w_on − w_off > 0; 0 < SHR < 1; 4 < ADP < 12 °C; 0 < CF ≤ 1;
-  frost_risk False.
-- **Coil frost case:** dry inlet air with a low off-coil target, 16 °C/30% →
-  2 °C/70%: ADP ≈ −3 °C ≤ 0 → frost_risk True. (Note: 20 °C/40% → 2 °C/95% is
-  NOT a frost case — its ADP is ≈ +1 °C; verified during implementation.)
-- **Coil validation:** t_off > t_on raises; rh_off giving w_off > w_on raises.
+- **Coil worked case:** 28 °C/50% on-coil, ADP 9 °C, t_off 12 °C at 1 kg/s dry air:
+  leaving RH ≈ 0.90 (±0.03); q_total ≈ −26.4 kW (±1.5); condensate > 0; 0 < SHR < 1;
+  BF = (12−9)/(28−9); frost_risk False. Legacy `t_off=12, rh_off=0.90` recovers the
+  same chord with ADP between 4 and 12 °C.
+- **Coil frost case:** ADP ≤ 0 °C (e.g. on-coil 16 °C/30%, ADP −2 °C, t_off 2 °C) →
+  frost_risk True.
+- **Coil validation:** t_off > t_on raises; t_off < t_ADP raises; legacy rh_off giving
+  w_off > w_on raises.
 - **Steam:** 20 °C/30% to w giving 50% RH: t unchanged (±0.01), steam_rate > 0.
 - **Adiabatic:** 28 °C/30%, ε = 0.85: t_wb conserved (±0.05 K), t drops, w rises.
 - **AHU chain:** winter case (OA −5/90%, RA 21/50%, 30% OA, frost coil to 5 °C,

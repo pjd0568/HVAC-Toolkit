@@ -133,33 +133,35 @@
     <section class="help-section" id="cooling-coil" data-help-section
              data-keywords="cooling coil dehumidification chilled water dx on coil off coil duty sensible latent shr sensible heat ratio apparatus dew point adp contact factor bypass factor condensate frost face velocity">
       <h2 class="help-h">Psychrometrics — Cooling Coil</h2>
-      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Enter the air on and off a cooling coil and get its full duty: total, sensible and latent cooling, sensible heat ratio, condensate, apparatus dew point and contact/bypass factor.</p>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Enter air-on, apparatus dew point and off-coil dry bulb. The coil locks moisture to the ON→ADP chord and reports duty, leaving RH, condensate and contact/bypass factor.</p>
 
       <h3 class="help-sub">When to use it</h3>
-      <p>To size or check a chilled-water or DX cooling coil once you know (or have chosen) the air condition entering and leaving it.</p>
+      <p>To size or check a chilled-water or DX cooling coil once you know the entering air and the coil surface temperature (ADP), and you have chosen how cold the air should leave.</p>
 
       <h3 class="help-sub">Inputs</h3>
       <dl class="help-io">
         <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure.</dd>
         <dt>On-coil — Dry Bulb, Second Property, Second Value</dt><dd>The air condition entering the coil (often the mixed-air result).</dd>
         <dt>On-coil Flow</dt><dd>The volume flow through the coil.</dd>
-        <dt>Off-coil — Dry Bulb, Second Property, Second Value</dt><dd>The air condition leaving the coil. For a dehumidifying coil, a common design assumption is around 90% RH off-coil.</dd>
+        <dt>Apparatus Dew Point</dt><dd>Mean coil surface temperature on the saturation curve — sets the process chord with air-on.</dd>
+        <dt>Off-coil Dry Bulb</dt><dd>How far along that chord the air travels before leaving. Leaving moisture and RH are calculated, not entered.</dd>
       </dl>
 
       <h3 class="help-sub">How to use it</h3>
       <ol class="help-steps">
         <li>Set the site Altitude.</li>
         <li>Enter the On-coil condition and flow.</li>
-        <li>Enter the Off-coil condition.</li>
-        <li>Press <strong>Calculate</strong>. Read the duty table and the process line on the chart, and expand <strong>Coil application notes</strong> for selection guidance.</li>
+        <li>Enter the Apparatus Dew Point and Off-coil Dry Bulb.</li>
+        <li>Press <strong>Calculate</strong>. Read the duty table and the ON→ADP chord on the chart, and expand <strong>Coil application notes</strong> for selection guidance.</li>
       </ol>
 
       <h3 class="help-sub">Reading the results</h3>
       <dl class="help-io">
         <dt>Total / sensible / latent cooling</dt><dd>The heat removed, split into the part that lowers temperature (sensible) and the part that removes moisture (latent).</dd>
         <dt>Sensible heat ratio (SHR)</dt><dd>Sensible ÷ total. Near 1.0 means little dehumidification; lower means a wetter duty.</dd>
-        <dt>Apparatus dew point (ADP)</dt><dd>Where the process line, extended, meets saturation — effectively the mean coil surface temperature.</dd>
-        <dt>Contact / bypass factor</dt><dd>The fraction of air brought to the ADP versus the fraction passing through unchanged. Deep coils have a high contact factor.</dd>
+        <dt>Off-coil RH</dt><dd>A result of the chord geometry — typically ~90–95% for a wet coil, not a free input.</dd>
+        <dt>Apparatus dew point (ADP)</dt><dd>The coil surface condition you entered — the end of the process chord on saturation.</dd>
+        <dt>Contact / bypass factor</dt><dd>From BF = (T₂ − T_ADP)/(T₁ − T_ADP). Deep coils have a high contact factor.</dd>
         <dt>Condensate</dt><dd>The rate of water wrung out — size the drain and trap for it.</dd>
       </dl>
 

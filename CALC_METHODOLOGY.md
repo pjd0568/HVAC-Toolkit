@@ -404,37 +404,39 @@ Q = m_da · (h_out − h_in)     # q_sensible = q_total; q_latent = 0
 
 ---
 
-### 2.4 Cooling coil (off-coil condition given)
+### 2.4 Cooling coil (ADP / bypass-factor model)
 
-**What it does:** Computes duties, SHR, condensate, ADP, contact/bypass factor, frost flag from on-coil state and off-coil T + RH.
+**What it does:** Forward apparatus-dew-point coil. Air-on and ADP lock the
+psychrometric chord; off-coil dry bulb (or BF) sets position on that chord.
+Leaving RH/W, duties, SHR, condensate, CF/BF, and frost flag are results.
 
 **Formulas:**
 
 ```
+BF = (t_off − t_ADP) / (t_on − t_ADP)     # or t_off = t_ADP + BF·(t_on − t_ADP)
+W_off = W_s(t_ADP) + BF · (W_on − W_s(t_ADP))   # wet coil (t_ADP < t_dp,on)
+W_off = W_on                                     # dry coil (t_ADP ≥ t_dp,on)
+
 Q_total = m_da · (h_off − h_on)
 Q_sensible = m_da · (enthalpy(t_off, W_on) − enthalpy(t_on, W_on))
 Q_latent = Q_total − Q_sensible
 SHR = Q_sensible / Q_total   (or 1 if Q_total == 0)
-condensate = m_da · (W_on − W_off)     # kg/s
-
-CF = (t_on − t_off) / (t_on − t_ADP)     if ADP exists and t_on ≠ t_ADP
-BF = 1 − CF
-frost_risk = (t_ADP is not None) and (t_ADP ≤ 0)
+condensate = m_da · max(W_on − W_off, 0)
+CF = 1 − BF
+frost_risk = (t_ADP ≤ 0)
 ```
 
-**ADP:** Intersection of on→off process line with saturation curve (bisection); if off-coil RH ≈ 1, ADP = t_off; if no intersection above T_MIN, ADP = None (treated as dry/sensible).
-
-Process line:
-
-```
-W_line(t) = W_on + (t − t_on) · (W_off − W_on) / (t_off − t_on)
-```
+**Legacy:** `t_off` + `rh_off` (AHU sim) finds ADP as the saturation intersection of
+the chord through the prescribed off-coil point, then runs the forward model.
 
 **Source:** `cooling_coil`, `_apparatus_dew_point`
 
-**Validation:** `m_da > 0`; `t_off < t_on`; off-coil W must not exceed on-coil W (coil cannot humidify).
+**Validation:** `m_da > 0`; `t_ADP < t_on`; `t_ADP ≤ t_off ≤ t_on` (or BF in `[0,1)`);
+dry-coil `t_off` must stay at/above entering dew point.
 
-**Assumptions:** Off-coil defined by user T/RH (not UA or LMTD coil model); ADP from straight process line on psych chart.
+**Assumptions:** Straight ON→ADP chord (standard bypass-factor model); not a UA/LMTD
+tube-side coil model. Leaving RH is typically ~90–95% for a wet coil because the
+chord sits above the curved saturation line.
 
 **Reference:** Standard ADP/bypass-factor model — module docstring / SPEC; CIBSE Guide B in SPEC.
 

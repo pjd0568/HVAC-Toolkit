@@ -20,9 +20,10 @@
         <div><label>On-coil Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
       </div>
 
-      <div class="section-label">Off-coil</div>
+      <div class="section-label">Coil (ADP &amp; leaving dry bulb)</div>
       <div class="form-grid psychro-stack">
-        {{ state_input("off", "Off-coil", form, second_properties) }}
+        <div><label>Apparatus Dew Point ({{ U.sym('temperature') }})</label><input name="adp_t" value="{{ form.adp_t }}"></div>
+        <div><label>Off-coil Dry Bulb ({{ U.sym('temperature') }})</label><input name="off_t" value="{{ form.off_t }}"></div>
       </div>
 
       <div class="psychro-actions">
@@ -64,10 +65,11 @@
       <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', m_da) }}</td></tr>
     </table>
     <div class="note-banner" style="margin:14px 16px 16px;">
-      Coil duty is from the off-coil condition you entered
-      ({{ '%.0f'|format(result.state.rh * 100) }}% RH off-coil). A common wet-coil design assumption
-      is ~90% RH — the AHU Design tool uses the same default when deriving off-coil from a supply
-      target.
+      Leaving moisture is locked to the straight ON→ADP chord.
+      Off-coil dry bulb only sets how far along that line the air travels
+      (bypass factor {{ '%.2f'|format(result.bypass_factor) }}), so off-coil RH
+      lands at {{ '%.0f'|format(result.state.rh * 100) }}% — typically ~90–95% for a wet coil,
+      not an independent input.
     </div>
   </div>
   {% endif %}
@@ -77,16 +79,21 @@
 <details class="notes">
   <summary>Coil application notes</summary>
   <div class="notes-body">
-    <p><strong>Off-coil RH.</strong> A wet (dehumidifying) coil typically leaves air at 90–95% RH;
-    0.90 is a reasonable design assumption for 4–6 row coils. A higher value implies more coil
-    surface (more rows / closer fins) for the same duty.</p>
-    <p><strong>ADP, contact and bypass factor.</strong> The apparatus dew point is where the extended
-    process line meets the saturation curve — effectively the mean coil surface temperature. The
-    contact factor is the fraction of air treated to the ADP; the bypass factor is the fraction
-    passing through unchanged. Deep coils have high contact factors; shallow high-velocity coils
-    bypass more.</p>
+    <p><strong>Why ADP + leaving dry bulb.</strong> A simple cooling coil cannot set
+    temperature and moisture independently. Once air-on and the apparatus dew point
+    (mean coil surface temperature) are fixed, the process is the straight line from
+    air-on to ADP on the saturation curve. Specifying off-coil dry bulb only chooses
+    how far along that chord the mixture leaves:</p>
+    <p style="font-family:ui-monospace,monospace;">BF = (T₂ − T<sub>ADP</sub>) / (T₁ − T<sub>ADP</sub>)</p>
+    <p><strong>Off-coil RH.</strong> Because the chord sits slightly above the curved
+    saturation line, leaving air is rarely at 100% RH — typically ~90–95% for a wet
+    4–6 row coil. That RH is a result of the geometry, not a free design knob.</p>
+    <p><strong>Contact and bypass factor.</strong> Contact factor is the fraction of
+    air treated toward the ADP; bypass factor is the fraction that streams through
+    closer to air-on. Deep coils / low face velocity raise contact factor; shallow
+    high-velocity coils bypass more.</p>
     <p><strong>Frost risk.</strong> An ADP at or below 0 °C means the coil surface can freeze
-    condensate. Options: raise the chilled water temperature or off-coil target, glycol, a defrost
+    condensate. Options: raise chilled water temperature or ADP, glycol, a defrost
     strategy on DX, or face-and-bypass control.</p>
     <p><strong>Face velocity.</strong> Keep coil face velocity in the region of 2–2.5 m/s;
     above ~2.75 m/s condensate carry-over from the fins becomes likely and an eliminator or
