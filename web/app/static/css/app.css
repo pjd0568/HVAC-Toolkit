@@ -76,8 +76,12 @@ body {
     );
   border-right: 1px solid var(--side-line);
   display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0;
+  overflow: hidden;
 }
-.logo { display: flex; align-items: center; gap: 10px; padding: 14px 12px 12px; }
+.logo {
+  display: flex; align-items: center; gap: 10px; padding: 14px 12px 12px;
+  flex-shrink: 0;
+}
 .logo-mark {
   width: 48px; height: 48px; border-radius: 9px;
   background: linear-gradient(135deg, var(--blue), var(--green));
@@ -97,6 +101,15 @@ body {
 }
 
 .nav-group { padding: 12px 12px 2px; }
+#sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
 .nav-group-label {
   font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
   color: var(--side-muted); font-weight: 800;
@@ -172,8 +185,9 @@ body {
 .access-lock-card p { margin: 0; color: var(--muted); line-height: 1.5; }
 
 .sidebar-legal {
-  margin-top: auto; padding: 10px 18px 4px; display: flex; flex-wrap: wrap; gap: 10px;
+  margin-top: 0; padding: 10px 18px 4px; display: flex; flex-wrap: wrap; gap: 10px;
   font-size: 11px; border-top: 1px solid var(--side-line);
+  flex-shrink: 0;
 }
 .sidebar-legal a {
   color: var(--side-ink); text-decoration: none; font-weight: 650;
@@ -182,21 +196,24 @@ body {
 .sidebar-foot {
   padding: 14px 18px; border-top: 1px solid var(--side-line);
   display: flex; align-items: center; gap: 10px; font-size: 12px;
+  flex-shrink: 0;
 }
 .avatar {
   width: 30px; height: 30px; border-radius: 50%;
   background: linear-gradient(135deg, var(--blue), var(--green)); color: white;
   display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;
+  flex-shrink: 0;
 }
 .foot-text { color: var(--side-muted); min-width: 0; flex: 1; }
 .foot-email {
   color: var(--side-title); font-weight: 600; font-size: 11px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.sidebar-logout { margin-left: auto; }
+.sidebar-logout { margin-left: auto; flex-shrink: 0; }
 .linkish {
   border: none; background: transparent; color: var(--green); cursor: pointer;
   font: inherit; font-size: 11px; font-weight: 650; padding: 0;
+  white-space: nowrap;
 }
 .linkish:hover { color: #5AD9CF; text-decoration: underline; }
 

@@ -6,7 +6,7 @@
 <title>{% block title %}{{ brand_name }}{% endblock %}</title>
 <link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-13">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-14">
 {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -122,7 +122,7 @@
     </div>
     {% if current_user.is_authenticated %}
     <form method="post" action="{{ url_for('auth.logout') }}" class="sidebar-logout">
-      <button type="submit" class="linkish" title="Sign out">Out</button>
+      <button type="submit" class="linkish">Sign out</button>
     </form>
     {% endif %}
   </div>
