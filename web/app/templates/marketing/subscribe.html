@@ -28,7 +28,11 @@
 
     {% if current_user.is_authenticated and current_user.subscription_status == 'active' %}
       <a class="btn-accent" href="{{ url_for('main.dashboard') }}">Open toolkit</a>
-      <p class="pricing-note">Your subscription is active.</p>
+      <p class="pricing-note">
+        Your subscription is active. Receipts, card updates and cancellation are
+        handled via Stripe / Link emails —
+        see <a href="{{ url_for('help.index', _anchor='account-billing') }}">Help → Account, billing &amp; cancel</a>.
+      </p>
     {% elif stripe_ready and current_user.is_authenticated %}
       <form method="post" action="{{ url_for('billing.create_checkout_session_route') }}">
         <button type="submit" class="btn-accent">Subscribe — £9.50/month</button>

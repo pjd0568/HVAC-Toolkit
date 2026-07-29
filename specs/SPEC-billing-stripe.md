@@ -71,7 +71,8 @@ stripe listen --forward-to localhost:5000/webhooks/stripe
 Test card: `4242 4242 4242 4242`, any future expiry, any CVC. Try different
 billing addresses to see tax.
 
-## Out of scope
+## Out of scope (parked until after soft launch)
 
-Customer Portal (Managed Payments subscription management is via Link),
-refunds UI, multi-currency prices, annual plans.
+Customer Portal (Managed Payments subscription management is via Link — see
+Help → Account, billing & cancel), refunds UI, multi-currency prices, annual
+plans. Operator dogfood + live cutover: `docs/go-live-checklist.md`.

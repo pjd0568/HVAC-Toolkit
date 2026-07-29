@@ -72,11 +72,20 @@ Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.
 - 14-day free trial starts on register; full suite then £9.50/month
   (`specs/SPEC-access.md`). Weather and Projects are Coming Soon.
 - Stripe Managed Payments Checkout + webhooks (`specs/SPEC-billing-stripe.md`).
-  Set keys in Railway from the Stripe Dashboard.
+  Set keys in Railway from the Stripe Dashboard. Cancel / invoices via Stripe /
+  Link (documented under Help → Account, billing & cancel).
 - Transactional email via **Resend** (preferred on Railway) or SMTP fallback
   (`specs/SPEC-transactional-email.md`) — trial welcome, subscribe thanks,
   cancellation. Gmail SMTP from Railway is unreliable.
 
+## Go-live (draw the line)
+
+Operator checklist: [`docs/go-live-checklist.md`](docs/go-live-checklist.md) —
+dogfood yourself (Stripe test, then one live pay-and-cancel), then a small invite
+cohort. Keep `REGISTRATION_OPEN=false` until you intentionally open trials.
+
+**Parked until after soft launch:** Customer Portal, password reset, Sentry,
+Weather/Projects product work, public marketing redesign.
 
 ## Provenance
 

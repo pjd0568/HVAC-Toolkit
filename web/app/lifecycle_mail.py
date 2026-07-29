@@ -92,8 +92,9 @@ Your account now has full access to the calculator suite (£{PRICE_MONTHLY_GBP}/
 Open the toolkit:
 {_dashboard_url()}
 
-Manage billing and invoices through the email receipts Stripe / Link send you
-for this subscription. For support, reply here or email {_contact()}.
+Manage billing, invoices and cancellation through the email receipts Stripe / Link
+send you for this subscription (Help → Account, billing & cancel in the app).
+For support, reply here or email {_contact()}.
 
 — {brand}
 """

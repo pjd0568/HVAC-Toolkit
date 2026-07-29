@@ -19,6 +19,7 @@ HELP_NAV = [
         "group": "Getting Started",
         "sections": [
             {"id": "overview", "title": "How the app works"},
+            {"id": "account-billing", "title": "Account, billing & cancel"},
         ],
     },
     {
@@ -81,6 +82,7 @@ ACTIVE_TO_ANCHOR = {
     "methodology": "methodology",
     "projects": "projects",
     "help": "overview",
+    "subscribe": "account-billing",
 }
 
 

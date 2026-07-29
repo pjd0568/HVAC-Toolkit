@@ -50,6 +50,12 @@ _STATUS_MAP = {
 }
 
 
+def map_stripe_subscription_status(stripe_status: str | None) -> str:
+    """Map a Stripe ``subscription.status`` string to our ``User.subscription_status``."""
+    status = (stripe_status or "").lower()
+    return _STATUS_MAP.get(status, "canceled")
+
+
 class StripeNotConfiguredError(RuntimeError):
     """Raised when Stripe secret key or price id is missing."""
 
@@ -212,8 +218,9 @@ def _find_user_for_session(session: Any) -> User | None:
 
 
 def _apply_subscription_to_user(user: User, subscription: Any) -> None:
-    status = (_field(subscription, "status") or "").lower()
-    user.subscription_status = _STATUS_MAP.get(status, "canceled")
+    user.subscription_status = map_stripe_subscription_status(
+        _field(subscription, "status")
+    )
     sub_id = _field(subscription, "id")
     if sub_id:
         user.stripe_subscription_id = sub_id

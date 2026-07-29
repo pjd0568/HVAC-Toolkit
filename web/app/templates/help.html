@@ -53,6 +53,35 @@
       <div class="help-tip">New here? Start with <a href="#single-point">Psychrometrics — Single Point</a> to resolve a moist-air state, or open <a href="#weather">Weather &amp; Design Conditions</a> for the planned ASHRAE lookup and links to ASHRAE’s own tools.</div>
     </section>
 
+    <!-- ═══════════════ ACCOUNT & BILLING ═══════════════ -->
+    <section class="help-section" id="account-billing" data-help-section
+             data-keywords="account billing subscription subscribe cancel unsubscribe trial invoice receipt stripe link payment refund support contact pricing">
+      <h2 class="help-h">Account, billing &amp; cancel</h2>
+      <p class="help-lead">How trials, the £9.50/month subscription, invoices, and cancellation work — without a separate billing portal inside the app.</p>
+
+      <h3 class="help-sub">Trial and subscribe</h3>
+      <ol class="help-steps">
+        <li>New accounts get a <strong>14-day free trial</strong> of the full calculator suite.</li>
+        <li>When you’re ready to continue, open <a href="{{ url_for('billing.subscribe') }}">Pricing</a> and complete Stripe’s secure checkout (card; tax for your location is calculated there).</li>
+        <li>After payment, suite access stays unlocked. You’ll also get a confirmation email from us when the subscription becomes active.</li>
+      </ol>
+
+      <h3 class="help-sub">Invoices and receipts</h3>
+      <p>Payments are processed by <strong>Stripe</strong> (Managed Payments). Receipts and invoices are sent by Stripe / Link to the email you used at checkout — open those messages to download a PDF or review past charges. We don’t host an invoice history page in the app.</p>
+
+      <h3 class="help-sub">Cancel or change payment details</h3>
+      <p>There is no in-app “cancel subscription” button. Manage or cancel through Stripe / Link:</p>
+      <ol class="help-steps">
+        <li>Find a subscription receipt or invoice email from Stripe / Link for this product.</li>
+        <li>Use the links in that email to open the customer billing area (often via Link), update the card, or cancel the subscription.</li>
+        <li>Cancellation takes effect at the end of the current paid period (see <a href="{{ url_for('pages.terms') }}">Terms</a>). When the subscription ends, suite access locks and we’ll send a short confirmation email.</li>
+      </ol>
+      <div class="help-note">If you can’t find the Stripe / Link email, contact us with topic <strong>Billing</strong> (below) and we can help from the Stripe Dashboard.</div>
+
+      <h3 class="help-sub">Billing or account support</h3>
+      <p>Use <a href="{{ url_for('pages.contact') }}">Contact</a> and choose topic <strong>Billing</strong> (or Help / Bug for other issues). Include the email on your account. For refunds and account closure requests, the same form is the right starting point — see also the <a href="{{ url_for('pages.terms') }}">Terms</a> and <a href="{{ url_for('pages.privacy') }}">Privacy</a> pages.</p>
+    </section>
+
     <!-- ═══════════════ WEATHER ═══════════════ -->
     <section class="help-section" id="weather" data-help-section
              data-keywords="weather design conditions ashrae coming soon station finder weather data viewer dry bulb wet bulb">
