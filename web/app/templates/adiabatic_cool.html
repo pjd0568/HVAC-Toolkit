@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% from "_state_row.html" import state_cells with context %}
+{% from "_state_input.html" import state_input with context %}
+{% from "_site_conditions.html" import site_conditions with context %}
+{% from "_report_form.html" import report_form with context %}
+{% block page_title %}Psychrometrics - Adiabatic Cooling{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="psychro-layout">
+  <form method="post" class="psychro-inputs panel" id="adiabatic-cool-form">
+    <div class="panel-head">Adiabatic / evaporative cooling</div>
+    <div class="panel-body">
+      <div class="mode-tabs">
+        <label class="mode-tab {{ 'active' if form.mode != 'duty' }}">
+          <input type="radio" name="mode" value="state" {{ 'checked' if form.mode != 'duty' }}>
+          State / effectiveness
+        </label>
+        <label class="mode-tab {{ 'active' if form.mode == 'duty' }}">
+          <input type="radio" name="mode" value="duty" {{ 'checked' if form.mode == 'duty' }}>
+          Duty &amp; airflow
+        </label>
+      </div>
+
+      {{ site_conditions(form, pressure) }}
+
+      <div class="section-label">Entering air</div>
+      <div class="form-grid psychro-stack">
+        {{ state_input("on", "Entering", form, second_properties) }}
+        <div><label>Airflow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
+      </div>
+
+      <div id="mode-state-fields" {% if form.mode == 'duty' %}style="display:none"{% endif %}>
+        <div class="section-label">Process extent</div>
+        <div class="form-grid psychro-stack">
+          <div>
+            <label>Target</label>
+            <select name="target_kind" id="target_kind">
+              <option value="effectiveness" {{ 'selected' if form.target_kind != 'rh' }}>Media effectiveness ε (%)</option>
+              <option value="rh" {{ 'selected' if form.target_kind == 'rh' }}>Leaving RH (%)</option>
+            </select>
+          </div>
+          <div id="field-effectiveness" {% if form.target_kind == 'rh' %}style="display:none"{% endif %}>
+            <label>Saturation Effectiveness ε (%)</label>
+            <input name="effectiveness" value="{{ form.effectiveness }}" inputmode="decimal">
+            <div class="suffix">Typical rigid media ~80–90%. ε = 100% reaches the entering wet-bulb.</div>
+          </div>
+          <div id="field-rh-out" {% if form.target_kind != 'rh' %}style="display:none"{% endif %}>
+            <label>Target Leaving RH (%)</label>
+            <input name="rh_out" value="{{ form.rh_out }}" inputmode="decimal">
+          </div>
+        </div>
+      </div>
+
+      <div id="mode-duty-fields" {% if form.mode != 'duty' %}style="display:none"{% endif %}>
+        <div class="section-label">Required cooling</div>
+        <div class="form-grid psychro-stack">
+          <div>
+            <label>Sensible Cooling Capacity ({{ U.sym('power') }})</label>
+            <input name="q_sensible" value="{{ form.q_sensible }}">
+            <div class="suffix">Cannot drive leaving dry-bulb below the entering wet-bulb.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="psychro-actions">
+        <button class="btn-accent" type="submit">Calculate</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
+  </div>
+
+  {% if result %}
+  <div class="psychro-results panel">
+    <div class="panel-head">Process result</div>
+    <table class="results">
+      <tr><th></th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th></tr>
+      <tr><td>Entering</td>{{ state_cells(on) }}</tr>
+      <tr><td>Leaving</td>{{ state_cells(result.state) }}</tr>
+    </table>
+    <table class="results">
+      <tr><td>Entering wet-bulb</td><td class="num">{{ U.html('temperature', on.t_wb) }}</td></tr>
+      <tr><td>Saturation effectiveness ε</td><td class="num"><strong>{{ '%.1f'|format(result.effectiveness * 100) }}%</strong></td></tr>
+      <tr><td>Sensible cooling effect</td><td class="num"><strong>{{ U.html('power', result.q_sensible) }}</strong></td></tr>
+      <tr><td>Water evaporation rate</td><td class="num">{{ U.html('moisture_rate', result.water_rate) }}</td></tr>
+      <tr><td>ΔW (out − in)</td><td class="num">{{ U.html('humidity_ratio', result.delta_w) }}</td></tr>
+      <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', m_da) }}</td></tr>
+    </table>
+    <div class="note-banner" style="margin:14px 16px 16px;">
+      Process follows the constant wet-bulb line from the entering state toward
+      saturation at {{ U.html('temperature', on.t_wb) }}. Enthalpy is nearly unchanged;
+      sensible cooling is paid for by latent moisture gain.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if result %}
+<details class="notes">
+  <summary>Adiabatic cooling notes</summary>
+  <div class="notes-body">
+    <p><strong>Process.</strong> Direct evaporative / spray washers with no external heat
+    transfer follow the constant wet-bulb line (nearly constant enthalpy). Dry-bulb falls
+    and humidity rises toward the entering wet-bulb temperature.</p>
+    <p><strong>Effectiveness.</strong>
+    ε = (T<sub>db1</sub> − T<sub>db2</sub>) / (T<sub>db1</sub> − T<sub>wb1</sub>).
+    Rigid media typically land around 80–90%; ε = 100% is the thermodynamic limit.</p>
+    <p><strong>Mode A.</strong> Set media effectiveness or a leaving RH on the wet-bulb
+    line; the tool reports leaving state, cooling effect and water use.</p>
+    <p><strong>Mode B.</strong> Set the required sensible cooling capacity; leaving
+    dry-bulb and required ε are calculated. Duties that would push below the entering
+    wet-bulb are rejected.</p>
+  </div>
+</details>
+
+{{ report_form(url_for('psychro.adiabatic_cool_report'), form, url_for('psychro.adiabatic_cool_chart_png')) }}
+{% endif %}
+
+<script>
+(function () {
+  var form = document.getElementById('adiabatic-cool-form');
+  if (!form) return;
+  function syncMode() {
+    var mode = (form.querySelector('input[name="mode"]:checked') || {}).value || 'state';
+    var stateFields = document.getElementById('mode-state-fields');
+    var dutyFields = document.getElementById('mode-duty-fields');
+    if (stateFields) stateFields.style.display = mode === 'duty' ? 'none' : '';
+    if (dutyFields) dutyFields.style.display = mode === 'duty' ? '' : 'none';
+    form.querySelectorAll('.mode-tab').forEach(function (tab) {
+      var input = tab.querySelector('input[type="radio"]');
+      tab.classList.toggle('active', !!(input && input.checked));
+    });
+  }
+  function syncTarget() {
+    var kind = (form.querySelector('#target_kind') || {}).value || 'effectiveness';
+    var eff = document.getElementById('field-effectiveness');
+    var rh = document.getElementById('field-rh-out');
+    if (eff) eff.style.display = kind === 'rh' ? 'none' : '';
+    if (rh) rh.style.display = kind === 'rh' ? '' : 'none';
+  }
+  form.querySelectorAll('input[name="mode"]').forEach(function (el) {
+    el.addEventListener('change', syncMode);
+  });
+  var kindSel = form.querySelector('#target_kind');
+  if (kindSel) kindSel.addEventListener('change', syncTarget);
+  syncMode();
+  syncTarget();
+})();
+</script>
+
+{% endblock %}

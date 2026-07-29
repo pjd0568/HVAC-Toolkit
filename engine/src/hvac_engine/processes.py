@@ -60,6 +60,150 @@ class AdiabaticResult:
     q_total: float
 
 
+@dataclass(frozen=True)
+class DesiccantResult:
+    """Outlet of a desiccant dehumidifier (isenthalpic / near-isenthalpic)."""
+
+    state: PsychroState
+    delta_w: float  # kg/kg, W_in − W_out (> 0 when drying)
+    moisture_removed: float  # kg/s dry-basis water removed
+    eta_d: float
+    h_in: float
+    h_out: float
+    q_total: float  # kW to the airstream; 0 when ηd = 1 (ideal isenthalpic)
+    dh_adsorption: float  # kJ/kg dry air, h_out − h_in
+
+
+# Latent heat of vaporization used in the ASHRAE moist-air enthalpy equation (kJ/kg).
+_H_FG = 2501.0
+
+
+def desiccant_dehumidify(
+    state_in: PsychroState,
+    m_da: float,
+    *,
+    w_out: float | None = None,
+    rh_out: float | None = None,
+    moisture_removed: float | None = None,
+    eta_d: float = 1.0,
+) -> DesiccantResult:
+    """Desiccant (solid/liquid) dehumidification — isenthalpic or near-isenthalpic.
+
+    Water vapour is adsorbed/absorbed and the latent heat appears as a sensible
+    temperature rise. Ideal model (``eta_d = 1``): constant enthalpy
+    ``h_out = h_in``. Real-world (``eta_d < 1``): additional heat of adsorption
+    / wheel heat carryover raises leaving enthalpy above the isenthalpic line::
+
+        h_out = h_in + (1 − η_d) · h_fg · (W_in − W_out)
+
+    Provide exactly one leaving-moisture contract:
+    - ``w_out`` — target humidity ratio (kg/kg), or
+    - ``rh_out`` — target leaving RH (0–1), solved with the enthalpy model, or
+    - ``moisture_removed`` — water removal rate (kg/s); then
+      ``W_out = W_in − moisture_removed / m_da``.
+    """
+    if m_da <= 0:
+        raise ValueError("mass flow must be positive")
+    if not (0.0 < eta_d <= 1.0):
+        raise ValueError("desiccant efficiency must be in (0, 1]")
+
+    n_targets = sum(x is not None for x in (w_out, rh_out, moisture_removed))
+    if n_targets != 1:
+        raise ValueError("provide exactly one of w_out, rh_out, or moisture_removed")
+
+    if moisture_removed is not None:
+        if moisture_removed <= 0:
+            raise ValueError("moisture removal rate must be positive")
+        w_out = state_in.w - moisture_removed / m_da
+        if w_out < 0:
+            raise ValueError(
+                "moisture removal exceeds the water content of the airstream"
+            )
+
+    if w_out is not None:
+        if w_out >= state_in.w * (1.0 - 1e-12):
+            raise ValueError(
+                "leaving humidity ratio must be below the entering value"
+            )
+        if w_out < 0:
+            raise ValueError("leaving humidity ratio cannot be negative")
+        s_out = _desiccant_outlet(state_in, w_out, eta_d)
+    else:
+        assert rh_out is not None
+        if not (0.0 < rh_out <= 1.0):
+            raise ValueError("leaving RH must be in (0, 1]")
+        s_out = _desiccant_outlet_for_rh(state_in, rh_out, eta_d)
+        w_out = s_out.w
+
+    delta_w = state_in.w - w_out
+    removed = m_da * delta_w
+    dh = s_out.h - state_in.h
+    return DesiccantResult(
+        state=s_out,
+        delta_w=delta_w,
+        moisture_removed=removed,
+        eta_d=eta_d,
+        h_in=state_in.h,
+        h_out=s_out.h,
+        q_total=m_da * dh,
+        dh_adsorption=dh,
+    )
+
+
+def _desiccant_outlet(
+    state_in: PsychroState, w_out: float, eta_d: float
+) -> PsychroState:
+    """Leaving state at ``w_out`` on the (near-)isenthalpic process line."""
+    dh_extra = (1.0 - eta_d) * _H_FG * (state_in.w - w_out)
+    h_out = state_in.h + dh_extra
+    return psy.state(h=h_out, w=w_out, p=state_in.p)
+
+
+def _desiccant_w_floor(h_out: float, p: float) -> float:
+    """Lowest humidity ratio that still resolves under ``state(h, w)``."""
+    # Dew-point correlation needs p_w above sat(T_MIN).
+    w_dp = psy.saturation_humidity_ratio(psy.T_MIN, p) * 1.001
+    # dry_bulb_from_enthalpy must stay ≤ T_MAX as W falls (T rises).
+    denom = _H_FG + psy.T_MAX * 1.86
+    w_tmax = max(0.0, (h_out - psy.T_MAX * 1.006) / denom)
+    return max(w_dp, w_tmax) + 1e-9
+
+
+def _desiccant_outlet_for_rh(
+    state_in: PsychroState, rh_out: float, eta_d: float
+) -> PsychroState:
+    """Solve ``W_out`` so the near-isenthalpic outlet lands at ``rh_out``."""
+    # Lower W → higher T on the process line → lower RH. Bracket W below W_in.
+    hi = state_in.w * (1.0 - 1e-9)
+    # Floor uses the ideal (lowest) leaving enthalpy for the driest reachable state.
+    h_at_floor = state_in.h  # ηd=1 lower bound; extra heat only raises T further
+    lo = _desiccant_w_floor(h_at_floor, state_in.p)
+    if lo >= hi:
+        raise ValueError("entering state leaves no valid desiccant process range")
+    s_hi = _desiccant_outlet(state_in, hi, eta_d)
+    s_lo = _desiccant_outlet(state_in, lo, eta_d)
+    if rh_out > s_hi.rh + 1e-9:
+        raise ValueError(
+            "target leaving RH is above the near-isenthalpic process line "
+            "at the entering moisture — lower the RH target or raise ηd"
+        )
+    if rh_out < s_lo.rh - 1e-9:
+        raise ValueError(
+            "target leaving RH is below what the process can reach at this "
+            "entering condition"
+        )
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        s_mid = _desiccant_outlet(state_in, mid, eta_d)
+        if s_mid.rh > rh_out:
+            hi = mid
+        else:
+            lo = mid
+        if hi - lo < 1e-12:
+            break
+    return _desiccant_outlet(state_in, 0.5 * (lo + hi), eta_d)
+
+
 # ── Elementary processes ───────────────────────────────────────────────────────
 
 def _saturated_state_at_enthalpy(h: float, p: float) -> PsychroState:
@@ -115,20 +259,82 @@ def sensible(state_in: PsychroState, m_da: float, t_out: float) -> ProcessResult
 def cooling_coil(
     state_on: PsychroState,
     m_da: float,
-    t_off: float,
-    rh_off: float,
+    *,
+    t_adp: float | None = None,
+    t_off: float | None = None,
+    bypass_factor: float | None = None,
+    rh_off: float | None = None,
 ) -> CoilResult:
-    """Dehumidifying (or dry) cooling coil defined by its off-coil condition."""
+    """Real-world ADP / bypass-factor cooling coil.
+
+    A coil cannot set dry-bulb and moisture independently. The process is the
+    straight psychrometric chord from air-on ``(T1, W1)`` to the apparatus dew
+    point on the saturation curve; off-coil air sits on that chord.
+
+    Provide **apparatus dew point** ``t_adp`` plus either:
+    - ``t_off`` — how far along the chord (BF follows), or
+    - ``bypass_factor`` — BF in ``[0, 1)`` (``t_off`` follows).
+
+    Legacy convenience: ``t_off`` + ``rh_off`` (no ``t_adp``) solves for the ADP
+    that places the leaving state at that RH on the chord — used by AHU
+    simulation when only an off-coil RH assumption is known.
+    """
     if m_da <= 0:
         raise ValueError("mass flow must be positive")
-    if t_off >= state_on.t_db:
-        raise ValueError("off-coil temperature must be below on-coil temperature")
-    s_off = psy.state(t_off, rh=rh_off, p=state_on.p)
-    if s_off.w > state_on.w * (1.0 + 1e-9):
-        raise ValueError(
-            "off-coil moisture content exceeds on-coil: a cooling coil cannot "
-            "humidify — reduce off-coil RH or raise off-coil temperature"
+
+    if t_adp is None:
+        if t_off is None or rh_off is None:
+            raise ValueError(
+                "cooling coil requires t_adp with t_off or bypass_factor "
+                "(or legacy t_off + rh_off)"
+            )
+        if t_off >= state_on.t_db:
+            raise ValueError("off-coil temperature must be below on-coil temperature")
+        t_adp = _solve_adp_for_leaving_rh(state_on, t_off, rh_off)
+        return cooling_coil(
+            state_on, m_da, t_adp=t_adp, t_off=t_off
         )
+
+    if t_adp >= state_on.t_db - 1e-9:
+        raise ValueError("apparatus dew point must be below on-coil dry bulb")
+
+    if bypass_factor is not None and t_off is not None:
+        raise ValueError("provide t_off or bypass_factor, not both")
+    if bypass_factor is None and t_off is None:
+        raise ValueError("provide t_off or bypass_factor with t_adp")
+
+    if bypass_factor is not None:
+        if not (0.0 <= bypass_factor < 1.0):
+            raise ValueError("bypass factor must be in [0, 1)")
+        t_off = t_adp + bypass_factor * (state_on.t_db - t_adp)
+    else:
+        assert t_off is not None
+        if t_off > state_on.t_db + 1e-9:
+            raise ValueError("off-coil temperature must be at or below on-coil temperature")
+        if t_off < t_adp - 1e-9:
+            raise ValueError(
+                "off-coil temperature cannot be below the apparatus dew point"
+            )
+        denom = state_on.t_db - t_adp
+        bypass_factor = (t_off - t_adp) / denom if abs(denom) > 1e-12 else 0.0
+
+    bf = float(bypass_factor)
+    cf = 1.0 - bf
+    p = state_on.p
+    wet = t_adp < state_on.t_dp - 1e-9
+
+    if wet:
+        w_adp = psy.saturation_humidity_ratio(t_adp, p)
+        w_off = w_adp + bf * (state_on.w - w_adp)
+        s_off = psy.state(t_off, w=w_off, p=p)
+    else:
+        # ADP at or above entering dew point → dry coil, constant moisture.
+        if t_off < state_on.t_dp - 1e-6:
+            raise ValueError(
+                "dry-coil off-coil temperature is below the entering dew point; "
+                "lower the apparatus dew point to dehumidify, or raise t_off"
+            )
+        s_off = psy.state(t_off, w=state_on.w, p=p)
 
     q_total = m_da * (s_off.h - state_on.h)
     q_sensible = m_da * (
@@ -136,15 +342,8 @@ def cooling_coil(
     )
     q_latent = q_total - q_sensible
     shr = q_sensible / q_total if q_total != 0 else 1.0
-    condensate = m_da * (state_on.w - s_off.w)
-
-    t_adp = _apparatus_dew_point(state_on, s_off)
-    if t_adp is not None and abs(state_on.t_db - t_adp) > 1e-9:
-        cf = (state_on.t_db - t_off) / (state_on.t_db - t_adp)
-        bf = 1.0 - cf
-    else:
-        cf = bf = None
-    frost = t_adp is not None and t_adp <= 0.0
+    condensate = m_da * max(state_on.w - s_off.w, 0.0)
+    frost = t_adp <= 0.0
 
     return CoilResult(
         state=s_off,
@@ -158,6 +357,34 @@ def cooling_coil(
         bypass_factor=bf,
         frost_risk=frost,
     )
+
+
+def _solve_adp_for_leaving_rh(
+    s_on: PsychroState, t_off: float, rh_off: float
+) -> float:
+    """Find ADP so the forward coil model leaves at ``(t_off, rh_off)``.
+
+    Used when only an off-coil RH design assumption is available (AHU sim).
+    Extends the chord through air-on and the prescribed off-coil point to the
+    saturation curve (same geometry as the forward ADP model).
+    """
+    if not (0.0 < rh_off <= 1.0):
+        raise ValueError("off-coil RH must be in (0, 1]")
+    s_off = psy.state(t_off, rh=rh_off, p=s_on.p)
+    if s_off.w > s_on.w * (1.0 + 1e-9):
+        raise ValueError(
+            "off-coil moisture content exceeds on-coil: a cooling coil cannot "
+            "humidify — reduce off-coil RH or raise off-coil temperature"
+        )
+    if abs(s_off.w - s_on.w) < 1e-12:
+        return s_on.t_dp
+    t_adp = _apparatus_dew_point(s_on, s_off)
+    if t_adp is None:
+        raise ValueError(
+            "no apparatus dew point on the saturation curve for this off-coil "
+            "state — the process is effectively dry / too shallow to dehumidify"
+        )
+    return t_adp
 
 
 def _apparatus_dew_point(
@@ -179,15 +406,9 @@ def _apparatus_dew_point(
         w_line = s_on.w + (t - s_on.t_db) * slope
         return w_line - psy.saturation_humidity_ratio(t, p)
 
-    # A saturated off-coil condition IS the apparatus dew point.
     if s_off.rh >= 1.0 - 1e-9:
         return s_off.t_db
 
-    # Subsaturated points sit below the saturation curve, so f(t_off) < 0.
-    # Extending the line to lower temperatures, W_s(t) falls away exponentially
-    # and the line crosses it at the ADP (f becomes >= 0). Walk down for the
-    # sign change, then bisect. No crossing above T_MIN -> no ADP (line steeper
-    # than the curve; effectively a dry/sensible process).
     hi = s_off.t_db
     lo = hi
     step = 1.0
@@ -197,7 +418,7 @@ def _apparatus_dew_point(
             break
         step *= 2.0
     if f(lo) < 0.0:
-        return None  # no intersection within the valid range
+        return None
 
     for _ in range(200):
         mid = 0.5 * (lo + hi)
@@ -224,6 +445,106 @@ def steam_humidify(
     return HumidifyResult(state=s_out, steam_rate=steam, q_latent=q_latent)
 
 
+@dataclass(frozen=True)
+class HeatHumidifyResult:
+    """Sensible heat then isothermal steam humidification (AHU winter path)."""
+
+    state_x: PsychroState  # after heating coil, before humidifier (T2, W1)
+    state: PsychroState  # final leaving (T2, W2)
+    q_sensible: float  # kW heating coil
+    q_latent: float  # kW steam / latent to airstream
+    q_total: float
+    steam_rate: float  # kg/s
+
+
+def heat_and_humidify(
+    state_in: PsychroState,
+    m_da: float,
+    *,
+    t_out: float | None = None,
+    w_out: float | None = None,
+    q_sensible: float | None = None,
+    steam_rate: float | None = None,
+) -> HeatHumidifyResult:
+    """Sensible heating at constant W, then isothermal steam humidification.
+
+    Process path on the psychrometric chart::
+
+        (1) ──constant W──► (X) ──constant T──► (2)
+              heating coil         steam
+
+    Mode A — state targets: provide ``t_out`` and ``w_out``.
+    Mode B — duties: provide ``q_sensible`` (kW) and ``steam_rate`` (kg/s);
+    either may be zero if the other is positive.
+
+    Sensible duty uses moist-air enthalpy at constant W (equivalent to
+    ``m · (1.006 + 1.86·W) · ΔT``). Latent duty is the isothermal steam
+    enthalpy rise (≈ ``m_w · h_fg``).
+    """
+    if m_da <= 0:
+        raise ValueError("mass flow must be positive")
+
+    state_mode = t_out is not None and w_out is not None
+    duty_mode = q_sensible is not None and steam_rate is not None
+    if state_mode == duty_mode:
+        raise ValueError(
+            "provide either t_out + w_out (state mode) or "
+            "q_sensible + steam_rate (duty mode)"
+        )
+
+    if duty_mode:
+        assert q_sensible is not None and steam_rate is not None
+        if q_sensible < -1e-12:
+            raise ValueError("sensible heating duty cannot be negative")
+        if steam_rate < -1e-12:
+            raise ValueError("steam rate cannot be negative")
+        if q_sensible <= 1e-12 and steam_rate <= 1e-12:
+            raise ValueError("provide a positive heating duty and/or steam rate")
+        cp = 1.006 + 1.86 * state_in.w
+        t_out = state_in.t_db + q_sensible / (m_da * cp)
+        w_out = state_in.w + steam_rate / m_da
+
+    assert t_out is not None and w_out is not None
+    if t_out < state_in.t_db - 1e-9:
+        raise ValueError(
+            "leaving dry bulb is below entering — this process is heating only"
+        )
+    if w_out < state_in.w * (1.0 - 1e-9):
+        raise ValueError(
+            "leaving humidity ratio is below entering — steam humidification "
+            "cannot dry the air"
+        )
+
+    # State X: heated to t_out at constant W1 (may equal state_in if no heat).
+    if abs(t_out - state_in.t_db) < 1e-9:
+        state_x = state_in
+        q_s = 0.0
+    else:
+        heated = sensible(state_in, m_da, t_out)
+        state_x = heated.state
+        q_s = heated.q_total
+
+    # State 2: isothermal steam to w_out (may equal X if no steam).
+    if abs(w_out - state_in.w) < 1e-12:
+        state_2 = state_x
+        steam = 0.0
+        q_l = 0.0
+    else:
+        hum = steam_humidify(state_x, m_da, w_out)
+        state_2 = hum.state
+        steam = hum.steam_rate
+        q_l = hum.q_latent
+
+    return HeatHumidifyResult(
+        state_x=state_x,
+        state=state_2,
+        q_sensible=q_s,
+        q_latent=q_l,
+        q_total=q_s + q_l,
+        steam_rate=steam,
+    )
+
+
 def adiabatic_humidify(
     state_in: PsychroState, m_da: float, effectiveness: float
 ) -> AdiabaticResult:
@@ -237,6 +558,116 @@ def adiabatic_humidify(
     water = m_da * (s_out.w - state_in.w)
     q_total = m_da * (s_out.h - state_in.h)
     return AdiabaticResult(state=s_out, water_rate=water, q_total=q_total)
+
+
+@dataclass(frozen=True)
+class AdiabaticCoolResult:
+    """Direct evaporative / adiabatic cooler along constant wet-bulb."""
+
+    state: PsychroState
+    effectiveness: float  # saturation efficiency ε in (0, 1]
+    water_rate: float  # kg/s evaporated into the airstream
+    delta_w: float  # kg/kg, W_out − W_in
+    q_sensible: float  # kW cooling effect (positive when air is cooled)
+    q_total: float  # kW enthalpy change (≈ 0 on the wet-bulb line)
+
+
+def adiabatic_cool(
+    state_in: PsychroState,
+    m_da: float,
+    *,
+    effectiveness: float | None = None,
+    rh_out: float | None = None,
+    q_sensible: float | None = None,
+) -> AdiabaticCoolResult:
+    """Direct evaporative cooling on the constant wet-bulb line.
+
+    No external heat transfer: dry-bulb falls and moisture rises toward the
+    entering wet-bulb. Extent is set by saturation effectiveness::
+
+        ε = (T_db1 − T_db2) / (T_db1 − T_wb1)
+
+    Provide exactly one of:
+    - ``effectiveness`` — media saturation efficiency in (0, 1], or
+    - ``rh_out`` — target leaving RH (0–1) on the wet-bulb line, or
+    - ``q_sensible`` — required sensible cooling effect (kW, positive);
+      leaving dry-bulb from moist-air cp, then ε follows. Raises if the
+      required T_db2 is below the entering wet-bulb limit.
+    """
+    if m_da <= 0:
+        raise ValueError("mass flow must be positive")
+
+    n = sum(x is not None for x in (effectiveness, rh_out, q_sensible))
+    if n != 1:
+        raise ValueError(
+            "provide exactly one of effectiveness, rh_out, or q_sensible"
+        )
+
+    twb = state_in.t_wb
+    t1 = state_in.t_db
+    approach = t1 - twb
+    if approach < 1e-9:
+        raise ValueError(
+            "entering air is already at the wet-bulb temperature — "
+            "no evaporative cooling potential"
+        )
+
+    if effectiveness is not None:
+        if not (0.0 < effectiveness <= 1.0):
+            raise ValueError("effectiveness must be in (0, 1]")
+        t_out = t1 - effectiveness * approach
+    elif q_sensible is not None:
+        if q_sensible <= 0:
+            raise ValueError("sensible cooling capacity must be positive")
+        cp = 1.006 + 1.86 * state_in.w
+        t_out = t1 - q_sensible / (m_da * cp)
+        if t_out < twb - 1e-9:
+            raise ValueError(
+                "Required temperature below thermodynamic wet-bulb limit"
+            )
+        effectiveness = (t1 - t_out) / approach
+    else:
+        assert rh_out is not None
+        if not (0.0 < rh_out <= 1.0):
+            raise ValueError("leaving RH must be in (0, 1]")
+        # Along constant Twb, RH rises as Tdb falls. Bracket T in [Twb, T1].
+        s_sat = psy.state(twb, twb=twb, p=state_in.p)  # ε = 1
+        if rh_out < state_in.rh - 1e-9:
+            raise ValueError(
+                "target leaving RH is below the entering RH — evaporative "
+                "cooling increases RH along the wet-bulb line"
+            )
+        if rh_out > s_sat.rh + 1e-9:
+            raise ValueError(
+                "target leaving RH exceeds saturation at the entering wet-bulb"
+            )
+        lo, hi = twb, t1
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            s_mid = psy.state(mid, twb=twb, p=state_in.p)
+            if s_mid.rh < rh_out:
+                hi = mid
+            else:
+                lo = mid
+            if hi - lo < 1e-9:
+                break
+        t_out = 0.5 * (lo + hi)
+        effectiveness = (t1 - t_out) / approach
+
+    s_out = psy.state(t_out, twb=twb, p=state_in.p)
+    delta_w = s_out.w - state_in.w
+    water = m_da * delta_w
+    cp = 1.006 + 1.86 * state_in.w
+    q_s = m_da * cp * (t1 - t_out)
+    q_total = m_da * (s_out.h - state_in.h)
+    return AdiabaticCoolResult(
+        state=s_out,
+        effectiveness=effectiveness,
+        water_rate=water,
+        delta_w=delta_w,
+        q_sensible=q_s,
+        q_total=q_total,
+    )
 
 
 def fan_gain(
@@ -370,7 +801,7 @@ def simulate_ahu(
             current = r.state
 
     if coil_t_off is not None:
-        c = cooling_coil(current, m_da, coil_t_off, coil_rh_off)
+        c = cooling_coil(current, m_da, t_off=coil_t_off, rh_off=coil_rh_off)
         note = ""
         if c.frost_risk:
             frost = True

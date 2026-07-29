@@ -50,24 +50,31 @@ supersaturated (for cooling, t_out ≥ dew point; otherwise the caller wants
 `cooling_coil`). q = m_da·(h_out − h_in).
 `ProcessResult(state, q_sensible, q_latent=0, q_total)`
 
-### `cooling_coil(state_on, m_da, t_off, rh_off) -> CoilResult`
-Dehumidifying coil defined by its off-coil condition (the practical design input:
-off-coil dry bulb + off-coil RH, typically 0.90–0.95 for a wet coil).
-Validation: t_off < t_on; w_off ≤ w_on (a coil cannot humidify); if w_off = w_on the
-process is sensible-only (dry coil) and ADP/CF are reported from the dry process line.
+### `cooling_coil(state_on, m_da, *, t_adp, t_off | bypass_factor) -> CoilResult`
+Real-world apparatus-dew-point / bypass-factor coil. A cooling coil cannot set
+dry-bulb and moisture independently: air-on `(T1, W1)` and ADP on the saturation
+curve lock a straight process chord; off-coil air sits on that chord.
 
+Provide **`t_adp`** plus either **`t_off`** (how far along the chord) or
+**`bypass_factor`** in `[0, 1)`:
+- `BF = (T_off − T_ADP) / (T_on − T_ADP)`  (or rearrange for `T_off` when BF given)
+- Wet coil (`T_ADP` < entering dew point):
+  `W_off = W_ADP + BF · (W_on − W_ADP)` with `W_ADP = W_s(T_ADP)`
+- Dry coil (`T_ADP` ≥ entering dew point): constant-`W` sensible cooling to `T_off`
+- Leaving RH is a **result** (typically ~0.90–0.95 for a wet coil), not an input.
+
+Legacy convenience for AHU simulation: `t_off` + `rh_off` (no `t_adp`) solves for
+the ADP at the saturation intersection of the chord through the prescribed
+off-coil point, then runs the forward model.
+
+Duties:
 - q_total = m_da·(h_off − h_on)  (negative)
-- q_sensible = m_da·(h(t_off, w_on) − h(t_on, w_on))  (cooling at constant w to t_off)
+- q_sensible = m_da·(h(t_off, w_on) − h(t_on, w_on))
 - q_latent = q_total − q_sensible
 - SHR = q_sensible / q_total
 - condensate = m_da·(w_on − w_off)
-- **ADP**: intersection of the straight line through (t_on, w_on)→(t_off, w_off),
-  extended, with the saturation curve: solve f(t) = w_line(t) − W_s(t) = 0 by
-  bisection below t_off. If the line does not intersect (shallow slope), report
-  ADP = None and CF from temperatures cannot be formed → contact_factor = None.
-- contact factor CF = (t_on − t_off)/(t_on − t_adp); bypass factor BF = 1 − CF.
-- **frost_risk = True if ADP ≤ 0 °C** (coil surface temperature at or below freezing
-  → condensate can freeze; flag for glycol/DX defrost/face-bypass consideration).
+- contact factor CF = 1 − BF
+- **frost_risk = True if ADP ≤ 0 °C**
 
 `CoilResult(state, q_sensible, q_latent, q_total, shr, condensate, t_adp,
 contact_factor, bypass_factor, frost_risk)`
@@ -85,6 +92,77 @@ t_out = t_in − ε·(t_in − t_wb,in), 0 < ε ≤ 1. w_out from (t_out, twb = 
 water_rate = m_da·(w_out − w_in). Enthalpy change is small and non-zero (wet-bulb,
 not enthalpy, is conserved exactly); report q_total for completeness.
 `AdiabaticResult(state, water_rate, q_total)`
+
+### `adiabatic_cool(state_in, m_da, *, effectiveness | rh_out | q_sensible) -> AdiabaticCoolResult`
+Direct evaporative / adiabatic cooling on the constant wet-bulb line (nearly
+constant enthalpy). Saturation effectiveness:
+
+```
+ε = (T_db1 − T_db2) / (T_db1 − T_wb1)
+T_db2 = T_db1 − ε · (T_db1 − T_wb1)
+state_2 = state(T_db2, twb=T_wb1)
+```
+
+Provide exactly one of:
+- `effectiveness` in (0, 1] — media saturation efficiency; or
+- `rh_out` — leaving RH on the wet-bulb line; or
+- `q_sensible` (kW, positive cooling effect) — duty mode:
+  `T_db2 = T_db1 − q_sensible / (m_da · (1.006 + 1.86·W_in))`;
+  raise if `T_db2 < T_wb1` ("Required temperature below thermodynamic wet-bulb limit").
+
+Outputs: leaving state, ε, `water_rate = m_da·(W_2−W_in)`,
+`q_sensible = m_da·c_p·(T_db1−T_db2)`, `q_total ≈ 0`.
+
+`AdiabaticCoolResult(state, effectiveness, water_rate, delta_w, q_sensible, q_total)`
+
+### `desiccant_dehumidify(state_in, m_da, *, w_out | rh_out | moisture_removed, eta_d=1) -> DesiccantResult`
+Desiccant (solid wheel / liquid) dehumidification. Adsorption/absorption removes
+water vapour; latent heat appears as a dry-bulb rise. Ideal model is
+**isenthalpic** (`η_d = 1` → `h_out = h_in`). Real-world (`0 < η_d < 1`) adds heat
+of adsorption / wheel heat carryover above the isenthalpic line:
+
+```
+h_out = h_in + (1 − η_d) · h_fg · (W_in − W_out)     # h_fg = 2501 kJ/kg
+T_out from state(h=h_out, w=W_out)                   # ASHRAE HOF eqn 30 inverse
+```
+
+Provide exactly one leaving-moisture contract:
+- `w_out` — target humidity ratio (kg/kg), Mode A moisture target; or
+- `rh_out` — target leaving RH (0–1), solved on the process line; or
+- `moisture_removed` — water removal rate (kg/s), Mode B:
+  `W_out = W_in − moisture_removed / m_da`.
+
+Validation: `m_da > 0`; `0 < η_d ≤ 1`; `W_out < W_in` and `W_out ≥ 0`; RH target
+must be reachable on the process line.
+
+`DesiccantResult(state, delta_w, moisture_removed, eta_d, h_in, h_out, q_total,
+dh_adsorption)` with `delta_w = W_in − W_out`, `q_total = m_da·(h_out − h_in)`
+(zero when ideal).
+
+### `heat_and_humidify(state_in, m_da, *, t_out+w_out | q_sensible+steam_rate) -> HeatHumidifyResult`
+Sensible heating at constant W, then isothermal steam humidification — the common
+AHU winter path:
+
+```
+(1) ──constant W──► (X) ──constant T──► (2)
+      heating coil         steam
+```
+
+Mode A (state): `t_out`, `w_out` with `t_out ≥ t_in` and `w_out ≥ w_in`.
+Intermediate X is `(t_out, W_in)`.
+
+Mode B (duty): `q_sensible` (kW) and `steam_rate` (kg/s); either may be zero if
+the other is positive. Leaving temperature from moist-air cp:
+`t_out = t_in + q_sensible / (m_da · (1.006 + 1.86·W_in))`;
+`W_out = W_in + steam_rate / m_da`.
+
+Duties from enthalpy (consistent with `sensible` / `steam_humidify`):
+- q_sensible = m_da·(h_X − h_in)
+- q_latent = m_da·(h_2 − h_X)  (≈ ṁ_w · h_fg)
+- q_total = q_sensible + q_latent
+- steam_rate = m_da·(W_out − W_in)
+
+`HeatHumidifyResult(state_x, state, q_sensible, q_latent, q_total, steam_rate)`
 
 ### `fan_gain(state_in, m_da, power_kw | dt) -> ProcessResult`
 Sensible pick-up across a fan at constant moisture content. Given absorbed power:
@@ -187,16 +265,26 @@ the interaction is consistent everywhere.
   supersaturated, result is saturated (rh = 1.0) and condensate ≥ 0.
 - **Sensible energy balance:** 1 kg/s heated 10→30 °C at w = 0.005:
   q = h(30, 0.005) − h(10, 0.005) ≈ 20.3 kW (±0.3). Cooling below dew point raises.
-- **Coil worked case:** 28 °C/50% → 12 °C/90% at 1 kg/s dry air:
-  q_total ≈ −(h_on − h_off) with h_on ≈ 58.4, h_off ≈ 31.4 → ≈ −27 kW (±1);
-  condensate = w_on − w_off > 0; 0 < SHR < 1; 4 < ADP < 12 °C; 0 < CF ≤ 1;
-  frost_risk False.
-- **Coil frost case:** dry inlet air with a low off-coil target, 16 °C/30% →
-  2 °C/70%: ADP ≈ −3 °C ≤ 0 → frost_risk True. (Note: 20 °C/40% → 2 °C/95% is
-  NOT a frost case — its ADP is ≈ +1 °C; verified during implementation.)
-- **Coil validation:** t_off > t_on raises; rh_off giving w_off > w_on raises.
+- **Coil worked case:** 28 °C/50% on-coil, ADP 9 °C, t_off 12 °C at 1 kg/s dry air:
+  leaving RH ≈ 0.90 (±0.03); q_total ≈ −26.4 kW (±1.5); condensate > 0; 0 < SHR < 1;
+  BF = (12−9)/(28−9); frost_risk False. Legacy `t_off=12, rh_off=0.90` recovers the
+  same chord with ADP between 4 and 12 °C.
+- **Coil frost case:** ADP ≤ 0 °C (e.g. on-coil 16 °C/30%, ADP −2 °C, t_off 2 °C) →
+  frost_risk True.
+- **Coil validation:** t_off > t_on raises; t_off < t_ADP raises; legacy rh_off giving
+  w_off > w_on raises.
 - **Steam:** 20 °C/30% to w giving 50% RH: t unchanged (±0.01), steam_rate > 0.
 - **Adiabatic:** 28 °C/30%, ε = 0.85: t_wb conserved (±0.05 K), t drops, w rises.
+- **Adiabatic cool duty:** q_sensible round-trips with effectiveness mode; T_db2 below
+  T_wb1 raises "wet-bulb limit".
+- **Desiccant isenthalpic:** 25 °C/60% → W_out = 0.006 at ηd = 1, 1 kg/s: h conserved
+  (±1e-6), T_out > T_in, moisture_removed = ΔW, q_total = 0.
+- **Desiccant ηd < 1:** same duty at ηd = 0.85: h_out > h_in by (1−ηd)·2501·ΔW;
+  T_out above the ideal isenthalpic leaving temperature.
+- **Desiccant Mode B:** moisture_removed sets W_out = W_in − ṁ_w / m_da.
+- **Heat+humidify state:** 5 °C/80% → 22 °C / W=0.008 at 1 kg/s: state X at
+  (22 °C, W_in); steam_rate = ΔW; q_total = q_s + q_l > 0.
+- **Heat+humidify duty round-trip:** state-mode duties reproduce T2/W2 in duty mode.
 - **AHU chain:** winter case (OA −5/90%, RA 21/50%, 30% OA, frost coil to 5 °C,
   reheat to 21 °C, steam to 40% RH at 21 °C): stage list ordered, each stage's
   inlet = previous stage's outlet, net heating > 0, moisture added > 0.

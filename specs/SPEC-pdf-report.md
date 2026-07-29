@@ -19,7 +19,7 @@ input/result rows to get a report for free.
 
 ## Scope (this pass)
 
-Wired into: Single Point, Mixed Air, Cooling Coil, AHU Design.
+Wired into: Single Point, Mixed Air, Cooling Coil, Desiccant, Heat & Humidify, Adiabatic Cool, AHU Design.
 Not wired into: Unit Converter (no "duty" concept — a single conversion doesn't
 warrant a report), Duct/Pipe Sizing (not built yet).
 

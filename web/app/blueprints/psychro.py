@@ -1,4 +1,5 @@
-"""Psychrometrics tools: single point, mixed air, cooling coil, AHU supply design.
+"""Psychrometrics tools: single point, mixed air, coils, desiccant, heat+humidify,
+adiabatic cool, AHU.
 
 Each tool has a page route (renders the on-screen form + results) and a sibling
 `/report` route (POST-only, generates a PDF). Both call the same `_run_*` helper
@@ -6,7 +7,7 @@ for the actual calculation, so the numbers in the PDF can never drift from the
 numbers on screen -- one calculation, two consumers. See specs/SPEC-pdf-report.md.
 """
 
-from flask import Blueprint, Response, current_app, render_template, request
+from flask import Blueprint, Response, current_app, redirect, render_template, request, session, url_for
 
 from hvac_engine import processes as proc
 from hvac_engine import psychrometrics as psy
@@ -22,6 +23,11 @@ from app.reports.helpers import report_meta_from_form as _report_meta_from_form
 from app.units import current_view
 
 bp = Blueprint("psychro", __name__)
+
+# Session-backed plotted points on Single Point (A, then optional B).
+_SINGLE_POINT_SESSION_KEY = "psychro_single_points"
+_SINGLE_POINT_MAX = 2
+_SINGLE_POINT_LABELS = ("A", "B")
 
 
 # Shared second-variable selector, consistent across every module. Dry-bulb
@@ -219,10 +225,54 @@ _SINGLE_POINT_DEFAULTS = {
 _SINGLE_POINT_FIELD_UNITS = {"s_t": "temperature", "altitude": "altitude"}
 
 
+def _state_to_session(label: str, state: psy.PsychroState) -> dict:
+    """Serialize a PsychroState for the Single Point session list."""
+    return {
+        "label": label,
+        "t_db": state.t_db,
+        "t_wb": state.t_wb,
+        "t_dp": state.t_dp,
+        "w": state.w,
+        "rh": state.rh,
+        "h": state.h,
+        "v": state.v,
+        "rho": state.rho,
+        "p_w": state.p_w,
+        "p": state.p,
+    }
+
+
+def _get_saved_points() -> list[dict]:
+    raw = session.get(_SINGLE_POINT_SESSION_KEY) or []
+    if not isinstance(raw, list):
+        return []
+    return [p for p in raw if isinstance(p, dict) and "label" in p][:_SINGLE_POINT_MAX]
+
+
+def _set_saved_points(points: list[dict]) -> None:
+    session[_SINGLE_POINT_SESSION_KEY] = points[:_SINGLE_POINT_MAX]
+
+
+def _clear_saved_points() -> None:
+    session.pop(_SINGLE_POINT_SESSION_KEY, None)
+
+
+def _chart_points_and_segments(saved: list[dict]):
+    points = [{"label": p["label"], "t": p["t_db"], "w": p["w"]} for p in saved]
+    segments = [(0, 1)] if len(saved) >= 2 else []
+    return points, segments
+
+
+def _chart_or_blank(points=None, segments=None, pressure=None, system="SI"):
+    """Always return a chart payload — empty points draw blank axes on page load."""
+    p = pressure if pressure is not None else psy.P_ATM
+    return chart_payload(points or [], segments or [], p=p, system=system)
+
+
 def _run_single_point(form, U):
     pressure = _resolve_pressure(form, U)
     result = _state_from_form(form, "s", pressure, U)
-    points = [{"label": "1", "t": result.t_db, "w": result.w}]
+    points = [{"label": "A", "t": result.t_db, "w": result.w}]
     segments = []
     return pressure, result, points, segments
 
@@ -231,13 +281,38 @@ def _run_single_point(form, U):
 @require_module("psychro.single_point")
 def single_point():
     U = current_view()
-    result = None
     error = None
     pressure = None
+    saved = _get_saved_points()
+
     if request.method == "POST":
+        action = request.form.get("action", "calculate")
         form = {k: request.form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}
+
+        if action == "reset":
+            _clear_saved_points()
+            return redirect(url_for("psychro.single_point"))
+
         try:
-            pressure, result, points, segments = _run_single_point(form, U)
+            pressure, result, _, _ = _run_single_point(form, U)
+            entry = _state_to_session("A", result)
+            if action == "add_b":
+                if not saved:
+                    # No Point A yet — treat as first calculate.
+                    _set_saved_points([entry])
+                else:
+                    entry["label"] = "B"
+                    _set_saved_points([saved[0], entry])
+            else:
+                # Calculate: set/replace Point A; keep B if present.
+                entry["label"] = "A"
+                if len(saved) >= 2:
+                    b = dict(saved[1])
+                    b["label"] = "B"
+                    _set_saved_points([entry, b])
+                else:
+                    _set_saved_points([entry])
+            saved = _get_saved_points()
         except ValueError as exc:
             error = str(exc)
             try:
@@ -247,14 +322,26 @@ def single_point():
     else:
         form = _display_defaults(_SINGLE_POINT_DEFAULTS, _SINGLE_POINT_FIELD_UNITS, U)
         _paste_slot_into(form, "s", U)
-        pressure = _resolve_pressure(form, U)
-    chart = None
-    if result:
-        chart = chart_payload(points, segments, system=U.system)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+
+    if pressure is None:
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = psy.P_ATM
+
+    chart_pts, chart_segs = _chart_points_and_segments(saved)
+    chart = _chart_or_blank(chart_pts, chart_segs, pressure, U.system)
+
     return render_template(
         "psychro.html", active="psychro", form=form,
-        second_properties=_second_properties(U), result=result, error=error,
+        second_properties=_second_properties(U), saved_points=saved, error=error,
         chart=chart, pressure=pressure,
+        can_add_b=len(saved) >= 1,
+        has_points=len(saved) >= 1,
     )
 
 
@@ -289,7 +376,7 @@ def single_point_report():
     ]
     meta = _report_meta_from_form("Psychrometrics - Single Point")
     pdf = build_pdf(meta, input_rows, result_rows, chart_png)
-    return _pdf_response(pdf, "psychrometrics-single-point.pdf")
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-single-point")
 
 
 @bp.route("/chart.png", methods=["POST"])
@@ -344,25 +431,28 @@ def mixed_air():
     result = None
     error = None
     mres = None
-    chart = None
     pressure = None
+    points, segments = [], []
     if request.method != "POST":
         form = _display_defaults(_MIXED_AIR_DEFAULTS, _MIXED_AIR_FIELD_UNITS, U)
         _paste_slot_into(form, "a", U)
         _paste_slot_into(form, "b", U)
-        pressure = _resolve_pressure(form, U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
     else:
         form = {k: request.form.get(k, d) for k, d in _MIXED_AIR_DEFAULTS.items()}
         try:
             pressure, sa, sb, ma, mb, mres, points, segments = _run_mixed_air(form, U)
             result = {"a": sa, "b": sb, "m_a": ma, "m_b": mb}
-            chart = chart_payload(points, segments, system=U.system)
         except ValueError as exc:
             error = str(exc)
             try:
                 pressure = _resolve_pressure(form, U)
             except ValueError:
                 pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
     return render_template(
         "mixed_air.html", active="psychro_mix", form=form,
         second_properties=_second_properties(U), result=result, mres=mres,
@@ -411,7 +501,7 @@ def mixed_air_report():
         ))
     meta = _report_meta_from_form("Psychrometrics - Mixed Air")
     pdf = build_pdf(meta, input_rows, result_rows, chart_png)
-    return _pdf_response(pdf, "psychrometrics-mixed-air.pdf")
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-mixed-air")
 
 
 @bp.route("/mixed-air/chart.png", methods=["POST"])
@@ -434,11 +524,11 @@ def mixed_air_chart_png():
 
 _COOLING_COIL_DEFAULTS = {
     "on_t": "28", "on_prop": "rh", "on_val": "50", "flow": "5000",
-    "off_t": "12", "off_prop": "rh", "off_val": "90",
+    "adp_t": "9", "off_t": "12",
     "altitude": "0",
 }
 _COOLING_COIL_FIELD_UNITS = {
-    "on_t": "temperature", "off_t": "temperature",
+    "on_t": "temperature", "adp_t": "temperature", "off_t": "temperature",
     "flow": "vol_flow", "altitude": "altitude",
 }
 
@@ -446,9 +536,10 @@ _COOLING_COIL_FIELD_UNITS = {
 def _run_cooling_coil(form, U):
     pressure = _resolve_pressure(form, U)
     on = _state_from_form(form, "on", pressure, U)
-    off_state = _state_from_form(form, "off", pressure, U)
+    t_adp = U.to_si("temperature", _f(form, "adp_t"))
+    t_off = U.to_si("temperature", _f(form, "off_t"))
     m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
-    result = proc.cooling_coil(on, m_da, off_state.t_db, off_state.rh)
+    result = proc.cooling_coil(on, m_da, t_adp=t_adp, t_off=t_off)
     points = [
         {"label": "ON", "t": on.t_db, "w": on.w},
         {"label": "OFF", "t": result.state.t_db, "w": result.state.w},
@@ -459,7 +550,8 @@ def _run_cooling_coil(form, U):
             "label": "ADP", "t": result.t_adp,
             "w": psy.saturation_humidity_ratio(result.t_adp, pressure),
         })
-        segments.append((1, 2))
+        # Full chord ON→ADP with OFF sitting on the line.
+        segments = [(0, 2)]
     return pressure, on, m_da, result, points, segments
 
 
@@ -471,24 +563,26 @@ def cooling_coil():
     error = None
     on = None
     m_da = None
-    chart = None
     pressure = None
+    points, segments = [], []
     if request.method != "POST":
         form = _display_defaults(_COOLING_COIL_DEFAULTS, _COOLING_COIL_FIELD_UNITS, U)
         _paste_slot_into(form, "on", U)
-        _paste_slot_into(form, "off", U)
-        pressure = _resolve_pressure(form, U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
     else:
         form = {k: request.form.get(k, d) for k, d in _COOLING_COIL_DEFAULTS.items()}
         try:
             pressure, on, m_da, result, points, segments = _run_cooling_coil(form, U)
-            chart = chart_payload(points, segments, system=U.system)
         except ValueError as exc:
             error = str(exc)
             try:
                 pressure = _resolve_pressure(form, U)
             except ValueError:
                 pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
     return render_template(
         "coil.html", active="psychro_coil", form=form,
         second_properties=_second_properties(U), on=on, m_da=m_da,
@@ -512,11 +606,13 @@ def cooling_coil_report():
         _site_condition_rows(form, pressure, U)
         + _state_input_rows("on", "On-coil", form, sp, U)
         + [("On-coil Flow", form['flow'], U.sym('vol_flow'))]
-        + _state_input_rows("off", "Off-coil", form, sp, U)
+        + [("Apparatus Dew Point", form['adp_t'], U.sym('temperature'))]
+        + [("Off-coil Dry Bulb", form['off_t'], U.sym('temperature'))]
     )
     result_rows = [
         ("On-coil Dry Bulb", U.fmt('temperature', on.t_db), U.sym('temperature')),
         ("Off-coil Dry Bulb", U.fmt('temperature', result.state.t_db), U.sym('temperature')),
+        ("Off-coil RH", f"{result.state.rh * 100:.1f}", "%"),
         ("Total Cooling", U.fmt('power', -result.q_total), U.sym('power')),
         ("Sensible / Latent",
          f"{U.fmt('power', -result.q_sensible)} / {U.fmt('power', -result.q_latent)}", U.sym('power')),
@@ -533,7 +629,7 @@ def cooling_coil_report():
         result_rows.append(("Frost Risk", "Yes — apparatus dew point at or below freezing", ""))
     meta = _report_meta_from_form("Psychrometrics - Cooling Coil")
     pdf = build_pdf(meta, input_rows, result_rows, chart_png)
-    return _pdf_response(pdf, "psychrometrics-cooling-coil.pdf")
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-cooling-coil")
 
 
 @bp.route("/cooling-coil/chart.png", methods=["POST"])
@@ -621,19 +717,21 @@ def ahu():
     result = None
     error = None
     m_da = None
-    chart = None
     pressure = None
+    pts, segs = [], []
     if request.method != "POST":
         form = _display_defaults(_AHU_DEFAULTS, _AHU_FIELD_UNITS, U)
         _paste_slot_into(form, "oa", U)
         _paste_slot_into(form, "ra", U)
         _paste_slot_into(form, "sup", U)
-        pressure = _resolve_pressure(form, U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
     else:
         form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
         try:
             pressure, m_da, result, pts, segs = _run_ahu(form, U)
-            chart = chart_payload(pts, segs, system=U.system)
         except ValueError as exc:
             result = None
             error = str(exc)
@@ -641,6 +739,7 @@ def ahu():
                 pressure = _resolve_pressure(form, U)
             except ValueError:
                 pressure = None
+    chart = _chart_or_blank(pts, segs, pressure, U.system)
     return render_template(
         "ahu.html", active="psychro_ahu", form=form,
         second_properties=_second_properties(U), result=result, m_da=m_da,
@@ -698,7 +797,7 @@ def ahu_report():
         result_rows.append(("Warning", w, ""))
     meta = _report_meta_from_form("Psychrometrics - AHU Design")
     pdf = build_pdf(meta, input_rows, result_rows, chart_png)
-    return _pdf_response(pdf, "psychrometrics-ahu-design.pdf")
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-ahu-design")
 
 
 @bp.route("/ahu/chart.png", methods=["POST"])
@@ -715,3 +814,447 @@ def ahu_chart_png():
     if png is None:
         return Response(f"Could not generate chart image: {err}", status=500)
     return _png_response(png, "psychrometrics-ahu-design-chart.png")
+
+
+# -- Desiccant dehumidification ------------------------------------------------------
+
+_DESICCANT_DEFAULTS = {
+    "mode": "state",
+    "on_t": "28", "on_prop": "rh", "on_val": "50",
+    "flow": "5000",
+    "target_prop": "w", "target_val": "0.006",  # kg/kg → 6 g/kg SI display
+    "moisture_duty": "0.0055555556",  # kg/s → 20 kg/h SI display
+    "eta_d": "100",
+    "altitude": "0",
+}
+_DESICCANT_FIELD_UNITS = {
+    "on_t": "temperature",
+    "flow": "vol_flow",
+    "target_val": "humidity_ratio",  # only when target_prop == w; RH is %
+    "moisture_duty": "moisture_rate",
+    "altitude": "altitude",
+}
+
+
+def _run_desiccant(form, U):
+    pressure = _resolve_pressure(form, U)
+    on = _state_from_form(form, "on", pressure, U)
+    m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
+    eta_d = _f(form, "eta_d") / 100.0
+    mode = form.get("mode", "state")
+
+    if mode == "duty":
+        removed = U.to_si("moisture_rate", _f(form, "moisture_duty"))
+        result = proc.desiccant_dehumidify(
+            on, m_da, moisture_removed=removed, eta_d=eta_d
+        )
+    else:
+        prop = form.get("target_prop", "w")
+        if prop == "rh":
+            result = proc.desiccant_dehumidify(
+                on, m_da, rh_out=_f(form, "target_val") / 100.0, eta_d=eta_d
+            )
+        else:
+            w_out = U.to_si("humidity_ratio", _f(form, "target_val"))
+            result = proc.desiccant_dehumidify(
+                on, m_da, w_out=w_out, eta_d=eta_d
+            )
+
+    points = [
+        {"label": "IN", "t": on.t_db, "w": on.w},
+        {"label": "OUT", "t": result.state.t_db, "w": result.state.w},
+    ]
+    segments = [(0, 1)]
+    return pressure, on, m_da, result, points, segments
+
+
+@bp.route("/desiccant", methods=["GET", "POST"])
+@require_module("psychro.desiccant")
+def desiccant():
+    U = current_view()
+    result = None
+    error = None
+    on = None
+    m_da = None
+    pressure = None
+    points, segments = [], []
+    if request.method != "POST":
+        form = _display_defaults(_DESICCANT_DEFAULTS, _DESICCANT_FIELD_UNITS, U)
+        # target_val default is humidity ratio; RH mode would be percent — keep w default.
+        _paste_slot_into(form, "on", U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+    else:
+        form = {k: request.form.get(k, d) for k, d in _DESICCANT_DEFAULTS.items()}
+        try:
+            pressure, on, m_da, result, points, segments = _run_desiccant(form, U)
+        except ValueError as exc:
+            error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
+    return render_template(
+        "desiccant.html", active="psychro_desiccant", form=form,
+        second_properties=_second_properties(U), on=on, m_da=m_da,
+        result=result, chart=chart, error=error, pressure=pressure,
+    )
+
+
+@bp.route("/desiccant/report", methods=["POST"])
+@require_module("psychro.desiccant")
+def desiccant_report():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _DESICCANT_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_desiccant(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate report: {exc}", status=400)
+
+    chart_png = _safe_chart_png(points, segments, U.system)
+    sp = _second_properties(U)
+    mode = form.get("mode", "state")
+    input_rows = (
+        _site_condition_rows(form, pressure, U)
+        + _state_input_rows("on", "Entering", form, sp, U)
+        + [("Entering Flow", form["flow"], U.sym("vol_flow"))]
+        + [("Mode", "Duty & airflow" if mode == "duty" else "State point target", "")]
+    )
+    if mode == "duty":
+        input_rows.append(
+            ("Moisture Removal Duty", form["moisture_duty"], U.sym("moisture_rate"))
+        )
+    else:
+        tprop = form.get("target_prop", "w")
+        if tprop == "rh":
+            input_rows.append(("Target Leaving RH", form["target_val"], "%"))
+        else:
+            input_rows.append(
+                ("Target Leaving Humidity Ratio", form["target_val"], U.sym("humidity_ratio"))
+            )
+    input_rows.append(("Desiccant Efficiency ηd", form["eta_d"], "%"))
+
+    result_rows = [
+        ("Leaving Dry Bulb", U.fmt("temperature", result.state.t_db), U.sym("temperature")),
+        ("Leaving RH", f"{result.state.rh * 100:.1f}", "%"),
+        ("Leaving Humidity Ratio", U.fmt("humidity_ratio", result.state.w), U.sym("humidity_ratio")),
+        ("Leaving Enthalpy", U.fmt("enthalpy", result.state.h), U.sym("enthalpy")),
+        ("ΔW (in − out)", U.fmt("humidity_ratio", result.delta_w), U.sym("humidity_ratio")),
+        ("Moisture Removed", U.fmt("moisture_rate", result.moisture_removed), U.sym("moisture_rate")),
+        ("Adsorption Δh", U.fmt("enthalpy", result.dh_adsorption), U.sym("enthalpy")),
+        ("Process Heat to Air", U.fmt("power", result.q_total), U.sym("power")),
+        ("Dry-air Mass Flow", U.fmt("mass_flow", m_da), U.sym("mass_flow")),
+    ]
+    meta = _report_meta_from_form("Psychrometrics - Desiccant Dehumidification")
+    pdf = build_pdf(meta, input_rows, result_rows, chart_png)
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-desiccant")
+
+
+@bp.route("/desiccant/chart.png", methods=["POST"])
+@require_module("psychro.desiccant")
+def desiccant_chart_png():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _DESICCANT_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_desiccant(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate chart: {exc}", status=400)
+
+    png, err = _chart_png_or_500(points, segments, U.system)
+    if png is None:
+        return Response(f"Could not generate chart image: {err}", status=500)
+    return _png_response(png, "psychrometrics-desiccant-chart.png")
+
+
+# -- Sensible heating + steam humidification -----------------------------------------
+
+_HEAT_HUMIDIFY_DEFAULTS = {
+    "mode": "state",
+    "on_t": "5", "on_prop": "rh", "on_val": "80",
+    "off_t": "22", "off_prop": "rh", "off_val": "50",
+    "flow": "5000",
+    "q_sensible": "50",  # kW (canonical = display for SI power)
+    "steam_rate": "0.0055555556",  # kg/s → 20 kg/h
+    "altitude": "0",
+}
+_HEAT_HUMIDIFY_FIELD_UNITS = {
+    "on_t": "temperature", "off_t": "temperature",
+    "flow": "vol_flow",
+    "q_sensible": "power",
+    "steam_rate": "moisture_rate",
+    "altitude": "altitude",
+}
+
+
+def _run_heat_humidify(form, U):
+    pressure = _resolve_pressure(form, U)
+    on = _state_from_form(form, "on", pressure, U)
+    m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
+    mode = form.get("mode", "state")
+
+    if mode == "duty":
+        q_s = U.to_si("power", _f(form, "q_sensible"))
+        steam = U.to_si("moisture_rate", _f(form, "steam_rate"))
+        result = proc.heat_and_humidify(
+            on, m_da, q_sensible=q_s, steam_rate=steam
+        )
+    else:
+        off = _state_from_form(form, "off", pressure, U)
+        result = proc.heat_and_humidify(
+            on, m_da, t_out=off.t_db, w_out=off.w
+        )
+
+    points = [
+        {"label": "1", "t": on.t_db, "w": on.w},
+        {"label": "X", "t": result.state_x.t_db, "w": result.state_x.w},
+        {"label": "2", "t": result.state.t_db, "w": result.state.w},
+    ]
+    segments = [(0, 1), (1, 2)]
+    return pressure, on, m_da, result, points, segments
+
+
+@bp.route("/heat-humidify", methods=["GET", "POST"])
+@require_module("psychro.heat_humidify")
+def heat_humidify():
+    U = current_view()
+    result = None
+    error = None
+    on = None
+    m_da = None
+    pressure = None
+    points, segments = [], []
+    if request.method != "POST":
+        form = _display_defaults(_HEAT_HUMIDIFY_DEFAULTS, _HEAT_HUMIDIFY_FIELD_UNITS, U)
+        _paste_slot_into(form, "on", U)
+        _paste_slot_into(form, "off", U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+    else:
+        form = {k: request.form.get(k, d) for k, d in _HEAT_HUMIDIFY_DEFAULTS.items()}
+        try:
+            pressure, on, m_da, result, points, segments = _run_heat_humidify(form, U)
+        except ValueError as exc:
+            error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
+    return render_template(
+        "heat_humidify.html", active="psychro_heat_humidify", form=form,
+        second_properties=_second_properties(U), on=on, m_da=m_da,
+        result=result, chart=chart, error=error, pressure=pressure,
+    )
+
+
+@bp.route("/heat-humidify/report", methods=["POST"])
+@require_module("psychro.heat_humidify")
+def heat_humidify_report():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _HEAT_HUMIDIFY_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_heat_humidify(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate report: {exc}", status=400)
+
+    chart_png = _safe_chart_png(points, segments, U.system)
+    sp = _second_properties(U)
+    mode = form.get("mode", "state")
+    input_rows = (
+        _site_condition_rows(form, pressure, U)
+        + _state_input_rows("on", "Entering", form, sp, U)
+        + [("Entering Flow", form["flow"], U.sym("vol_flow"))]
+        + [("Mode", "Duty & airflow" if mode == "duty" else "State point target", "")]
+    )
+    if mode == "duty":
+        input_rows += [
+            ("Sensible Heating Duty", form["q_sensible"], U.sym("power")),
+            ("Steam Rate", form["steam_rate"], U.sym("moisture_rate")),
+        ]
+    else:
+        input_rows += _state_input_rows("off", "Leaving target", form, sp, U)
+
+    result_rows = [
+        ("State X Dry Bulb", U.fmt("temperature", result.state_x.t_db), U.sym("temperature")),
+        ("State X Humidity Ratio", U.fmt("humidity_ratio", result.state_x.w), U.sym("humidity_ratio")),
+        ("Leaving Dry Bulb", U.fmt("temperature", result.state.t_db), U.sym("temperature")),
+        ("Leaving RH", f"{result.state.rh * 100:.1f}", "%"),
+        ("Leaving Humidity Ratio", U.fmt("humidity_ratio", result.state.w), U.sym("humidity_ratio")),
+        ("Sensible Heating", U.fmt("power", result.q_sensible), U.sym("power")),
+        ("Latent / Steam Duty", U.fmt("power", result.q_latent), U.sym("power")),
+        ("Total Heat to Air", U.fmt("power", result.q_total), U.sym("power")),
+        ("Steam Injection Rate", U.fmt("moisture_rate", result.steam_rate), U.sym("moisture_rate")),
+        ("Dry-air Mass Flow", U.fmt("mass_flow", m_da), U.sym("mass_flow")),
+    ]
+    meta = _report_meta_from_form("Psychrometrics - Heating & Humidification")
+    pdf = build_pdf(meta, input_rows, result_rows, chart_png)
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-heat-humidify")
+
+
+@bp.route("/heat-humidify/chart.png", methods=["POST"])
+@require_module("psychro.heat_humidify")
+def heat_humidify_chart_png():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _HEAT_HUMIDIFY_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_heat_humidify(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate chart: {exc}", status=400)
+
+    png, err = _chart_png_or_500(points, segments, U.system)
+    if png is None:
+        return Response(f"Could not generate chart image: {err}", status=500)
+    return _png_response(png, "psychrometrics-heat-humidify-chart.png")
+
+
+# -- Adiabatic / evaporative cooling -------------------------------------------------
+
+_ADIABATIC_COOL_DEFAULTS = {
+    "mode": "state",
+    "on_t": "35", "on_prop": "rh", "on_val": "20",
+    "flow": "5000",
+    "target_kind": "effectiveness",  # effectiveness | rh
+    "effectiveness": "85",
+    "rh_out": "70",
+    "q_sensible": "20",  # kW cooling effect — within wet-bulb approach at defaults
+    "altitude": "0",
+}
+_ADIABATIC_COOL_FIELD_UNITS = {
+    "on_t": "temperature",
+    "flow": "vol_flow",
+    "q_sensible": "power",
+    "altitude": "altitude",
+}
+
+
+def _run_adiabatic_cool(form, U):
+    pressure = _resolve_pressure(form, U)
+    on = _state_from_form(form, "on", pressure, U)
+    m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
+    mode = form.get("mode", "state")
+
+    if mode == "duty":
+        q_s = U.to_si("power", _f(form, "q_sensible"))
+        result = proc.adiabatic_cool(on, m_da, q_sensible=q_s)
+    else:
+        kind = form.get("target_kind", "effectiveness")
+        if kind == "rh":
+            result = proc.adiabatic_cool(
+                on, m_da, rh_out=_f(form, "rh_out") / 100.0
+            )
+        else:
+            result = proc.adiabatic_cool(
+                on, m_da, effectiveness=_f(form, "effectiveness") / 100.0
+            )
+
+    # Chart: IN → OUT along wet-bulb, plus WB saturation marker.
+    wb_sat = psy.state(on.t_wb, twb=on.t_wb, p=pressure)
+    points = [
+        {"label": "IN", "t": on.t_db, "w": on.w},
+        {"label": "OUT", "t": result.state.t_db, "w": result.state.w},
+        {"label": "WB", "t": wb_sat.t_db, "w": wb_sat.w},
+    ]
+    segments = [(0, 1), (1, 2)]
+    return pressure, on, m_da, result, points, segments
+
+
+@bp.route("/adiabatic-cool", methods=["GET", "POST"])
+@require_module("psychro.adiabatic_cool")
+def adiabatic_cool():
+    U = current_view()
+    result = None
+    error = None
+    on = None
+    m_da = None
+    pressure = None
+    points, segments = [], []
+    if request.method != "POST":
+        form = _display_defaults(
+            _ADIABATIC_COOL_DEFAULTS, _ADIABATIC_COOL_FIELD_UNITS, U
+        )
+        _paste_slot_into(form, "on", U)
+        try:
+            pressure = _resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+    else:
+        form = {k: request.form.get(k, d) for k, d in _ADIABATIC_COOL_DEFAULTS.items()}
+        try:
+            pressure, on, m_da, result, points, segments = _run_adiabatic_cool(form, U)
+        except ValueError as exc:
+            error = str(exc)
+            try:
+                pressure = _resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
+    chart = _chart_or_blank(points, segments, pressure, U.system)
+    return render_template(
+        "adiabatic_cool.html", active="psychro_adiabatic_cool", form=form,
+        second_properties=_second_properties(U), on=on, m_da=m_da,
+        result=result, chart=chart, error=error, pressure=pressure,
+    )
+
+
+@bp.route("/adiabatic-cool/report", methods=["POST"])
+@require_module("psychro.adiabatic_cool")
+def adiabatic_cool_report():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _ADIABATIC_COOL_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_adiabatic_cool(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate report: {exc}", status=400)
+
+    chart_png = _safe_chart_png(points, segments, U.system)
+    sp = _second_properties(U)
+    mode = form.get("mode", "state")
+    input_rows = (
+        _site_condition_rows(form, pressure, U)
+        + _state_input_rows("on", "Entering", form, sp, U)
+        + [("Entering Flow", form["flow"], U.sym("vol_flow"))]
+        + [("Mode", "Duty & airflow" if mode == "duty" else "State / effectiveness", "")]
+    )
+    if mode == "duty":
+        input_rows.append(
+            ("Sensible Cooling Duty", form["q_sensible"], U.sym("power"))
+        )
+    elif form.get("target_kind") == "rh":
+        input_rows.append(("Target Leaving RH", form["rh_out"], "%"))
+    else:
+        input_rows.append(("Media Effectiveness", form["effectiveness"], "%"))
+
+    result_rows = [
+        ("Leaving Dry Bulb", U.fmt("temperature", result.state.t_db), U.sym("temperature")),
+        ("Leaving RH", f"{result.state.rh * 100:.1f}", "%"),
+        ("Leaving Humidity Ratio", U.fmt("humidity_ratio", result.state.w), U.sym("humidity_ratio")),
+        ("Entering Wet Bulb", U.fmt("temperature", on.t_wb), U.sym("temperature")),
+        ("Saturation Effectiveness ε", f"{result.effectiveness * 100:.1f}", "%"),
+        ("Sensible Cooling Effect", U.fmt("power", result.q_sensible), U.sym("power")),
+        ("Water Evaporation Rate", U.fmt("moisture_rate", result.water_rate), U.sym("moisture_rate")),
+        ("ΔW (out − in)", U.fmt("humidity_ratio", result.delta_w), U.sym("humidity_ratio")),
+        ("Dry-air Mass Flow", U.fmt("mass_flow", m_da), U.sym("mass_flow")),
+    ]
+    meta = _report_meta_from_form("Psychrometrics - Adiabatic Cooling")
+    pdf = build_pdf(meta, input_rows, result_rows, chart_png)
+    return _pdf_response(pdf, meta=meta, fallback="psychrometrics-adiabatic-cool")
+
+
+@bp.route("/adiabatic-cool/chart.png", methods=["POST"])
+@require_module("psychro.adiabatic_cool")
+def adiabatic_cool_chart_png():
+    U = current_view()
+    form = {k: request.form.get(k, d) for k, d in _ADIABATIC_COOL_DEFAULTS.items()}
+    try:
+        pressure, on, m_da, result, points, segments = _run_adiabatic_cool(form, U)
+    except ValueError as exc:
+        return Response(f"Cannot generate chart: {exc}", status=400)
+
+    png, err = _chart_png_or_500(points, segments, U.system)
+    if png is None:
+        return Response(f"Could not generate chart image: {err}", status=500)
+    return _png_response(png, "psychrometrics-adiabatic-cool-chart.png")

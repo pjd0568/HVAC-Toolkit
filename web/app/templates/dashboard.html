@@ -3,48 +3,104 @@
 {% block content %}
 
 <div class="greeting">Welcome</div>
-<div class="greeting-sub">Pick a tool to start a new design.</div>
+<div class="greeting-sub">Choose a suite to start — every calculator also lives in the sidebar.</div>
 
-<div class="section-label">Site Data</div>
-<div class="tool-grid">
-  <a class="tool tile-util" href="{{ url_for('weather.index') }}">
-    <div class="tool-ico">☁</div>
-    <div class="tool-name">Weather &amp; Design Conditions <span class="soon">Coming Soon</span></div>
-    <div class="tool-desc">In-app ASHRAE climatic design lookup is on the way. Meanwhile: link through to ASHRAE’s Weather Data Viewer.</div>
-  </a>
+<div class="section-label">Design suites</div>
+<div class="suite-grid">
+
+  <article class="suite-card tile-air">
+    <div class="suite-head">
+      <div class="tool-ico" aria-hidden="true">〜</div>
+      <div>
+        <h2 class="suite-name">Psychrometrics</h2>
+        <p class="suite-desc">Moist-air states, mixing, coils, desiccant, heat &amp; humidify, evaporative cooling, and AHU supply design.</p>
+      </div>
+    </div>
+    <ul class="suite-links">
+      <li><a href="{{ url_for('psychro.single_point') }}">Single Point</a></li>
+      <li><a href="{{ url_for('psychro.mixed_air') }}">Mixed Air</a></li>
+      <li><a href="{{ url_for('psychro.cooling_coil') }}">Cooling Coil</a></li>
+      <li><a href="{{ url_for('psychro.desiccant') }}">Desiccant Dehumidification</a></li>
+      <li><a href="{{ url_for('psychro.heat_humidify') }}">Heat &amp; Humidify</a></li>
+      <li><a href="{{ url_for('psychro.adiabatic_cool') }}">Adiabatic Cool</a></li>
+      <li><a href="{{ url_for('psychro.ahu') }}">AHU Design</a></li>
+    </ul>
+  </article>
+
+  <article class="suite-card tile-duct">
+    <div class="suite-head">
+      <div class="tool-ico" aria-hidden="true">≋</div>
+      <div>
+        <h2 class="suite-name">Air Distribution</h2>
+        <p class="suite-desc">Duct sizing by shape, plus index-leg pressure drop.</p>
+      </div>
+    </div>
+    <ul class="suite-links">
+      <li><a href="{{ url_for('duct.index') }}">Duct Sizing</a></li>
+    </ul>
+  </article>
+
+  <article class="suite-card tile-water">
+    <div class="suite-head">
+      <div class="tool-ico" aria-hidden="true">||</div>
+      <div>
+        <h2 class="suite-name">Hydronics</h2>
+        <p class="suite-desc">Pipe DN / flow sizing and system schedule with pump head.</p>
+      </div>
+    </div>
+    <ul class="suite-links">
+      <li><a href="{{ url_for('pipe.index') }}">Pipe Sizing</a></li>
+    </ul>
+  </article>
+
+  <article class="suite-card tile-util">
+    <div class="suite-head">
+      <div class="tool-ico" aria-hidden="true">⇄</div>
+      <div>
+        <h2 class="suite-name">Utilities</h2>
+        <p class="suite-desc">Unit conversion across SI and imperial in one place.</p>
+      </div>
+    </div>
+    <ul class="suite-links">
+      <li><a href="{{ url_for('converter.index') }}">Unit Converter</a></li>
+    </ul>
+  </article>
+
 </div>
 
-<div class="section-label">Design Tools</div>
-<div class="tool-grid">
-  <a class="tool tile-air" href="{{ url_for('psychro.single_point') }}">
-    <div class="tool-ico">〜</div>
-    <div class="tool-name">Psychrometrics - Single Point</div>
-    <div class="tool-desc">Moist-air state points from any property pair. Also: Mixed Air, Cooling Coil and AHU Design.</div>
-  </a>
-  <a class="tool tile-duct" href="{{ url_for('duct.index') }}">
-    <div class="tool-ico">≋</div>
-    <div class="tool-name">Air Distribution - Duct Sizing</div>
-    <div class="tool-desc">Circular / rectangular / flat-oval sizing plus Index Leg pressure-drop builder.</div>
-  </a>
-  <a class="tool tile-water" href="{{ url_for('pipe.index') }}">
-    <div class="tool-ico">||</div>
-    <div class="tool-name">Hydronics - Pipe Sizing</div>
-    <div class="tool-desc">DN / flow sizer plus Pipe System schedule, lift and pump head.</div>
-  </a>
-  <a class="tool tile-util" href="{{ url_for('converter.index') }}">
-    <div class="tool-ico">⇄</div>
-    <div class="tool-name">Utilities - Unit Converter</div>
-    <div class="tool-desc">Any value into every unit in its category at once — metric and imperial, with the conversion shown.</div>
-  </a>
-</div>
+<div class="section-label">Site data &amp; reference</div>
+<div class="suite-grid suite-grid-secondary">
 
-<div class="section-label">Reference</div>
-<div class="tool-grid">
-  <a class="tool tile-util" href="{{ url_for('guides.index') }}">
-    <div class="tool-ico">📖</div>
-    <div class="tool-name">Reference - Design Guides</div>
-    <div class="tool-desc">Short explainers behind the calculators — read alongside a tool for the reasoning behind the number.</div>
-  </a>
+  <article class="suite-card tile-util">
+    <div class="suite-head">
+      <div class="tool-ico" aria-hidden="true">◎</div>
+      <div>
+        <h2 class="suite-name">Site Data</h2>
+        <p class="suite-desc">Climatic design conditions for the project location.</p>
+      </div>
+    </div>
+    <ul class="suite-links">
+      <li>
+        <a href="{{ url_for('weather.index') }}">Weather &amp; Design Conditions</a>
+        <span class="soon">Coming Soon</span>
+      </li>
+    </ul>
+  </article>
+
+  <article class="suite-card tile-util">
+    <div class="suite-head">
+      <div class="tool-ico" aria-hidden="true">¶</div>
+      <div>
+        <h2 class="suite-name">Reference</h2>
+        <p class="suite-desc">Background behind the numbers, and how the engines are limited.</p>
+      </div>
+    </div>
+    <ul class="suite-links">
+      <li><a href="{{ url_for('guides.index') }}">Design Guides</a></li>
+      <li><a href="{{ url_for('methodology.index') }}">Methodology &amp; Limitations</a></li>
+    </ul>
+  </article>
+
 </div>
 
 {% endblock %}

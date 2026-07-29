@@ -162,37 +162,129 @@
     <section class="help-section" id="cooling-coil" data-help-section
              data-keywords="cooling coil dehumidification chilled water dx on coil off coil duty sensible latent shr sensible heat ratio apparatus dew point adp contact factor bypass factor condensate frost face velocity">
       <h2 class="help-h">Psychrometrics — Cooling Coil</h2>
-      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Enter the air on and off a cooling coil and get its full duty: total, sensible and latent cooling, sensible heat ratio, condensate, apparatus dew point and contact/bypass factor.</p>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Enter air-on, apparatus dew point and off-coil dry bulb. The coil locks moisture to the ON→ADP chord and reports duty, leaving RH, condensate and contact/bypass factor.</p>
 
       <h3 class="help-sub">When to use it</h3>
-      <p>To size or check a chilled-water or DX cooling coil once you know (or have chosen) the air condition entering and leaving it.</p>
+      <p>To size or check a chilled-water or DX cooling coil once you know the entering air and the coil surface temperature (ADP), and you have chosen how cold the air should leave.</p>
 
       <h3 class="help-sub">Inputs</h3>
       <dl class="help-io">
         <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure.</dd>
         <dt>On-coil — Dry Bulb, Second Property, Second Value</dt><dd>The air condition entering the coil (often the mixed-air result).</dd>
         <dt>On-coil Flow</dt><dd>The volume flow through the coil.</dd>
-        <dt>Off-coil — Dry Bulb, Second Property, Second Value</dt><dd>The air condition leaving the coil. For a dehumidifying coil, a common design assumption is around 90% RH off-coil.</dd>
+        <dt>Apparatus Dew Point</dt><dd>Mean coil surface temperature on the saturation curve — sets the process chord with air-on.</dd>
+        <dt>Off-coil Dry Bulb</dt><dd>How far along that chord the air travels before leaving. Leaving moisture and RH are calculated, not entered.</dd>
       </dl>
 
       <h3 class="help-sub">How to use it</h3>
       <ol class="help-steps">
         <li>Set the site Altitude.</li>
         <li>Enter the On-coil condition and flow.</li>
-        <li>Enter the Off-coil condition.</li>
-        <li>Press <strong>Calculate</strong>. Read the duty table and the process line on the chart, and expand <strong>Coil application notes</strong> for selection guidance.</li>
+        <li>Enter the Apparatus Dew Point and Off-coil Dry Bulb.</li>
+        <li>Press <strong>Calculate</strong>. Read the duty table and the ON→ADP chord on the chart, and expand <strong>Coil application notes</strong> for selection guidance.</li>
       </ol>
 
       <h3 class="help-sub">Reading the results</h3>
       <dl class="help-io">
         <dt>Total / sensible / latent cooling</dt><dd>The heat removed, split into the part that lowers temperature (sensible) and the part that removes moisture (latent).</dd>
         <dt>Sensible heat ratio (SHR)</dt><dd>Sensible ÷ total. Near 1.0 means little dehumidification; lower means a wetter duty.</dd>
-        <dt>Apparatus dew point (ADP)</dt><dd>Where the process line, extended, meets saturation — effectively the mean coil surface temperature.</dd>
-        <dt>Contact / bypass factor</dt><dd>The fraction of air brought to the ADP versus the fraction passing through unchanged. Deep coils have a high contact factor.</dd>
+        <dt>Off-coil RH</dt><dd>A result of the chord geometry — typically ~90–95% for a wet coil, not a free input.</dd>
+        <dt>Apparatus dew point (ADP)</dt><dd>The coil surface condition you entered — the end of the process chord on saturation.</dd>
+        <dt>Contact / bypass factor</dt><dd>From BF = (T₂ − T_ADP)/(T₁ − T_ADP). Deep coils have a high contact factor.</dd>
         <dt>Condensate</dt><dd>The rate of water wrung out — size the drain and trap for it.</dd>
       </dl>
 
       <div class="help-note">A <strong>frost risk</strong> banner appears if the ADP is at or below freezing (the coil surface could ice up) — options are glycol protection, a DX defrost strategy or face-and-bypass control.</div>
+    </section>
+
+    <!-- ═══════════════ DESICCANT ═══════════════ -->
+    <section class="help-section" id="desiccant" data-help-section
+             data-keywords="desiccant dehumidification wheel isenthalpic adsorption silica gel enthalpy moisture removal latent duty">
+      <h2 class="help-h">Psychrometrics — Desiccant Dehumidification</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Model a desiccant dehumidifier as an isenthalpic (or near-isenthalpic) process: moisture falls, dry-bulb rises along the enthalpy line.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>When you need deep dehumidification beyond what a chilled-water coil can reach, or want the leaving state and moisture-removal rate of a desiccant wheel / liquid desiccant contactor.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Mode</dt><dd><strong>State target</strong> — set leaving humidity ratio or RH. <strong>Duty &amp; airflow</strong> — set moisture removal rate; leaving W follows from the mass balance.</dd>
+        <dt>Entering air</dt><dd>Dry bulb + second property, plus airflow through the wheel.</dd>
+        <dt>Desiccant efficiency η<sub>d</sub></dt><dd>100% = ideal isenthalpic (h<sub>2</sub> = h<sub>1</sub>). Lower values add heat of adsorption above the enthalpy line.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Choose State target or Duty &amp; airflow.</li>
+        <li>Enter site altitude and the entering air condition + flow.</li>
+        <li>Enter the leaving moisture target (or removal duty) and η<sub>d</sub>.</li>
+        <li>Press <strong>Calculate</strong>. Leaving dry-bulb, RH and moisture removed appear with the process line on the chart.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <dl class="help-io">
+        <dt>Leaving state</dt><dd>Hotter and drier than entering — dry-bulb is solved from the (near-)isenthalpic model.</dd>
+        <dt>ΔW / moisture removed</dt><dd>Humidity-ratio drop and the corresponding water removal rate at the entered airflow.</dd>
+        <dt>Adsorption Δh</dt><dd>Extra enthalpy above the ideal line when η<sub>d</sub> &lt; 100%.</dd>
+      </dl>
+
+      <div class="help-note">Leaving air is usually too warm for direct supply — plan a downstream cooling coil or heat exchanger to trim dry-bulb without re-humidifying.</div>
+    </section>
+
+    <!-- ═══════════════ HEAT + HUMIDIFY ═══════════════ -->
+    <section class="help-section" id="heat-humidify" data-help-section
+             data-keywords="heating humidification steam heat humidify winter coil isothermal sensible latent">
+      <h2 class="help-h">Psychrometrics — Heating &amp; Humidification</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Two-stage winter path: sensible heating at constant moisture, then isothermal steam humidification at constant dry-bulb.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>When an AHU must both raise temperature and add humidity — the usual heating-coil then steam-humidifier sequence.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Mode</dt><dd><strong>State target</strong> — enter leaving dry-bulb and moisture. <strong>Duty &amp; airflow</strong> — enter heating kW and steam rate.</dd>
+        <dt>Entering air</dt><dd>State 1 plus airflow.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Choose State target or Duty &amp; airflow.</li>
+        <li>Enter site altitude, entering condition and flow.</li>
+        <li>Enter the leaving target (or heating duty + steam rate).</li>
+        <li>Press <strong>Calculate</strong>. States 1 → X → 2 appear on the chart with coil and steam duties.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <dl class="help-io">
+        <dt>State X</dt><dd>After the heating coil: leaving dry-bulb at entering humidity ratio.</dd>
+        <dt>State 2</dt><dd>After steam: same dry-bulb as X, higher moisture.</dd>
+        <dt>Sensible / latent / total</dt><dd>Heating-coil duty, steam enthalpy to the airstream, and their sum.</dd>
+      </dl>
+    </section>
+
+    <!-- ═══════════════ ADIABATIC COOL ═══════════════ -->
+    <section class="help-section" id="adiabatic-cool" data-help-section
+             data-keywords="adiabatic cooling evaporative cooler spray washer wet bulb saturation effectiveness media">
+      <h2 class="help-h">Psychrometrics — Adiabatic Cooling</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Direct evaporative cooling along the constant wet-bulb line — dry-bulb falls, moisture rises, enthalpy nearly constant.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>For direct evaporative coolers, spray washers or evaporative media when you need the leaving state, water use and media effectiveness.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Mode</dt><dd><strong>State / effectiveness</strong> — set media ε or a leaving RH. <strong>Duty &amp; airflow</strong> — set the required sensible cooling capacity.</dd>
+        <dt>Entering air</dt><dd>Hot/dry state plus airflow. Cooling potential is T<sub>db</sub> − T<sub>wb</sub>.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Choose mode and enter site altitude, entering condition and flow.</li>
+        <li>Enter media effectiveness, leaving RH, or required cooling capacity.</li>
+        <li>Press <strong>Calculate</strong>. Leaving state, ε, cooling effect and water evaporation appear with the wet-bulb process line on the chart.</li>
+      </ol>
+
+      <div class="help-note">Leaving dry-bulb cannot go below the entering wet-bulb — that is the thermodynamic limit (ε = 100%).</div>
     </section>
 
     <!-- ═══════════════ AHU DESIGN ═══════════════ -->

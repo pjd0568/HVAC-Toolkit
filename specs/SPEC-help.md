@@ -15,11 +15,17 @@ user is currently on).
 ## Scope (modules covered)
 
 Getting Started (app-wide: units toggle, memory slots, PDF/PNG export, shareable
+<<<<<<< HEAD
 URLs; Account, billing & cancel — trial, Stripe Checkout, invoices via Stripe/Link,
 cancellation, Contact Billing), Weather & Design Conditions, Psychrometrics
 (Single Point, Mixed Air, Cooling Coil, AHU Design), Duct Sizing (+ Index Leg),
 Unit Converter, Design Guides, Projects, and Pipe Sizing (including Stage 2
 system pressure-drop builder).
+=======
+URLs), Weather & Design Conditions, Psychrometrics (Single Point, Mixed Air,
+Cooling Coil, Desiccant Dehumidification, Heating & Humidification, Adiabatic Cooling, AHU Design), Duct Sizing (+ Index Leg), Unit Converter, Design
+Guides, Projects, and Pipe Sizing (including Stage 2 system pressure-drop builder).
+>>>>>>> e1721908955648863c1027fef89b25c1aab4096e
 
 ## Design
 

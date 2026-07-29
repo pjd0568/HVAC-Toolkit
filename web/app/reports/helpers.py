@@ -10,6 +10,8 @@ quietly drift apart. See specs/SPEC-pdf-report.md.
 
 from __future__ import annotations
 
+import re
+
 from flask import Response, current_app, request
 
 from app.reports.builder import ReportMeta
@@ -29,7 +31,49 @@ def report_meta_from_form(tool_title: str) -> ReportMeta:
     )
 
 
-def pdf_response(pdf_bytes: bytes, filename: str) -> Response:
+def _filename_part(text: str) -> str:
+    """One path-safe segment for a download filename (no spaces / reserved chars)."""
+    text = (text or "").strip()
+    if not text:
+        return ""
+    text = re.sub(r"[^\w.\-]+", "-", text, flags=re.UNICODE)
+    text = re.sub(r"-{2,}", "-", text).strip(".-")
+    return text[:80]
+
+
+def pdf_filename(meta: ReportMeta, fallback: str = "report") -> str:
+    """Build ``Project-System-Revision-YYYY-MM-DD.pdf`` from report fields.
+
+    Empty project/system/revision parts are skipped. If none of those were
+    entered, falls back to ``{fallback}-{date}.pdf`` so the download still has
+    a useful name.
+    """
+    parts = [
+        _filename_part(meta.project),
+        _filename_part(meta.system),
+        _filename_part(meta.revision),
+    ]
+    parts = [p for p in parts if p]
+    date_s = meta.report_date.strftime("%Y-%m-%d")
+    if parts:
+        stem = "-".join([*parts, date_s])
+    else:
+        stem = f"{_filename_part(fallback) or 'report'}-{date_s}"
+    return f"{stem}.pdf"
+
+
+def pdf_response(
+    pdf_bytes: bytes,
+    filename: str | None = None,
+    *,
+    meta: ReportMeta | None = None,
+    fallback: str = "report",
+) -> Response:
+    """Return a PDF download. Prefer ``meta=`` so the filename uses project fields."""
+    if meta is not None:
+        filename = pdf_filename(meta, fallback)
+    if not filename:
+        filename = f"{_filename_part(fallback) or 'report'}.pdf"
     return Response(
         pdf_bytes,
         mimetype="application/pdf",

@@ -36,12 +36,18 @@ def chart_payload(points, segments=(), p: float = 101.325, system: str = "SI") -
     index pairs into points. system: "SI" or "IP", the active display system --
     every number in the returned payload is already converted, so neither
     psychart.js nor app.reports.chart has to touch hvac_engine.units itself.
+
+    An empty ``points`` list draws a blank standard chart (axes + RH curves,
+    no state markers) -- used on Single Point page load before Calculate.
     """
     ts = [pt["t"] for pt in points]
     ws = [pt["w"] for pt in points]
-    t_min_si = min(-5.0, min(ts) - 4.0)
-    t_max_si = max(35.0, max(ts) + 4.0)
-    w_max_si = max(0.012, max(ws) * 1.3)  # kg/kg dry air, SI
+    if ts:
+        t_min_si = min(-5.0, min(ts) - 4.0)
+        t_max_si = max(35.0, max(ts) + 4.0)
+        w_max_si = max(0.012, max(ws) * 1.3)  # kg/kg dry air, SI
+    else:
+        t_min_si, t_max_si, w_max_si = -5.0, 35.0, 0.012
 
     def curve_si(rh, step):
         out = []

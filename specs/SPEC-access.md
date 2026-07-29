@@ -27,7 +27,7 @@ material.
 
 ## Suite catalogue (all unlocked on trial / subscription)
 
-Psychrometrics (Single Point, Mixed Air, Cooling Coil, AHU Design), Duct Sizing
+Psychrometrics (Single Point, Mixed Air, Cooling Coil, Desiccant, Heat & Humidify, Adiabatic Cool, AHU Design), Duct Sizing
 (including Index Leg), Pipe Sizing (including Pipe System), Unit Converter, PDF
 reports.
 

@@ -404,37 +404,39 @@ Q = m_da · (h_out − h_in)     # q_sensible = q_total; q_latent = 0
 
 ---
 
-### 2.4 Cooling coil (off-coil condition given)
+### 2.4 Cooling coil (ADP / bypass-factor model)
 
-**What it does:** Computes duties, SHR, condensate, ADP, contact/bypass factor, frost flag from on-coil state and off-coil T + RH.
+**What it does:** Forward apparatus-dew-point coil. Air-on and ADP lock the
+psychrometric chord; off-coil dry bulb (or BF) sets position on that chord.
+Leaving RH/W, duties, SHR, condensate, CF/BF, and frost flag are results.
 
 **Formulas:**
 
 ```
+BF = (t_off − t_ADP) / (t_on − t_ADP)     # or t_off = t_ADP + BF·(t_on − t_ADP)
+W_off = W_s(t_ADP) + BF · (W_on − W_s(t_ADP))   # wet coil (t_ADP < t_dp,on)
+W_off = W_on                                     # dry coil (t_ADP ≥ t_dp,on)
+
 Q_total = m_da · (h_off − h_on)
 Q_sensible = m_da · (enthalpy(t_off, W_on) − enthalpy(t_on, W_on))
 Q_latent = Q_total − Q_sensible
 SHR = Q_sensible / Q_total   (or 1 if Q_total == 0)
-condensate = m_da · (W_on − W_off)     # kg/s
-
-CF = (t_on − t_off) / (t_on − t_ADP)     if ADP exists and t_on ≠ t_ADP
-BF = 1 − CF
-frost_risk = (t_ADP is not None) and (t_ADP ≤ 0)
+condensate = m_da · max(W_on − W_off, 0)
+CF = 1 − BF
+frost_risk = (t_ADP ≤ 0)
 ```
 
-**ADP:** Intersection of on→off process line with saturation curve (bisection); if off-coil RH ≈ 1, ADP = t_off; if no intersection above T_MIN, ADP = None (treated as dry/sensible).
-
-Process line:
-
-```
-W_line(t) = W_on + (t − t_on) · (W_off − W_on) / (t_off − t_on)
-```
+**Legacy:** `t_off` + `rh_off` (AHU sim) finds ADP as the saturation intersection of
+the chord through the prescribed off-coil point, then runs the forward model.
 
 **Source:** `cooling_coil`, `_apparatus_dew_point`
 
-**Validation:** `m_da > 0`; `t_off < t_on`; off-coil W must not exceed on-coil W (coil cannot humidify).
+**Validation:** `m_da > 0`; `t_ADP < t_on`; `t_ADP ≤ t_off ≤ t_on` (or BF in `[0,1)`);
+dry-coil `t_off` must stay at/above entering dew point.
 
-**Assumptions:** Off-coil defined by user T/RH (not UA or LMTD coil model); ADP from straight process line on psych chart.
+**Assumptions:** Straight ON→ADP chord (standard bypass-factor model); not a UA/LMTD
+tube-side coil model. Leaving RH is typically ~90–95% for a wet coil because the
+chord sits above the curved saturation line.
 
 **Reference:** Standard ADP/bypass-factor model — module docstring / SPEC; CIBSE Guide B in SPEC.
 
@@ -482,6 +484,80 @@ Q_total = m_da · (h_out − h_in)
 **Source:** `adiabatic_humidify`
 
 **Reference:** Constant-wet-bulb evaporative cooling — module docstring.
+
+---
+
+### 2.6a Adiabatic / evaporative cooling (calculator API)
+
+**What it does:** Same constant wet-bulb process as §2.6, with Mode A
+(effectiveness or leaving RH) and Mode B (sensible cooling duty → ε).
+
+**Formulas:**
+
+```
+ε = (T_db1 − T_db2) / (T_db1 − T_wb1)
+state_out = state(T_db2, twb=T_wb1, p)
+Q_sensible = m_da · (1.006 + 1.86·W_in) · (T_db1 − T_db2)   # positive cooling
+water_rate = m_da · (W_out − W_in)
+```
+
+Duty mode rejects T_db2 &lt; T_wb1.
+
+**Source:** `adiabatic_cool`
+
+**Reference:** SPEC-ahu-processes — adiabatic_cool.
+
+---
+
+### 2.6b Desiccant dehumidification
+
+**What it does:** Isenthalpic / near-isenthalpic drying. Leaving dry-bulb rises as
+moisture falls; optional ηd < 1 adds heat of adsorption above the isenthalpic line.
+
+**Formulas:**
+
+```
+h_out = h_in + (1 − η_d) · 2501 · (W_in − W_out)     # kJ/kg
+state_out = state(h=h_out, w=W_out, p)                 # solves T_db
+ΔW = W_in − W_out
+moisture_removed = m_da · ΔW                           # kg/s
+Q_total = m_da · (h_out − h_in)                        # 0 when η_d = 1
+```
+
+Mode B: `W_out = W_in − moisture_removed / m_da`. RH target: bisect W_out on the
+process line until leaving RH matches.
+
+**Source:** `desiccant_dehumidify`
+
+**Validation:** `m_da > 0`; `0 < η_d ≤ 1`; exactly one of `w_out` / `rh_out` /
+`moisture_removed`; `W_out < W_in`.
+
+**Reference:** SPEC-ahu-processes — desiccant section.
+
+---
+
+### 2.6c Sensible heating + steam humidification
+
+**What it does:** Two-stage process — heat at constant W to state X, then
+isothermal steam to state 2.
+
+**Formulas:**
+
+```
+state_X = state(t_out, w=W_in)
+Q_sensible = m_da · (h_X − h_in)
+state_2 = state(t_out, w=W_out)          # isothermal steam
+steam_rate = m_da · (W_out − W_in)
+Q_latent = m_da · (h_2 − h_X)
+Q_total = Q_sensible + Q_latent
+```
+
+Duty mode: `t_out = t_in + Q_s / (m_da · (1.006 + 1.86·W_in))`,
+`W_out = W_in + steam_rate / m_da`.
+
+**Source:** `heat_and_humidify`
+
+**Reference:** SPEC-ahu-processes — heat_and_humidify.
 
 ---
 
