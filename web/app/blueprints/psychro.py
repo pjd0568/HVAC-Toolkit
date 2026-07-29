@@ -7,7 +7,8 @@ for the actual calculation, so the numbers in the PDF can never drift from the
 numbers on screen -- one calculation, two consumers. See specs/SPEC-pdf-report.md.
 """
 
-from flask import Blueprint, Response, current_app, redirect, render_template, request, session, url_for
+from flask import Blueprint, Response, current_app, jsonify, redirect, render_template, request, session, url_for
+from flask_login import login_required
 
 from hvac_engine import processes as proc
 from hvac_engine import psychrometrics as psy
@@ -20,8 +21,12 @@ from app.reports.builder import build_pdf
 from app.reports.chart import render_chart
 from app.reports.helpers import pdf_response as _pdf_response
 from app.reports.helpers import report_meta_from_form as _report_meta_from_form
-from app.units import current_view
-
+from app.teaser import (
+    TEASER_FORM_SESSION_KEY,
+    form_from_teaser_si,
+    session_point_from_si,
+)
+from app.units import current_view, set_unit_system
 bp = Blueprint("psychro", __name__)
 
 # Session-backed plotted points on Single Point (A, then optional B).
@@ -277,6 +282,25 @@ def _run_single_point(form, U):
     return pressure, result, points, segments
 
 
+@bp.post("/hydrate-teaser")
+@login_required
+def hydrate_teaser():
+    """Apply homepage ``hvac_teaser_state`` into Single Point (units + Point A)."""
+    data = request.get_json(silent=True) or {}
+    si = data.get("si")
+    system = str(data.get("system") or "SI").upper()
+    if not isinstance(si, dict) or "t_db" not in si or "rh" not in si:
+        return jsonify({"ok": False, "error": "missing teaser si payload"}), 400
+    try:
+        set_unit_system(system)
+        form = form_from_teaser_si(si, system)
+        session[TEASER_FORM_SESSION_KEY] = form
+        _set_saved_points([session_point_from_si(si, "A")])
+    except (TypeError, ValueError, KeyError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    return jsonify({"ok": True, "redirect": url_for("psychro.single_point")})
+
+
 @bp.route("/", methods=["GET", "POST"])
 @require_module("psychro.single_point")
 def single_point():
@@ -320,13 +344,16 @@ def single_point():
             except ValueError:
                 pressure = None
     else:
-        form = _display_defaults(_SINGLE_POINT_DEFAULTS, _SINGLE_POINT_FIELD_UNITS, U)
-        _paste_slot_into(form, "s", U)
+        teaser_form = session.pop(TEASER_FORM_SESSION_KEY, None)
+        if isinstance(teaser_form, dict):
+            form = {k: teaser_form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}
+        else:
+            form = _display_defaults(_SINGLE_POINT_DEFAULTS, _SINGLE_POINT_FIELD_UNITS, U)
+            _paste_slot_into(form, "s", U)
         try:
             pressure = _resolve_pressure(form, U)
         except ValueError:
             pressure = None
-
     if pressure is None:
         try:
             pressure = _resolve_pressure(form, U)

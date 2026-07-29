@@ -77,3 +77,7 @@
 {% endif %}
 
 {% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/psychro_teaser_hydrate.js') }}?v=teaser-1" defer></script>
+{% endblock %}

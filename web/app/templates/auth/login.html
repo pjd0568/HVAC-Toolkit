@@ -24,9 +24,11 @@
     {% if registration_open %}
     No account yet?
     <a href="{{ url_for('auth.register') }}">Create one</a>
+    · Try the <a href="{{ url_for('main.coming_soon') }}#psychro-teaser">free psychrometric calculator</a>
     {% else %}
     Accounts are by arrangement while public signup is closed.
     <a href="{{ url_for('pages.contact') }}">Contact us</a> if you need access.
+    · Try the <a href="{{ url_for('main.coming_soon') }}#psychro-teaser">free psychrometric calculator</a>
     {% endif %}
   </p>
 </section>

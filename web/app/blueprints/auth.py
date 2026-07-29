@@ -118,7 +118,8 @@ def register_post():
     send_trial_started(user)
 
     flash("Account created. Your 14-day free trial has started.", "success")
-    return redirect(url_for("main.dashboard"))
+    # Land on Single Point so the homepage teaser can hydrate from localStorage.
+    return redirect(url_for("psychro.single_point", from_teaser=1))
 
 
 @bp.post("/logout")

@@ -14,11 +14,14 @@
   <div class="coming-actions">
     {% if current_user.is_authenticated %}
       <a class="btn-accent" href="{{ url_for('main.dashboard') }}">Open toolkit</a>
+      <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
     {% elif registration_open %}
       <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
+      <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
       <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
     {% else %}
       <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">See pricing</a>
+      <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
       <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
     {% endif %}
     {% if current_user.is_authenticated or registration_open %}
@@ -26,6 +29,8 @@
     {% endif %}
   </div>
 </section>
+
+{% include "marketing/_psychro_teaser.html" %}
 
 <section class="coming-section">
   <h2>Psychrometric, duct and pipe sizing calculators</h2>
@@ -55,4 +60,32 @@
     · <a href="{{ url_for('pages.privacy') }}">Privacy</a>
   </p>
 </section>
+{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "{{ brand_name }} Free Psychrometric Calculator",
+  "url": "{{ public_base_url }}/#psychro-teaser",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "GBP",
+    "description": "Free single-point psychrometric calculator with 14-day full-suite trial"
+  },
+  "featureList": [
+    "Dry bulb and relative humidity or wet bulb inputs",
+    "Dew point, wet bulb, enthalpy, and specific volume outputs",
+    "SI and IP unit systems"
+  ]
+}
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/psychro_teaser.js') }}?v=teaser-1" defer></script>
 {% endblock %}

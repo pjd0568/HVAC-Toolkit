@@ -1,0 +1,216 @@
+{# Homepage free psychrometric calculator + trial conversion teaser. #}
+<section
+  id="psychro-teaser"
+  class="teaser"
+  itemscope
+  itemtype="https://schema.org/WebApplication"
+  aria-labelledby="teaser-heading"
+  data-teaser-api="{{ url_for('main.psychro_teaser_calculate') }}"
+  data-register-url="{% if current_user.is_authenticated %}{{ url_for('psychro.single_point') }}{% elif registration_open %}{{ url_for('auth.register') }}{% else %}{{ url_for('billing.subscribe') }}{% endif %}"
+  data-registration-open="{{ '1' if registration_open else '0' }}"
+  data-authenticated="{{ '1' if current_user.is_authenticated else '0' }}"
+  data-storage-key="hvac_teaser_state"
+>
+  <meta itemprop="name" content="Free Psychrometric Calculator">
+  <meta itemprop="applicationCategory" content="BusinessApplication">
+  <meta itemprop="operatingSystem" content="Web">
+  <link itemprop="url" href="{{ public_base_url }}/#psychro-teaser">
+
+  <div class="teaser-intro">
+    <h2 id="teaser-heading" class="teaser-title" itemprop="name">Free psychrometric calculator</h2>
+    <p class="teaser-lead" itemprop="description">
+      Resolve dew point, wet bulb, enthalpy, and specific volume from dry bulb and
+      humidity — instantly, in SI or IP. Unlock charts, process lines, and PDF
+      reports with a 14-day free trial.
+    </p>
+  </div>
+
+  <div class="teaser-panel panel">
+    <div class="panel-head teaser-toolbar">
+      <span>Single-point state</span>
+      <div class="unit-toggle" role="group" aria-label="Unit system">
+        <button type="button" class="unit-pill" data-teaser-system="SI" aria-pressed="false">SI · Metric</button>
+        <button type="button" class="unit-pill" data-teaser-system="IP" aria-pressed="false">IP · Imperial</button>
+      </div>
+    </div>
+
+    <div class="panel-body teaser-body">
+      <form class="teaser-form" id="teaser-form" novalidate>
+        <div class="form-grid teaser-inputs">
+          <div>
+            <label for="teaser-tdb">Dry bulb temperature <span data-teaser-sym="temperature">°C</span></label>
+            <input
+              id="teaser-tdb"
+              name="t_db"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              required
+              autocomplete="off"
+              data-teaser-input="t_db"
+            >
+          </div>
+
+          <div>
+            <label for="teaser-prop">Second property</label>
+            <select id="teaser-prop" name="prop" data-teaser-input="prop" aria-controls="teaser-val">
+              <option value="rh">Relative humidity (%)</option>
+              <option value="twb">Wet bulb temperature</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="teaser-val" data-teaser-val-label>Relative humidity (%)</label>
+            <input
+              id="teaser-val"
+              name="val"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              required
+              autocomplete="off"
+              data-teaser-input="val"
+            >
+          </div>
+        </div>
+
+        <details class="teaser-advanced">
+          <summary>Advanced — barometric pressure</summary>
+          <div class="teaser-advanced-body">
+            <label for="teaser-pressure">
+              Atmospheric pressure <span data-teaser-sym="pressure">kPa</span>
+            </label>
+            <input
+              id="teaser-pressure"
+              name="pressure"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              autocomplete="off"
+              data-teaser-input="pressure"
+            >
+            <p class="teaser-hint">Defaults to sea level (101.325&nbsp;kPa / 29.921&nbsp;inHg).</p>
+          </div>
+        </details>
+
+        <p class="teaser-status" data-teaser-status role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="teaser-results" aria-live="polite">
+        <h3 class="teaser-results-title">Calculated state</h3>
+        <table class="results teaser-results-table">
+          <thead>
+            <tr><th scope="col">Property</th><th scope="col">Value</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Dew point</th>
+              <td class="num" data-teaser-out="t_dp"><span class="valunit"><span class="v">—</span></span></td>
+            </tr>
+            <tr>
+              <th scope="row">Wet bulb</th>
+              <td class="num" data-teaser-out="t_wb"><span class="valunit"><span class="v">—</span></span></td>
+            </tr>
+            <tr>
+              <th scope="row">Specific enthalpy</th>
+              <td class="num" data-teaser-out="h"><span class="valunit"><span class="v">—</span></span></td>
+            </tr>
+            <tr>
+              <th scope="row">Specific volume</th>
+              <td class="num" data-teaser-out="v"><span class="valunit"><span class="v">—</span></span></td>
+            </tr>
+            <tr>
+              <th scope="row">Density</th>
+              <td class="num" data-teaser-out="rho"><span class="valunit"><span class="v">—</span></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="teaser-pro" aria-label="Pro features preview">
+        <div class="teaser-pro-head">
+          <h3>Pro features</h3>
+          <span class="teaser-lock-badge" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            Locked
+          </span>
+        </div>
+
+        <div class="teaser-pro-grid">
+          <button type="button" class="teaser-locked-card" data-teaser-lock aria-haspopup="dialog">
+            <span class="teaser-locked-label">Interactive chart view</span>
+            <span class="teaser-chart-preview" aria-hidden="true">
+              <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" role="img">
+                <defs>
+                  <linearGradient id="teaserChartFade" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#e8eef5"/>
+                    <stop offset="100%" stop-color="#d5e0ea"/>
+                  </linearGradient>
+                </defs>
+                <rect width="320" height="180" fill="url(#teaserChartFade)"/>
+                <path d="M36 150 C 90 140, 140 110, 200 70 C 240 45, 270 30, 300 22" fill="none" stroke="#1A4F7A" stroke-width="1.5" opacity=".45"/>
+                <path d="M36 150 C 100 145, 160 130, 230 95" fill="none" stroke="#00A99D" stroke-width="1.2" opacity=".4"/>
+                <path d="M36 150 L 300 150 M36 150 L 36 20" fill="none" stroke="#8a96a3" stroke-width="1"/>
+                <circle cx="168" cy="88" r="5" fill="#00A99D" opacity=".7"/>
+                <text x="178" y="84" font-size="11" fill="#1A4F7A" font-family="system-ui,sans-serif">A</text>
+              </svg>
+            </span>
+          </button>
+
+          <button type="button" class="teaser-locked-btn" data-teaser-lock aria-disabled="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            Export PDF report
+          </button>
+
+          <button type="button" class="teaser-locked-tab" data-teaser-lock aria-disabled="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            Add process line (mixing / cooling / heating)
+          </button>
+        </div>
+
+        <div class="teaser-cta-row">
+          {% if current_user.is_authenticated %}
+          <a class="btn-accent" href="{{ url_for('psychro.single_point') }}">Open full psychrometric suite</a>
+          {% else %}
+          <button type="button" class="btn-accent" data-teaser-cta>
+            Start 14-day free trial
+          </button>
+          <p class="teaser-cta-note">No credit card required</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="teaser-modal"
+    data-teaser-modal
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="teaser-modal-title"
+    aria-describedby="teaser-modal-sub"
+  >
+    <div class="teaser-modal-backdrop" data-teaser-modal-close tabindex="-1"></div>
+    <div class="teaser-modal-card">
+      <button type="button" class="teaser-modal-x" data-teaser-modal-close aria-label="Close">×</button>
+      {% if current_user.is_authenticated %}
+      <h3 id="teaser-modal-title">Open the full psychrometric suite</h3>
+      <p id="teaser-modal-sub" class="teaser-modal-sub">
+        Interactive charts, process paths, duct/pipe sizing, saved projects, and PDF reports
+        are available in the toolkit.
+      </p>
+      <a class="btn-accent" href="{{ url_for('psychro.single_point') }}">Go to Single Point</a>
+      {% else %}
+      <h3 id="teaser-modal-title">Unlock Full Psychrometric Analysis &amp; Field Tools</h3>
+      <p id="teaser-modal-sub" class="teaser-modal-sub">
+        Plot dynamic process paths, size ducting/pipe index legs, save project files,
+        and export client-ready PDF reports.
+      </p>
+      <button type="button" class="btn-accent" data-teaser-cta>
+        Start 14-Day Free Trial (No Credit Card Required)
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</section>

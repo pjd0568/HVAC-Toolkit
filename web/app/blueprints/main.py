@@ -1,6 +1,7 @@
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 from flask_login import login_required
 
+from app.teaser import P_ATM, resolve_teaser_state, teaser_payload
 from app.units import set_unit_system
 
 bp = Blueprint("main", __name__)
@@ -27,6 +28,38 @@ def set_units():
     if not nxt.startswith("/") or nxt.startswith("//"):
         nxt = url_for("main.dashboard")
     return redirect(nxt)
+
+
+@bp.post("/api/psychro/teaser")
+def psychro_teaser_calculate():
+    """Public single-point psychrometric calculate for the homepage teaser."""
+    data = request.get_json(silent=True) or {}
+    system = str(data.get("system") or "SI").upper()
+    prop = str(data.get("prop") or "rh").lower()
+    try:
+        t_db = float(data["t_db"])
+        val = float(data["val"])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"ok": False, "error": "t_db and val are required numbers"}), 400
+
+    pressure = data.get("pressure", None)
+    try:
+        p_display = None if pressure in (None, "") else float(pressure)
+        state, U = resolve_teaser_state(
+            system=system, t_db=t_db, prop=prop, val=val, pressure=p_display
+        )
+    except (TypeError, ValueError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+    payload = teaser_payload(state, U, prop=prop, val=val)
+    payload["ok"] = True
+    payload["defaults"] = {
+        "pressure_sea_level": {
+            "SI": P_ATM,
+            "IP": round(P_ATM / 3.386389, 3),
+        }
+    }
+    return jsonify(payload)
 
 
 @bp.get("/health")

@@ -11,6 +11,7 @@ _PUBLIC_ENDPOINTS = frozenset(
     {
         "main.coming_soon",
         "main.health",
+        "main.psychro_teaser_calculate",
         "auth.login",
         "auth.login_post",
         "auth.register",
