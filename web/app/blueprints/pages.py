@@ -163,6 +163,19 @@ def robots_txt():
     return current_app.response_class("\n".join(lines), mimetype="text/plain")
 
 
+@bp.get("/BingSiteAuth.xml")
+def bing_site_auth():
+    """Bing Webmaster Tools XML verification file (site root)."""
+    from flask import send_from_directory
+
+    static_dir = current_app.static_folder or ""
+    return send_from_directory(
+        static_dir,
+        "BingSiteAuth.xml",
+        mimetype="application/xml",
+    )
+
+
 @bp.get("/sitemap.xml")
 def sitemap_xml():
     base = current_app.config["PUBLIC_BASE_URL"].rstrip("/")

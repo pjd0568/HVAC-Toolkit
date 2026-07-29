@@ -22,6 +22,7 @@ _PUBLIC_ENDPOINTS = frozenset(
         "pages.contact",
         "pages.robots_txt",
         "pages.sitemap_xml",
+        "pages.bing_site_auth",
         "static",
     }
 )
