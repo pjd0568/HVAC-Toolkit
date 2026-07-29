@@ -1,6 +1,6 @@
 {% extends "marketing/base.html" %}
-{% block title %}{{ brand_name }} — HVAC calculators for engineers{% endblock %}
-{% block meta_description %}Professional HVAC calculators for engineers, designers and contractors: psychrometrics, duct sizing, pipe sizing, weather design conditions, and unit conversion. SI and imperial.{% endblock %}
+{% block title %}{{ brand_name }} — psychrometric, duct &amp; pipe sizing calculators{% endblock %}
+{% block meta_description %}Online HVAC calculators for engineers: psychrometric calculator, duct sizing calculator, pipe sizing calculator, unit conversion, and PDF reports. SI and imperial. 14-day free trial, then £9.50/month.{% endblock %}
 {% block body_class %}marketing-home{% endblock %}
 {% block content %}
 <section class="coming-hero">
@@ -19,7 +19,7 @@
       <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
     {% else %}
       <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">See pricing</a>
-      <a class="btn-ghost" href="{{ url_for('auth.login') }}">Private access</a>
+      <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
     {% endif %}
     {% if current_user.is_authenticated or registration_open %}
     <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">See pricing</a>
@@ -28,13 +28,14 @@
 </section>
 
 <section class="coming-section">
-  <h2>HVAC design tools in one place</h2>
+  <h2>Psychrometric, duct and pipe sizing calculators</h2>
   <p class="coming-section-lead">
-    A focused suite of engineering calculators — 14-day free trial, then
-    £9.50/month for full access. Coming soon to public signup.
+    A focused suite of HVAC engineering calculators. Start with a
+    <strong>14-day free trial</strong>, then continue for
+    <strong>£9.50/month</strong> for full suite access.
   </p>
   <ul class="coming-list">
-    <li><strong>Psychrometric calculator</strong> — single point, mixed air, cooling coil, AHU design</li>
+    <li><strong>Psychrometric calculator</strong> — single point, mixed air, cooling coil, desiccant, heat &amp; humidify, adiabatic cool, AHU design</li>
     <li><strong>Duct sizing calculator</strong> and <strong>pipe sizing calculator</strong> with system / index-leg workflows</li>
     <li>Weather &amp; climatic design conditions (ASHRAE lookup — coming soon)</li>
     <li>HVAC unit converter, design guides, and PDF reports</li>

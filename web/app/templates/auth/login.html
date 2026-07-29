@@ -15,7 +15,8 @@
       <input type="password" name="password" required autocomplete="current-password">
     </label>
     <label class="auth-check">
-      <input type="checkbox" name="remember" value="1"> Remember me
+      <input type="checkbox" name="remember" value="1">
+      <span>Remember me</span>
     </label>
     <button type="submit" class="btn-accent">Log in</button>
   </form>
@@ -24,7 +25,8 @@
     No account yet?
     <a href="{{ url_for('auth.register') }}">Create one</a>
     {% else %}
-    Accounts are invite-only while we prepare the launch.
+    Accounts are by arrangement while public signup is closed.
+    <a href="{{ url_for('pages.contact') }}">Contact us</a> if you need access.
     {% endif %}
   </p>
 </section>

@@ -103,5 +103,7 @@ Still closed to the public.
 
 ## D. After go-live hygiene
 
-- [ ] Submit `https://hvac-calcs.app/sitemap.xml` in Google Search Console
+- [ ] After go-live, submit `https://hvac-calcs.app/sitemap.xml` in
+      [Google Search Console](https://search.google.com/search-console) (verify
+      domain via DNS or HTML tag). Optional: Bing Webmaster Tools.
 - [ ] Watch Railway logs + Stripe Dashboard for webhook failures for the first cohort

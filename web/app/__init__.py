@@ -133,8 +133,9 @@ def create_app(config_class: type = Config) -> Flask:
             "legal_entity": app.config.get("LEGAL_ENTITY", "PJD IT Systems"),
             "contact_email": app.config.get("CONTACT_EMAIL", "info@hvac-calcs.app"),
             "default_meta_description": (
-                f"{app.config['BRAND_NAME']} — professional HVAC calculators for "
-                "engineers: psychrometrics, duct sizing, pipe sizing, and more."
+                f"{app.config['BRAND_NAME']} — HVAC calculators for engineers: "
+                "psychrometric, duct sizing, and pipe sizing tools. "
+                "SI and imperial. 14-day free trial."
             ),
         }
 
