@@ -15,8 +15,17 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from app.extensions import db
 from app.models import User
+from app.turnstile import turnstile_configured, turnstile_site_key, verify_turnstile_response
 
 bp = Blueprint("auth", __name__)
+
+
+def _register_template(**extra):
+    return render_template(
+        "auth/register.html",
+        turnstile_site_key=turnstile_site_key() if turnstile_configured() else "",
+        **extra,
+    )
 
 
 def _registration_open() -> bool:
@@ -62,7 +71,7 @@ def register():
         return redirect(url_for("main.coming_soon"))
     if current_user.is_authenticated:
         return redirect(url_for("main.dashboard"))
-    return render_template("auth/register.html")
+    return _register_template()
 
 
 @bp.post("/register")
@@ -76,6 +85,10 @@ def register_post():
     password2 = request.form.get("password2", "")
 
     errors: list[str] = []
+    if turnstile_configured() and not verify_turnstile_response(
+        request.form.get("cf-turnstile-response")
+    ):
+        errors.append("Please complete the human check and try again.")
     if not email or "@" not in email:
         errors.append("Enter a valid email address.")
     if len(password) < 8:
@@ -88,7 +101,7 @@ def register_post():
     if errors:
         for msg in errors:
             flash(msg, "error")
-        return render_template("auth/register.html"), 400
+        return _register_template(), 400
 
     user = User(
         email=email,

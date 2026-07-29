@@ -48,5 +48,19 @@ Stripe Checkout webhooks flip `subscription_status` (see `SPEC-billing-stripe.md
 
 ## Out of scope
 
-Email verification, password reset, Google OAuth, invite-only registration,
-roles/admin.
+Password reset, Google OAuth, invite-only registration codes, roles/admin.
+Email click-to-verify is deferred; open registration uses Cloudflare Turnstile
+when ``TURNSTILE_SITE_KEY`` + ``TURNSTILE_SECRET_KEY`` are set (see
+``web/app/turnstile.py``).
+
+## Bot protection (Turnstile)
+
+| Variable | Role |
+|----------|------|
+| `TURNSTILE_SITE_KEY` | Widget on `/register` |
+| `TURNSTILE_SECRET_KEY` | Server-side siteverify |
+
+Both must be set to enforce the check. If either is missing, registration works
+without a widget (local/dev). Create a widget at
+[Cloudflare Turnstile](https://dash.cloudflare.com/) with hostname
+`hvac-calcs.app`.

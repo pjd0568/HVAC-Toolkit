@@ -74,6 +74,8 @@ Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.
 - Stripe Managed Payments Checkout + webhooks (`specs/SPEC-billing-stripe.md`).
   Set keys in Railway from the Stripe Dashboard. Cancel / invoices via Stripe /
   Link (documented under Help → Account, billing & cancel).
+- Open registration: add Cloudflare Turnstile keys (`TURNSTILE_SITE_KEY` /
+  `TURNSTILE_SECRET_KEY`) so `/register` is bot-checked (`specs/SPEC-auth.md`).
 - Transactional email via **Resend** (preferred on Railway) or SMTP fallback
   (`specs/SPEC-transactional-email.md`) — trial welcome, subscribe thanks,
   cancellation. Gmail SMTP from Railway is unreliable.

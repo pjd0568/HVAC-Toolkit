@@ -142,3 +142,8 @@ class Config:
     STRIPE_MANAGED_PAYMENTS = os.environ.get(
         "STRIPE_MANAGED_PAYMENTS", "true"
     ).lower() in ("1", "true", "yes", "on")
+
+    # Cloudflare Turnstile on /register (both keys required to enforce).
+    # https://dash.cloudflare.com/ → Turnstile → Add widget
+    TURNSTILE_SITE_KEY = os.environ.get("TURNSTILE_SITE_KEY", "")
+    TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")

@@ -2,6 +2,7 @@
 
 Operator checklist for drawing the line before public self-serve.
 Keep `REGISTRATION_OPEN=false` except when creating an invite or your dogfood account.
+While registration stays open on production, set Cloudflare Turnstile (below).
 
 **Deferred until after soft launch (do not build now):** Weather in-app data,
 Projects persistence, Customer Portal UI, password reset / email verify,
@@ -22,6 +23,12 @@ Do this before a live (£) self-subscribe.
 - [ ] (After a test register) trial welcome email arrives
 
 See `specs/SPEC-transactional-email.md`.
+
+### Bot protection (Turnstile) — while `REGISTRATION_OPEN=true`
+
+- [ ] Cloudflare Dashboard → **Turnstile** → Add widget for hostname `hvac-calcs.app`
+- [ ] Railway: `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`
+- [ ] `/register` shows the widget; submit without it is rejected
 
 ### Stripe Test mode (local or prod webhook)
 

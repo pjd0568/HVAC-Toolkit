@@ -1345,6 +1345,7 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 .auth-check {
   display: flex !important; align-items: center; gap: 8px; font-weight: 500 !important;
 }
+.auth-form .cf-turnstile { margin: 4px 0; }
 .auth-switch { margin-top: 18px; font-size: 13px; color: var(--muted); }
 .auth-switch a { color: var(--blue-ink); font-weight: 650; }
 
