@@ -1,8 +1,8 @@
-"""Transactional emails — trial welcome, subscribed, cancelled.
+"""Transactional emails — trial welcome, subscribed, cancelled + owner alerts.
 
-Uses the same SMTP settings as the contact form (Google Workspace
-``info@hvac-calcs.app``). Failures are logged; callers should not fail the
-request if mail is down.
+Customer mail goes to the user; owner pings go to ``CONTACT_EMAIL``
+(e.g. ``info@hvac-calcs.app``). Failures are logged; callers should not fail
+the request if mail is down.
 """
 
 from __future__ import annotations
@@ -50,6 +50,58 @@ def _dashboard_url() -> str:
         return f"{base}/"
 
 
+def _notify_owner(*, subject: str, body: str) -> bool:
+    """Ping CONTACT_EMAIL; no-op if mail unset or contact blank."""
+    if not mail_configured():
+        log.warning("Mail not configured; skipped owner alert: %s", subject)
+        return False
+    to_addr = (_contact() or "").strip()
+    if not to_addr:
+        return False
+    return send_email(to=to_addr, subject=subject, body=body)
+
+
+def send_owner_trial_started(user: User) -> bool:
+    brand = _brand()
+    subject = f"[Owner] New trial — {user.email}"
+    body = f"""New trial account on {brand}.
+
+Email: {user.email}
+User id: {user.id}
+Trial: {TRIAL_DAYS} days from today
+
+Dashboard (after login): {_dashboard_url()}
+"""
+    return _notify_owner(subject=subject, body=body)
+
+
+def send_owner_subscribed(user: User) -> bool:
+    brand = _brand()
+    subject = f"[Owner] New subscriber — {user.email}"
+    body = f"""Paid subscription activated on {brand}.
+
+Email: {user.email}
+User id: {user.id}
+Plan: £{PRICE_MONTHLY_GBP}/month
+Stripe customer: {user.stripe_customer_id or '—'}
+Stripe subscription: {user.stripe_subscription_id or '—'}
+"""
+    return _notify_owner(subject=subject, body=body)
+
+
+def send_owner_subscription_ended(user: User) -> bool:
+    brand = _brand()
+    subject = f"[Owner] Subscription ended — {user.email}"
+    body = f"""A paid subscription ended / cancelled on {brand}.
+
+Email: {user.email}
+User id: {user.id}
+Stripe customer: {user.stripe_customer_id or '—'}
+Stripe subscription: {user.stripe_subscription_id or '—'}
+"""
+    return _notify_owner(subject=subject, body=body)
+
+
 def send_trial_started(user: User) -> bool:
     """Welcome email when a new account starts the free trial."""
     if not mail_configured():
@@ -73,7 +125,9 @@ Questions? Reply to this email or write to {_contact()}.
 
 — {brand}
 """
-    return send_email(to=user.email, subject=subject, body=body)
+    ok = send_email(to=user.email, subject=subject, body=body)
+    send_owner_trial_started(user)
+    return ok
 
 
 def send_subscribed(user: User) -> bool:
@@ -98,7 +152,9 @@ For support, reply here or email {_contact()}.
 
 — {brand}
 """
-    return send_email(to=user.email, subject=subject, body=body)
+    ok = send_email(to=user.email, subject=subject, body=body)
+    send_owner_subscribed(user)
+    return ok
 
 
 def send_subscription_ended(user: User) -> bool:
@@ -123,7 +179,9 @@ Thanks for trying {brand}.
 
 — {brand}
 """
-    return send_email(to=user.email, subject=subject, body=body)
+    ok = send_email(to=user.email, subject=subject, body=body)
+    send_owner_subscription_ended(user)
+    return ok
 
 
 def notify_subscription_status_change(user: User, previous_status: str) -> None:

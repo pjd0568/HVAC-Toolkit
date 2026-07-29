@@ -41,10 +41,10 @@ from Railway.
 
 ## Lifecycle emails
 
-| Trigger | Email |
-|---------|--------|
-| Account register | Trial welcome |
-| Subscription → `active` | Thanks for subscribing |
-| Subscription `active` → `canceled` | Soft cancellation |
+| Trigger | Customer email | Owner (`CONTACT_EMAIL`) |
+|---------|----------------|-------------------------|
+| Account register | Trial welcome | `[Owner] New trial — …` |
+| Subscription → `active` | Thanks for subscribing | `[Owner] New subscriber — …` |
+| Subscription `active` → `canceled` | Soft cancellation | `[Owner] Subscription ended — …` |
 
 If mail is unset, sends are skipped (logged); register / webhooks still succeed.
