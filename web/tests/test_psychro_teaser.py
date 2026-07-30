@@ -37,9 +37,11 @@ def test_teaser_api_si_rh(client):
     assert data["ok"] is True
     assert data["system"] == "SI"
     assert data["outputs"]["t_wb"]["symbol"] == "°C"
+    assert data["outputs"]["w"]["symbol"] == "g/kg"
     assert data["outputs"]["h"]["symbol"] == "kJ/kg"
     assert data["si"]["t_db"] == pytest.approx(21.0)
     assert data["si"]["rh"] == pytest.approx(0.5, rel=1e-3)
+    assert data["outputs"]["w"]["value"] == pytest.approx(data["si"]["w"] * 1000.0, rel=1e-3)
 
 
 def test_teaser_api_ip_converts_and_recalculates(client):

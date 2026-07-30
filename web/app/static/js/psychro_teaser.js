@@ -143,7 +143,7 @@
 
   function renderOutputs(payload) {
     var outs = (payload && payload.outputs) || {};
-    ["t_dp", "t_wb", "h", "v", "rho"].forEach(function (key) {
+    ["t_dp", "t_wb", "w", "h", "v", "rho"].forEach(function (key) {
       var cell = root.querySelector('[data-teaser-out="' + key + '"]');
       if (!cell) return;
       var q = outs[key];

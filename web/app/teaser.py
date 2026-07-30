@@ -73,6 +73,7 @@ def teaser_payload(state: psy.PsychroState, U: UnitView, *, prop: str, val: floa
         "outputs": {
             "t_dp": None if t_dp is None else _qty(U, "temperature", t_dp, 2),
             "t_wb": _qty(U, "temperature", state.t_wb, 2),
+            "w": _qty(U, "humidity_ratio", state.w),
             "h": _qty(U, "enthalpy", state.h, 2),
             "v": _qty(U, "specific_volume", state.v),
             "rho": _qty(U, "density", state.rho),
@@ -93,6 +94,7 @@ def teaser_payload(state: psy.PsychroState, U: UnitView, *, prop: str, val: floa
         },
         "symbols": {
             "temperature": U.sym("temperature"),
+            "humidity_ratio": U.sym("humidity_ratio"),
             "enthalpy": U.sym("enthalpy"),
             "specific_volume": U.sym("specific_volume"),
             "density": U.sym("density"),
