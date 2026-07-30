@@ -2,7 +2,7 @@
    steel-blue accents (Mercedes F1–inspired). Adopted 27 Jul 2026. */
 
 :root {
-  --bg: #C8CED6;
+  --bg: #ffffff;
   --panel: #ECEEF1;
   --ink: #0E1116;
   --muted: #555E69;
@@ -45,15 +45,6 @@
 body {
   font-family: "Segoe UI", system-ui, sans-serif;
   background-color: var(--bg);
-  background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 120px),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 11px,
-      rgba(18, 21, 26, 0.015) 11px,
-      rgba(18, 21, 26, 0.015) 12px
-    );
   color: var(--ink);
   font-size: 14px;
   display: flex;
@@ -218,7 +209,7 @@ body {
 .linkish:hover { color: #5AD9CF; text-decoration: underline; }
 
 /* ── Main ── */
-.main { margin-left: 236px; flex: 1; }
+.main { margin-left: 236px; flex: 1; background: var(--bg); }
 .topbar {
   height: 58px; background: var(--panel); border-bottom: 1px solid var(--line);
   border-top: 3px solid var(--green);
@@ -400,11 +391,11 @@ input, select {
   font-size: 13px; font-family: inherit; background: white; color: var(--ink);
 }
 input:focus, select:focus { outline: 2px solid var(--blue-soft); border-color: var(--blue); }
-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; }
+input:disabled { background: #E4E8ED; color: var(--muted); cursor: not-allowed; }
 /* Flat oval's major/minor steppers (Correction #5): the number itself is
    display-only -- only the +/- buttons move it, since a typed value could
    otherwise invite a size that isn't in the real Lindab catalogue. */
-input[readonly] { background: var(--bg); cursor: default; }
+input[readonly] { background: #E4E8ED; cursor: default; }
 .btn-accent,
 .btn-green {
   padding: 9px 18px; border: none; background: var(--green); border-radius: 8px;
