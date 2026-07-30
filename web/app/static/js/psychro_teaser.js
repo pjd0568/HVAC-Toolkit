@@ -21,22 +21,10 @@
   var modal = root.querySelector("[data-teaser-modal]");
   var systemButtons = root.querySelectorAll("[data-teaser-system]");
 
-  var system = detectDefaultSystem();
+  var system = "SI";
   var lastPayload = null;
   var debounceTimer = null;
   var calcSeq = 0;
-
-  function detectDefaultSystem() {
-    try {
-      var lang = String(navigator.language || navigator.userLanguage || "").toLowerCase();
-      if (lang === "en-us" || /(^|-)us$/.test(lang)) return "IP";
-      if (typeof Intl !== "undefined" && Intl.Locale) {
-        var locale = new Intl.Locale(navigator.language || "en");
-        if (String(locale.region || "").toUpperCase() === "US") return "IP";
-      }
-    } catch (e) { /* ignore */ }
-    return "SI";
-  }
 
   function seaLevelPressureDisplay(sys) {
     return sys === "IP" ? +(P_ATM_SI / 3.386389).toFixed(3) : +P_ATM_SI.toFixed(3);
