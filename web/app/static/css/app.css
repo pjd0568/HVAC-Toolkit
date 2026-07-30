@@ -1499,7 +1499,7 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
   display: block; border-radius: 6px; overflow: hidden;
   filter: blur(2.5px); opacity: 0.72; pointer-events: none;
 }
-.teaser-chart-preview svg { display: block; width: 100%; height: auto; }
+.teaser-chart-preview img { display: block; width: 100%; height: auto; }
 .teaser-locked-btn,
 .teaser-locked-tab {
   display: flex; align-items: center; gap: 8px;
