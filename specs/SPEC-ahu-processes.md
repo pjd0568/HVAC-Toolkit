@@ -214,16 +214,18 @@ Intake is identical to `simulate_ahu`: outdoor state (+ return + %OA by dry-air 
 mix to the on-coil condition A. Given the required supply state D, compare its moisture
 content w_sup with the on-coil w_on:
 
-- **w_sup > w_on** (supply wetter than on-coil): unreachable by cooling alone — a
-  cooling coil can only remove moisture. Raise with a clear message that the duty needs
-  humidification (not yet sized by this tool).
+- **w_sup > w_on** (supply wetter than on-coil — typical winter with cold dry OA):
+  heating coil then isothermal steam humidification to (t_sup, w_sup). Stages `HC`
+  then `HUM`. If the on-coil is already at or above t_sup (unusual), cool sensibly
+  first then steam. A cooling coil alone cannot add moisture; humidification is sized
+  here via the shared `heat_and_humidify` / `steam_humidify` processes.
 - **w_sup ≈ w_on** (within ~0.01 g/kg, no net moisture change): a purely sensible duty.
   If t_sup < t_A it is sensible (dry) cooling A→D; if t_sup > t_A it is heating-only
   A→D; if equal, no duty.
-- **w_sup < w_on** (dehumidification): off-coil C holds the supply moisture at a
-  target off-coil RH (`coil_rh_off`, default **0.90** — matching `simulate_ahu` and
-  typical wet-coil practice). `coil_rh_off=1.0` recovers the idealised CF = 1 case
-  (saturated at the supply dew point). The path is:
+- **w_sup < w_on** (dehumidification — typical summer): off-coil C holds the supply
+  moisture at a target off-coil RH (`coil_rh_off`, default **0.90** — matching
+  `simulate_ahu` and typical wet-coil practice). `coil_rh_off=1.0` recovers the
+  idealised CF = 1 case (saturated at the supply dew point). The path is:
   A → B saturation onset (sensible cooling at constant w_on to the on-coil dew point) →
   C off-coil (at w_sup and coil_rh_off) →
   D supply (sensible reheat at constant w_sup to the supply dry bulb when needed).
@@ -236,15 +238,15 @@ m_da·(w_on − w_sup). **frost_risk = True if the off-coil temperature (supply 
 ≤ 0 °C.**
 
 Optional supply fan gain (same SFP/kW basis as `fan_gain`): a **draw-through** fan sits
-after reheat, so its rise is added last and the reheat coil targets t_sup − ΔT_fan so
-the air arrives at t_sup after the fan; a **blow-through** fan raises the on-coil
-condition A before the coil. Reachability note added if the fan gain alone overshoots the
-reheat requirement.
+after reheat / humidifier, so its rise is added last and the heating coil targets
+t_sup − ΔT_fan so the air arrives at t_sup after the fan; a **blow-through** fan raises
+the on-coil condition A before the coil. Reachability note added if the fan gain alone
+overshoots the reheat requirement.
 
 Output is the same `AhuResult` shape as `simulate_ahu` — ordered labelled stages
-(`OA`, `RA`, `MA`, `FAN`, `SAT`, `CC`, `HC`, `SUP`) with per-stage duty, totals, and any
-frost/fog/reachability warnings. The final `SUP` stage equals the requested supply
-state (within tolerance); a warning is raised if it cannot.
+(`OA`, `RA`, `MA`, `FAN`, `SAT`, `CC`, `HC`, `HUM`, `SUP`) with per-stage duty, totals,
+and any frost/fog/reachability warnings. The final `SUP` stage equals the requested
+supply state (within tolerance); a warning is raised if it cannot.
 
 ## Second-variable input convention (web layer)
 
@@ -297,7 +299,8 @@ the interaction is consistent everywhere.
   moisture (both above the dew point): single sensible CC stage, no reheat, no condensate.
 - **Supply-driven heating only:** on-coil 15 °C/50%, supply 22 °C at the same moisture:
   single HC stage, cooling = 0, heating > 0.
-- **Supply-driven reachability:** supply moisture above on-coil moisture raises
-  (needs humidification).
+- **Supply-driven heat+humidify (winter):** on-coil OA −5 °C/90% mixed with RA 21/50%
+  at 30% OA, required supply 21 °C/40%: w_sup > w_on → HC then HUM; heating > 0,
+  moisture added > 0; final SUP within 0.1 K / 0.05 g/kg of the requested supply.
 - **Supply-driven frost:** required supply with a dew point below 0 °C → frost_risk True.
 - **Supply-driven continuity:** each stage inlet = previous stage outlet; OA/RA mix to MA.

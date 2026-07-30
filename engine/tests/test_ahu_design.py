@@ -87,13 +87,44 @@ def test_supply_heating_only():
     assert r.heating_total > 0
 
 
-# -- Reachability ---------------------------------------------------------------
+# -- Reachability / winter humidification ---------------------------------------
 
-def test_supply_moisture_above_on_coil_raises():
-    on = psy.state(20.0, rh=0.4)
-    sup = psy.state(18.0, rh=0.8)  # wetter than on-coil
-    with pytest.raises(ValueError, match="cooling coil can only remove moisture"):
-        design_ahu_to_supply(m_da=1.0, supply=sup, outdoor=on)
+def test_supply_heat_and_humidify_winter():
+    # Cold dry OA mixed with return → on-coil drier than supply → heat + steam.
+    oa = psy.state(-5.0, rh=0.9)
+    ra = psy.state(21.0, rh=0.5)
+    # 21 °C / 40% is wetter than a 30% OA mix of −5/90 and 21/50.
+    sup = psy.state(21.0, rh=0.4)
+    r = design_ahu_to_supply(
+        m_da=1.5, supply=sup, outdoor=oa, return_air=ra, oa_fraction=0.3,
+    )
+    labs = _labels(r)
+    assert labs[:3] == ["OA", "RA", "MA"]
+    assert "HC" in labs
+    assert "HUM" in labs
+    assert "CC" not in labs
+    assert r.heating_total > 0
+    assert r.moisture_added > 0
+    assert r.cooling_total == pytest.approx(0.0, abs=1e-9)
+    assert r.moisture_removed == pytest.approx(0.0, abs=1e-9)
+    hum = _stage(r, "HUM")
+    assert "Humidification required" in hum.note
+    sup_out = _stage(r, "SUP").state
+    assert sup_out.t_db == pytest.approx(sup.t_db, abs=0.05)
+    assert sup_out.w == pytest.approx(sup.w, abs=5e-5)
+
+
+def test_supply_humidify_only_when_already_at_supply_db():
+    # On-coil already at supply dry bulb but drier → steam only.
+    on = psy.state(20.0, rh=0.3)
+    # Same DB, higher RH → wetter.
+    sup = psy.state(20.0, rh=0.5)
+    assert sup.w > on.w
+    r = design_ahu_to_supply(m_da=1.0, supply=sup, outdoor=on)
+    assert "HUM" in _labels(r)
+    assert "HC" not in _labels(r)
+    assert r.moisture_added > 0
+    assert _stage(r, "SUP").state.w == pytest.approx(sup.w, abs=5e-5)
 
 
 def test_invalid_coil_rh_off_raises():

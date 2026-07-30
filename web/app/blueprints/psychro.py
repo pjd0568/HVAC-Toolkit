@@ -677,10 +677,24 @@ def cooling_coil_chart_png():
 
 # -- AHU duty (supply-driven design) ---------------------------------------------------
 
+_AHU_SEASON_DEFAULTS = {
+    "summer": {
+        "oa_t": "28", "oa_prop": "rh", "oa_val": "50",
+        "ra_t": "22", "ra_prop": "rh", "ra_val": "50",
+        "sup_t": "14", "sup_prop": "rh", "sup_val": "90",
+    },
+    "winter": {
+        "oa_t": "-5", "oa_prop": "rh", "oa_val": "90",
+        "ra_t": "21", "ra_prop": "rh", "ra_val": "50",
+        "sup_t": "21", "sup_prop": "rh", "sup_val": "40",
+    },
+}
+
 _AHU_DEFAULTS = {
+    "season": "summer",
     "flow": "5000",
+    "oa_flow": "1500",
     "oa_t": "28", "oa_prop": "rh", "oa_val": "50",
-    "oa_frac": "100",
     "ra_t": "22", "ra_prop": "rh", "ra_val": "50",
     "sup_t": "14", "sup_prop": "rh", "sup_val": "90",
     "coil_rh_off": "90",
@@ -688,21 +702,48 @@ _AHU_DEFAULTS = {
     "altitude": "0",
 }
 _AHU_FIELD_UNITS = {
-    "flow": "vol_flow", "oa_t": "temperature",
+    "flow": "vol_flow", "oa_flow": "vol_flow",
+    "oa_t": "temperature",
     "ra_t": "temperature", "sup_t": "temperature", "altitude": "altitude",
 }
+
+
+def _ahu_season_defaults_display(U):
+    """Season OA/RA/SUP defaults rendered in the active unit system (for JS)."""
+    out = {}
+    for season, vals in _AHU_SEASON_DEFAULTS.items():
+        display = dict(vals)
+        for key in ("oa_t", "ra_t", "sup_t"):
+            display[key] = U.fmt("temperature", float(vals[key]))
+        out[season] = display
+    return out
 
 
 def _run_ahu(form, U):
     pressure = _resolve_pressure(form, U)
     supply = _state_from_form(form, "sup", pressure, U)
     oa = _state_from_form(form, "oa", pressure, U)
-    oa_frac = _f(form, "oa_frac") / 100.0
-    ra = _state_from_form(form, "ra", pressure, U) if oa_frac < 1.0 else None
 
     # Supply volumetric flow (converted to SI) at the known supply condition.
     flow_m3h = U.to_si("vol_flow", _f(form, "flow"))
     m_da = _m_da(flow_m3h, supply)
+
+    # Outdoor air as volume → dry-air mass fraction of supply.
+    oa_flow_m3h = U.to_si("vol_flow", _f(form, "oa_flow"))
+    m_oa = _m_da(oa_flow_m3h, oa)
+    if m_oa <= 0:
+        raise ValueError("outdoor air flow must be positive")
+    if m_oa > m_da * (1.0 + 1e-9):
+        raise ValueError(
+            "Outdoor air mass flow exceeds the supply mass flow. Reduce the outdoor "
+            "air volume, or raise the supply flow."
+        )
+    oa_frac = m_oa / m_da
+    if oa_frac >= 1.0 - 1e-12:
+        oa_frac = 1.0
+        ra = None
+    else:
+        ra = _state_from_form(form, "ra", pressure, U)
 
     kwargs = dict(
         m_da=m_da, supply=supply, outdoor=oa,
@@ -734,7 +775,7 @@ def _run_ahu(form, U):
             continue
         segs.append((i, i + 1))
 
-    return pressure, m_da, result, pts, segs
+    return pressure, m_da, result, pts, segs, oa_frac
 
 
 @bp.route("/ahu", methods=["GET", "POST"])
@@ -745,6 +786,7 @@ def ahu():
     error = None
     m_da = None
     pressure = None
+    oa_frac = None
     pts, segs = [], []
     if request.method != "POST":
         form = _display_defaults(_AHU_DEFAULTS, _AHU_FIELD_UNITS, U)
@@ -758,7 +800,7 @@ def ahu():
     else:
         form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
         try:
-            pressure, m_da, result, pts, segs = _run_ahu(form, U)
+            pressure, m_da, result, pts, segs, oa_frac = _run_ahu(form, U)
         except ValueError as exc:
             result = None
             error = str(exc)
@@ -770,7 +812,8 @@ def ahu():
     return render_template(
         "ahu.html", active="psychro_ahu", form=form,
         second_properties=_second_properties(U), result=result, m_da=m_da,
-        chart=chart, error=error, pressure=pressure,
+        chart=chart, error=error, pressure=pressure, oa_frac=oa_frac,
+        season_defaults=_ahu_season_defaults_display(U),
     )
 
 
@@ -780,16 +823,19 @@ def ahu_report():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
     try:
-        pressure, m_da, result, pts, segs = _run_ahu(form, U)
+        pressure, m_da, result, pts, segs, oa_frac = _run_ahu(form, U)
     except ValueError as exc:
         return Response(f"Cannot generate report: {exc}", status=400)
 
     chart_png = _safe_chart_png(pts, segs, U.system)
     sp = _second_properties(U)
+    season_label = "Winter" if form.get("season") == "winter" else "Summer"
     input_rows = (
         _site_condition_rows(form, pressure, U)
+        + [("Season", season_label, "")]
         + _state_input_rows("oa", "Outdoor Air", form, sp, U)
-        + [("Outdoor Air Fraction", form['oa_frac'], "%")]
+        + [("Outdoor Air Flow", form['oa_flow'], U.sym('vol_flow'))]
+        + [("Outdoor Air Fraction (derived)", f"{oa_frac * 100:.1f}", "%")]
         + _state_input_rows("ra", "Return Air", form, sp, U)
         + _state_input_rows("sup", "Supply", form, sp, U)
         + [("Supply Flow", form['flow'], U.sym('vol_flow'))]
@@ -819,6 +865,7 @@ def ahu_report():
          f"{U.fmt('moisture_rate', result.moisture_added)} / "
          f"{U.fmt('moisture_rate', result.moisture_removed)}", U.sym('moisture_rate')),
         ("Dry-air Mass Flow", U.fmt('mass_flow', result.m_da), U.sym('mass_flow')),
+        ("Outdoor Air Fraction (derived)", f"{oa_frac * 100:.1f}", "%"),
     ]
     for w in result.warnings:
         result_rows.append(("Warning", w, ""))
@@ -833,7 +880,7 @@ def ahu_chart_png():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
     try:
-        pressure, m_da, result, pts, segs = _run_ahu(form, U)
+        pressure, m_da, result, pts, segs, oa_frac = _run_ahu(form, U)
     except ValueError as exc:
         return Response(f"Cannot generate chart: {exc}", status=400)
 

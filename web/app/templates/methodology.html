@@ -17,11 +17,12 @@
     <p><strong>Cooling Coil</strong> is defined by the on- and off-coil states you enter.
     A wet (dehumidifying) coil typically leaves air at ~90–95% RH; that is a design
     assumption, not a solved coil geometry.</p>
-    <p><strong>AHU Design</strong> (supply-driven) derives off-coil from the required supply
-    moisture at a target off-coil RH (default <strong>90%</strong>, matching typical wet-coil
-    practice and the Cooling Coil tool). Set 100% RH for the idealised contact-factor&nbsp;= 1
-    case (saturated at the supply dew point). The two tools are comparable when they
-    use the same off-coil RH idealisation.</p>
+    <p><strong>AHU Design</strong> (supply-driven) chooses the process from the moisture
+    balance: cool / dehumidify / reheat when the supply is drier than on-coil (off-coil at
+    a target RH, default <strong>90%</strong>); heat then steam humidify when the supply is
+    wetter (winter path); sensible-only when moisture matches. Outdoor air is entered as a
+    volume flow; the fresh-air fraction is derived from dry-air mass. Comparable with the
+    Cooling Coil tool when both use the same off-coil RH idealisation.</p>
   </div>
 </div>
 

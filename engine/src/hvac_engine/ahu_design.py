@@ -3,11 +3,16 @@
 Implemented from SPEC-ahu-processes.md (``design_ahu_to_supply``). Instead of
 specifying the off-coil condition and reading off the supply, the user gives the
 **required supply (off-unit) condition** and the solver derives the intermediate
-stages that reach it: mix OA/RA to the on-coil condition, check the supply is
-reachable, then cool to the supply moisture at a target off-coil RH (default
-90%, matching ``simulate_ahu`` / typical wet-coil practice) and reheat to the
-supply dry bulb. ``coil_rh_off=1.0`` recovers the idealised CF = 1 model
-(saturated at the supply dew point).
+stages that reach it: mix OA/RA to the on-coil condition, then choose a path
+from the moisture balance:
+
+- supply drier than on-coil → cool / dehumidify at a target off-coil RH (default
+  90%, matching ``simulate_ahu``) and reheat to the supply dry bulb;
+- supply wetter than on-coil → heat then steam humidify (winter path);
+- equal moisture → purely sensible cool or heat.
+
+``coil_rh_off=1.0`` recovers the idealised CF = 1 model (saturated at the
+supply dew point).
 
 Pure Python; depends only on ``hvac_engine.psychrometrics`` and the shared result
 types / elementary processes in ``hvac_engine.processes``.
@@ -17,7 +22,14 @@ from __future__ import annotations
 
 from hvac_engine import psychrometrics as psy
 from hvac_engine.psychrometrics import PsychroState
-from hvac_engine.processes import AhuResult, AhuStage, mix, sensible
+from hvac_engine.processes import (
+    AhuResult,
+    AhuStage,
+    heat_and_humidify,
+    mix,
+    sensible,
+    steam_humidify,
+)
 
 _W_TOL = 1e-5  # kg/kg (~0.01 g/kg): smaller differences are "no net moisture change"
 _T_TOL = 1e-3  # degC
@@ -90,19 +102,20 @@ def design_ahu_to_supply(
 ) -> AhuResult:
     """Design the AHU stages needed to deliver a required supply condition.
 
-    Mixes OA/RA to the on-coil condition A, checks the required supply state is
-    reachable by cooling (a coil cannot add moisture), then derives:
+    Mixes OA/RA to the on-coil condition A, then derives stages from the moisture
+    balance between on-coil and supply:
 
-    - dehumidification: off-coil C holds the supply moisture at ``coil_rh_off``
-      (default 0.90, matching ``simulate_ahu``); reheat C→D to the supply dry bulb.
-      ``coil_rh_off=1.0`` is the idealised CF = 1 case (saturated at the supply
-      dew point);
-    - or a purely sensible cooling or heating duty when the supply moisture equals
-      the on-coil moisture.
+    - dehumidification (``W_sup < W_on``): off-coil C holds the supply moisture at
+      ``coil_rh_off`` (default 0.90, matching ``simulate_ahu``); reheat C→D to the
+      supply dry bulb. ``coil_rh_off=1.0`` is the idealised CF = 1 case;
+    - humidification (``W_sup > W_on``): heating coil then isothermal steam to the
+      supply moisture (winter path);
+    - equal moisture: purely sensible cooling or heating.
 
-    A blow-through fan raises the on-coil condition before the coil; a draw-through
-    fan sits after reheat, so the reheat coil targets ``t_sup − ΔT_fan``. Returns
-    the same ``AhuResult`` shape as ``simulate_ahu``.
+    A blow-through fan raises the on-coil condition before the coils; a
+    draw-through fan sits after the last coil/humidifier, so the heating coil
+    targets ``t_sup − ΔT_fan``. Returns the same ``AhuResult`` shape as
+    ``simulate_ahu``.
     """
     if m_da <= 0:
         raise ValueError("mass flow must be positive")
@@ -156,22 +169,13 @@ def design_ahu_to_supply(
             )
             air_on = r.state
 
-    # A draw-through fan sits after reheat: target t_sup - dt_fan before the fan so
-    # the air arrives at the supply temperature once the fan gain is added.
+    # A draw-through fan sits after the last process stage: target t_sup - dt_fan
+    # so the air arrives at the supply temperature once the fan gain is added.
     dt_draw = _fan_dt(supply) if fan_position == "draw" else 0.0
     reheat_target = supply.t_db - dt_draw
 
     W_on = air_on.w
     W_sup = supply.w
-
-    # Reachability: a cooling coil can only remove moisture.
-    if W_sup > W_on + _W_TOL:
-        raise ValueError(
-            f"Required supply moisture ({W_sup * 1000:.2f} g/kg) exceeds the on-coil "
-            f"moisture ({W_on * 1000:.2f} g/kg). A cooling coil can only remove "
-            "moisture — this duty needs humidification, which this tool does not yet "
-            "size. Lower the supply moisture, or add a humidifier stage."
-        )
 
     def _finish(pre_fan: PsychroState) -> PsychroState:
         """Apply the draw-through fan (if any) and append the SUP stage."""
@@ -211,6 +215,43 @@ def design_ahu_to_supply(
             final = _finish(r.state)
         else:
             final = _finish(air_on)
+    elif W_sup > W_on + _W_TOL:
+        # ── Humidification (winter): heat then isothermal steam ─────────────────
+        hum_note = "Humidification required (on-coil drier than supply)."
+        if reheat_target < air_on.t_db - _T_TOL:
+            # Unusual: on-coil warmer than supply but drier — cool then steam.
+            c = sensible(air_on, m_da, reheat_target)
+            stages.append(
+                AhuStage("CC", "Cooling coil (sensible)", c.state,
+                         q_sensible=c.q_sensible, q_total=c.q_total, note=hum_note)
+            )
+            hm = steam_humidify(c.state, m_da, W_sup)
+            stages.append(
+                AhuStage("HUM", "Steam humidifier", hm.state,
+                         q_latent=hm.q_latent, q_total=hm.q_latent,
+                         moisture=hm.steam_rate, note=hum_note)
+            )
+            final = _finish(hm.state)
+        else:
+            hh = heat_and_humidify(
+                air_on, m_da, t_out=reheat_target, w_out=W_sup
+            )
+            if abs(hh.state_x.t_db - air_on.t_db) > _T_TOL:
+                stages.append(
+                    AhuStage("HC", "Heating coil", hh.state_x,
+                             q_sensible=hh.q_sensible, q_total=hh.q_sensible,
+                             note=hum_note)
+                )
+            if hh.steam_rate > 1e-12:
+                stages.append(
+                    AhuStage("HUM", "Steam humidifier", hh.state,
+                             q_latent=hh.q_latent, q_total=hh.q_latent,
+                             moisture=hh.steam_rate, note=hum_note)
+                )
+                pre_fan = hh.state
+            else:
+                pre_fan = hh.state_x
+            final = _finish(pre_fan)
     else:
         # ── Dehumidification: off-coil at supply moisture + target RH ───────────
         t_off = _t_db_at_w_rh(W_sup, coil_rh_off, p)

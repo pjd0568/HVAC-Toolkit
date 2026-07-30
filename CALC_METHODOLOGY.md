@@ -621,7 +621,7 @@ then sensible(state_in, m_da, t_db + ΔT)
 
 **Fan ΔT:** same `c_p = 1.006 + 1.86·W` as `fan_gain`.
 
-**Assumptions / simplifications:** Default off-coil RH 90% (aligned with `simulate_ahu`); humidification not sized (raises if W_sup > W_on); no frost coil / humidifier stages in this inverse path.
+**Assumptions / simplifications:** Default off-coil RH 90% (aligned with `simulate_ahu`); when W_sup > W_on the inverse path sizes heating then steam humidification; no frost/preheat coil stage in this inverse path.
 
 **Source:** `ahu_design.design_ahu_to_supply`
 

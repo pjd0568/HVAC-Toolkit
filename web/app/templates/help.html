@@ -289,38 +289,40 @@
 
     <!-- ═══════════════ AHU DESIGN ═══════════════ -->
     <section class="help-section" id="ahu" data-help-section
-             data-keywords="ahu air handling unit supply condition off-unit outdoor return mix on-coil off-coil reheat preheat coil duty fan gain blow through draw through sfp specific fan power reachability frost stages">
+             data-keywords="ahu air handling unit supply condition off-unit outdoor return mix on-coil off-coil reheat preheat coil duty fan gain blow through draw through sfp specific fan power reachability frost stages summer winter humidification outdoor air flow">
       <h2 class="help-h">Psychrometrics — AHU Design</h2>
-      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Work backwards from the condition you need to deliver into the room. Give the required supply (off-unit) air; the tool mixes outdoor and return air, then derives the cooling and reheat needed to get there.</p>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Work backwards from the condition you need to deliver into the room. Give the required supply (off-unit) air; the tool mixes outdoor and return air, then derives the cooling/reheat or heating/humidification needed to get there.</p>
 
       <h3 class="help-sub">When to use it</h3>
-      <p>When you know the supply condition the space needs and want the coil duties that produce it — the inverse of specifying the off-coil condition and reading the result. It chains mixing → cooling → reheat into one staged process.</p>
+      <p>When you know the supply condition the space needs and want the coil duties that produce it — the inverse of specifying the off-coil condition and reading the result. It chains mixing → cool/reheat (summer) or heat/humidify (winter) into one staged process.</p>
 
       <h3 class="help-sub">Inputs</h3>
       <dl class="help-io">
         <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure.</dd>
-        <dt>Outdoor Air — condition + Outdoor Air Fraction (%)</dt><dd>The fresh-air state and how much of the supply is fresh air (the rest is return air).</dd>
-        <dt>Return Air — condition</dt><dd>The air coming back from the space.</dd>
+        <dt>Design season</dt><dd>Summer or Winter — loads typical OA / RA / supply defaults. The process path still follows the moisture balance (cool+reheat vs heat+humidify).</dd>
+        <dt>Outdoor Air — condition + Outdoor Air Flow</dt><dd>The fresh-air state and its volume flow (at the outdoor condition). The outdoor-air fraction of supply is derived from dry-air mass flows and shown in the results.</dd>
+        <dt>Return Air — condition</dt><dd>The air coming back from the space (used when outdoor air is less than 100% of supply).</dd>
         <dt>Required Supply — condition + Supply Flow</dt><dd>The off-unit condition to deliver into the room, and the total supply volume flow.</dd>
-        <dt>Off-coil RH target (%)</dt><dd>Default <strong>90%</strong> — same wet-coil leaving assumption as the Cooling Coil tool. Use <strong>100%</strong> for idealised contact factor = 1 (saturated at the supply dew point).</dd>
-        <dt>Supply Fan — Position, SFP, Power</dt><dd>Optional fan heat gain. <em>Blow-through</em> sits before the coil (adds to coil duty); <em>draw-through</em> sits after reheat. Give the fan power directly (kW) or let it be estimated from Specific Fan Power (W per l/s). Leave Position on "No fan gain" to ignore it.</dd>
+        <dt>Off-coil RH target (%)</dt><dd>Default <strong>90%</strong> — same wet-coil leaving assumption as the Cooling Coil tool. Use <strong>100%</strong> for idealised contact factor = 1. Applies when the supply is drier than on-coil (dehumidification).</dd>
+        <dt>Supply Fan — Position, SFP, Power</dt><dd>Optional fan heat gain. <em>Blow-through</em> sits before the coil (adds to coil duty); <em>draw-through</em> sits after the last coil/humidifier. Give the fan power directly (kW) or let it be estimated from Specific Fan Power (W per l/s). Leave Position on "No fan gain" to ignore it.</dd>
       </dl>
 
       <h3 class="help-sub">How to use it</h3>
       <ol class="help-steps">
         <li>Set the site Altitude.</li>
-        <li>Enter the Outdoor Air condition and the fresh-air fraction.</li>
+        <li>Choose Summer or Winter (optional — sets typical defaults).</li>
+        <li>Enter the Outdoor Air condition and outdoor air volume flow.</li>
         <li>Enter the Return Air condition.</li>
         <li>Enter the Required Supply condition and supply flow.</li>
-        <li>Confirm the off-coil RH target (90% default).</li>
+        <li>For summer / dehumidification duties, confirm the off-coil RH target (90% default).</li>
         <li>Optionally set the fan position and power/SFP.</li>
         <li>Press <strong>Design</strong>. The derived stages, total cooling and total heating are listed and drawn on the chart; expand <strong>Design method &amp; notes</strong> for the assumptions.</li>
       </ol>
 
       <h3 class="help-sub">Reading the results</h3>
-      <p>Each stage (mix, cool, reheat) is a row with its state and the duty/moisture change at that step. Totals give the coil (cooling) duty and reheat/preheat (heating) duty. A note under the totals states which off-coil RH idealisation was used — keep that in mind if comparing with the Cooling Coil tool.</p>
+      <p>Each stage (mix, cool, reheat, humidify) is a row with its state and the duty/moisture change at that step. Totals give cooling duty, heating duty, and moisture added/removed. The derived outdoor-air fraction (%) is shown under the totals. A note under the totals states which path was used.</p>
 
-      <div class="help-note">A cooling coil can only remove moisture: a supply moisture content above the on-coil value is <strong>rejected as unreachable</strong> (that duty needs humidification). Equal moisture collapses the duty to a purely sensible cool or heat. Frost is flagged when the off-coil temperature is at or below 0 °C.</div>
+      <div class="help-note">Process path is chosen from moisture: supply drier than on-coil → cool / dehumidify / reheat; supply wetter → heat then steam humidify; equal moisture → sensible cool or heat only. Frost is flagged when the off-coil temperature is at or below 0 °C.</div>
     </section>
 
     <!-- ═══════════════ DUCT SIZING ═══════════════ -->

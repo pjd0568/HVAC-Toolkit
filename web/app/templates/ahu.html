@@ -8,16 +8,32 @@
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="psychro-layout">
-  <form method="post" class="psychro-inputs psychro-inputs-stack">
+  <form method="post" class="psychro-inputs psychro-inputs-stack" id="ahu-form">
     <div class="panel">
       <div class="panel-head">Air on</div>
       <div class="panel-body">
         {{ site_conditions(form, pressure) }}
 
+        <div class="section-label">Season</div>
+        <div class="form-grid psychro-stack">
+          <div>
+            <label>Design season</label>
+            <select name="season" id="ahu-season">
+              <option value="summer" {{ 'selected' if form.season != 'winter' }}>Summer — cool / dehumidify / reheat</option>
+              <option value="winter" {{ 'selected' if form.season == 'winter' }}>Winter — heat / humidify</option>
+            </select>
+            <div class="suffix">Switches typical OA / RA / supply defaults. Process path still follows the moisture balance.</div>
+          </div>
+        </div>
+
         <div class="section-label">Outdoor Air</div>
         <div class="form-grid psychro-stack">
           {{ state_input("oa", "Outdoor Air", form, second_properties) }}
-          <div><label>Outdoor Air Fraction (%)</label><input name="oa_frac" value="{{ form.oa_frac }}"></div>
+          <div>
+            <label>Outdoor Air Flow ({{ U.sym('vol_flow') }})</label>
+            <input name="oa_flow" value="{{ form.oa_flow }}">
+            <div class="suffix">Fresh-air volume at the outdoor condition. Fraction of supply is derived from dry-air mass flows.</div>
+          </div>
         </div>
 
         <div class="section-label">Return Air</div>
@@ -39,16 +55,29 @@
     </div>
 
     <div class="panel">
-      <div class="panel-head">Cooling coil &amp; fan</div>
+      <div class="panel-head" id="ahu-coil-fan-head">
+        {% if form.season == 'winter' %}Heating / humidification &amp; fan{% else %}Cooling coil &amp; fan{% endif %}
+      </div>
       <div class="panel-body">
-        <div class="section-label">Cooling coil model</div>
-        <div class="form-grid psychro-stack">
+        <div class="section-label" id="ahu-coil-label" {% if form.season == 'winter' %}hidden{% endif %}>Cooling coil model</div>
+        <div class="form-grid psychro-stack" id="ahu-coil-fields" {% if form.season == 'winter' %}hidden{% endif %}>
           <div>
             <label>Off-coil RH target (%)</label>
             <input name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
-            <div class="suffix">Default 90% — typical wet-coil practice. Use 100% for idealised CF = 1.</div>
+            <div class="suffix">Default 90% — typical wet-coil practice. Use 100% for idealised CF = 1. Used when the supply is drier than on-coil.</div>
           </div>
         </div>
+        {% if form.season == 'winter' %}
+        <p class="psychro-hint" id="ahu-winter-hint" style="margin-top:0;">
+          Winter path: when on-coil air is drier than the supply, the tool sizes a heating coil
+          then steam humidification. Off-coil RH is only used if dehumidification is still needed.
+        </p>
+        {% else %}
+        <p class="psychro-hint" id="ahu-winter-hint" style="margin-top:0;" hidden>
+          Winter path: when on-coil air is drier than the supply, the tool sizes a heating coil
+          then steam humidification. Off-coil RH is only used if dehumidification is still needed.
+        </p>
+        {% endif %}
 
         <div class="section-label">Supply fan — leave off to ignore fan gain</div>
         <div class="form-grid psychro-stack">
@@ -57,7 +86,7 @@
             <select name="fan_pos">
               <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
               <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before coil</option>
-              <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after reheat</option>
+              <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after last stage</option>
             </select>
           </div>
           <div><label>Fan SFP (W per l/s)</label><input name="fan_sfp" value="{{ form.fan_sfp }}"></div>
@@ -102,14 +131,23 @@
     </table>
     <table class="results">
       <tr><td>Total cooling (coil duty)</td><td class="num"><strong>{{ U.html('power', -result.cooling_total) }}</strong></td></tr>
-      <tr><td>Total heating (reheat + preheat)</td><td class="num"><strong>{{ U.html('power', result.heating_total) }}</strong></td></tr>
+      <tr><td>Total heating (reheat + preheat + humidify path)</td><td class="num"><strong>{{ U.html('power', result.heating_total) }}</strong></td></tr>
       <tr><td>Moisture added / removed</td><td class="num"><span class="valunit"><span class="v">{{ U.fmt('moisture_rate', result.moisture_added) }} / {{ U.fmt('moisture_rate', result.moisture_removed) }}</span><span class="u">{{ U.sym('moisture_rate') }}</span></span></td></tr>
       <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', result.m_da) }}</td></tr>
+      {% if oa_frac is not none %}
+      <tr><td>Outdoor air fraction (derived)</td><td class="num"><span class="valunit"><span class="v">{{ '%.1f'|format(oa_frac * 100) }}</span><span class="u">%</span></span></td></tr>
+      {% endif %}
     </table>
     <div class="note-banner" style="margin:14px 16px 16px;">
+      {% if result.moisture_removed > 0 %}
       Coil duty assumes {{ form.coil_rh_off }}% off-coil RH at the supply moisture content
       {% if form.coil_rh_off == '100' %}(idealised contact factor = 1, saturated at the supply dew point){% else %}(same idealisation as the Cooling Coil tool’s typical 90–95% wet-coil leaving condition){% endif %}.
       Duties are not directly comparable to a run that used a different off-coil RH.
+      {% elif result.moisture_added > 0 %}
+      Winter path: heating coil then isothermal steam humidification to the required supply moisture.
+      {% else %}
+      Sensible-only duty — no net moisture change between on-coil and supply.
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -121,29 +159,76 @@
   <div class="notes-body">
     <p><strong>What this does.</strong> You give the condition the unit must deliver into the room
     (the supply, or off-unit, condition); the tool mixes outdoor and return air to the on-coil
-    condition, checks the supply is reachable, then works out the coil and reheat needed to get
-    there. It is the inverse of specifying the off-coil condition and reading off the result.</p>
-    <p><strong>Coil model.</strong> Where dehumidification is needed, the cooling coil is taken to
-    leave air at the supply moisture content and the off-coil RH target (default <strong>90%</strong>,
-    matching typical wet-coil practice and the Cooling Coil tool). Set the target to 100% for the
-    idealised CF = 1 case (saturated at the supply dew point). Real coils leave air a little off
-    saturation (~90–95% RH). A reheat coil then lifts the air sensibly to the supply dry bulb when
-    the off-coil temperature is below the supply dry bulb.</p>
-    <p><strong>Reachability.</strong> A cooling coil can only remove moisture, so a supply moisture
-    content above the on-coil value is rejected — that duty needs humidification. If the supply
-    moisture equals the on-coil moisture the duty collapses to a purely sensible cool or heat.</p>
-    <p><strong>Frost.</strong> An off-coil temperature (supply dew point) at or below 0 °C means the
-    coil surface can freeze condensate — consider glycol, a DX defrost strategy or face-and-bypass.</p>
+    condition, then works out the coil, reheat or humidification needed to get there. Outdoor air
+    is entered as a volume flow; the fresh-air fraction is derived from dry-air mass flows.</p>
+    <p><strong>Summer path.</strong> Where dehumidification is needed (supply drier than on-coil),
+    the cooling coil leaves air at the supply moisture content and the off-coil RH target (default
+    <strong>90%</strong>). A reheat coil then lifts the air sensibly to the supply dry bulb when needed.</p>
+    <p><strong>Winter path.</strong> Where the supply is wetter than on-coil (typical with cold dry
+    outdoor air), the tool sizes a heating coil then isothermal steam humidification — the same
+    sequence as the Heating &amp; Humidification tool.</p>
+    <p><strong>Sensible-only.</strong> If supply moisture equals on-coil moisture the duty collapses
+    to a purely sensible cool or heat.</p>
+    <p><strong>Frost.</strong> An off-coil temperature at or below 0 °C means the coil surface can
+    freeze condensate — consider glycol, a DX defrost strategy or face-and-bypass.</p>
     <p><strong>Fan position.</strong> A blow-through fan raises the on-coil condition (adding to coil
-    duty); a draw-through fan sits after reheat, so the reheat coil targets the supply dry bulb minus
-    the fan rise and the air reaches the supply temperature after the fan. Absorbed power can be
-    estimated from specific fan power: P (W) = SFP (W per l/s) × flow (l/s). Approved Document L
-    Volume 2 (England, 2021) limits: central balanced with heating and cooling 2.0 W/(l/s);
-    heating only 1.9; other central balanced 1.5; zonal supply 1.1; zonal extract 0.5.</p>
+    duty); a draw-through fan sits after the last coil/humidifier, so the heating coil targets the
+    supply dry bulb minus the fan rise. Absorbed power can be estimated from specific fan power:
+    P (W) = SFP (W per l/s) × flow (l/s). Approved Document L Volume 2 (England, 2021) limits:
+    central balanced with heating and cooling 2.0 W/(l/s); heating only 1.9; other central balanced
+    1.5; zonal supply 1.1; zonal extract 0.5.</p>
   </div>
 </details>
 
 {{ report_form(url_for('psychro.ahu_report'), form, url_for('psychro.ahu_chart_png')) }}
 {% endif %}
+
+<script type="application/json" id="ahu-season-defaults">{{ season_defaults | tojson }}</script>
+<script>
+(function () {
+  var sel = document.getElementById("ahu-season");
+  var raw = document.getElementById("ahu-season-defaults");
+  if (!sel || !raw) return;
+  var defaults = JSON.parse(raw.textContent);
+  var head = document.getElementById("ahu-coil-fan-head");
+  var coilLabel = document.getElementById("ahu-coil-label");
+  var coilFields = document.getElementById("ahu-coil-fields");
+  var winterHint = document.getElementById("ahu-winter-hint");
+
+  function applySeasonUi(season) {
+    var winter = season === "winter";
+    if (head) {
+      head.textContent = winter
+        ? "Heating / humidification & fan"
+        : "Cooling coil & fan";
+    }
+    if (coilLabel) coilLabel.hidden = winter;
+    if (coilFields) coilFields.hidden = winter;
+    if (winterHint) winterHint.hidden = !winter;
+  }
+
+  function applySeasonDefaults(season) {
+    var d = defaults[season];
+    if (!d) return;
+    var form = document.getElementById("ahu-form");
+    if (!form) return;
+    [["oa", "oa"], ["ra", "ra"], ["sup", "sup"]].forEach(function (pair) {
+      var prefix = pair[0];
+      var key = pair[1];
+      var t = form.querySelector('[name="' + prefix + '_t"]');
+      var prop = form.querySelector('[name="' + prefix + '_prop"]');
+      var val = form.querySelector('[name="' + prefix + '_val"]');
+      if (t) t.value = d[key + "_t"];
+      if (prop) prop.value = d[key + "_prop"];
+      if (val) val.value = d[key + "_val"];
+    });
+  }
+
+  sel.addEventListener("change", function () {
+    applySeasonDefaults(sel.value);
+    applySeasonUi(sel.value);
+  });
+})();
+</script>
 
 {% endblock %}
