@@ -143,6 +143,14 @@
         <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}">SI · Metric</button>
         <button type="submit" name="system" value="IP" class="unit-pill {{ 'on' if units == 'IP' }}">IP · Imperial</button>
       </form>
+      {% set flow_unit_tools = ['psychro_mix', 'psychro_coil', 'psychro_desiccant', 'psychro_heat_humidify', 'psychro_adiabatic_cool', 'psychro_ahu'] %}
+      {% if units == 'SI' and active in flow_unit_tools %}
+      <form method="post" action="{{ url_for('main.set_flow_unit_pref') }}" class="unit-toggle" title="Airflow units — applies to every psychrometric tool">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" name="unit" value="m3h" class="unit-pill {{ 'on' if U.flow_unit == 'm3h' }}">m³/h</button>
+        <button type="submit" name="unit" value="m3s" class="unit-pill {{ 'on' if U.flow_unit == 'm3s' }}">m³/s</button>
+      </form>
+      {% endif %}
       {% set help_anchor = help_anchor_for.get(active) %}
       <a class="help-btn" href="{{ url_for('help.index') }}{% if help_anchor %}#{{ help_anchor }}{% endif %}"
          title="Help for this tool">

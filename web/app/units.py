@@ -35,6 +35,31 @@ def set_unit_system(system: str) -> None:
         session["units"] = system
 
 
+# ── Airflow display toggle (m³/h vs m³/s) ───────────────────────────────────────
+# Every psychrometric tool's airflow field ("vol_flow") is canonically m³/h.
+# Some users think in m³/s instead, so this is a second, independent session
+# preference layered on top of the SI/IP system toggle above -- it only changes
+# how the "vol_flow" quantity displays/parses under the SI system (IP airflow
+# stays CFM either way; there's no IP convention for airflow-per-second here).
+FLOW_UNITS = ("m3h", "m3s")
+DEFAULT_FLOW_UNIT = "m3h"
+_M3H_PER_M3S = 3600.0
+_FLOW_UNIT_SYMBOLS = {"m3h": "m³/h", "m3s": "m³/s"}
+_FLOW_UNIT_DECIMALS = {"m3h": 0, "m3s": 3}
+
+
+def get_flow_unit() -> str:
+    """Active airflow display unit for this request. Session now; SI-only concern."""
+    unit = session.get("flow_unit", DEFAULT_FLOW_UNIT)
+    return unit if unit in FLOW_UNITS else DEFAULT_FLOW_UNIT
+
+
+def set_flow_unit(unit: str) -> None:
+    """Persist the chosen airflow display unit (session today)."""
+    if unit in FLOW_UNITS:
+        session["flow_unit"] = unit
+
+
 class UnitView:
     """Per-request façade over ``hvac_engine.units`` bound to the active system.
 
@@ -43,16 +68,29 @@ class UnitView:
     convert user input with ``U.to_si(quantity, value)``.
     """
 
-    def __init__(self, system: str) -> None:
+    def __init__(self, system: str, flow_unit: str = DEFAULT_FLOW_UNIT) -> None:
         self.system = system
+        self.flow_unit = flow_unit if flow_unit in FLOW_UNITS else DEFAULT_FLOW_UNIT
+
+    def _flow_toggled(self, quantity: str) -> bool:
+        """True when ``quantity`` is airflow and the m³/s display is active.
+
+        Only applies under the SI system -- IP airflow always displays as CFM,
+        regardless of the m³/h vs m³/s preference.
+        """
+        return quantity == "vol_flow" and self.system == "SI" and self.flow_unit == "m3s"
 
     # -- display -------------------------------------------------------------------
     def sym(self, quantity: str) -> str:
         """Unit symbol for the active system, e.g. sym('temperature') -> '°C' or '°F'."""
+        if self._flow_toggled(quantity):
+            return _FLOW_UNIT_SYMBOLS[self.flow_unit]
         return eng_units.symbol(quantity, self.system)
 
     def conv(self, quantity: str, si_value: float) -> float:
         """SI value -> raw display value (unformatted)."""
+        if self._flow_toggled(quantity):
+            return si_value / _M3H_PER_M3S
         return eng_units.from_si(quantity, si_value, self.system)
 
     def fmt(self, quantity: str, si_value, dp: int | None = None, sign: bool = False) -> str:
@@ -63,9 +101,14 @@ class UnitView:
         """
         if si_value is None:
             return "—"
-        value = eng_units.from_si(quantity, si_value, self.system)
-        if dp is None:
-            dp = eng_units.decimals(quantity, self.system)
+        if self._flow_toggled(quantity):
+            value = si_value / _M3H_PER_M3S
+            if dp is None:
+                dp = _FLOW_UNIT_DECIMALS[self.flow_unit]
+        else:
+            value = eng_units.from_si(quantity, si_value, self.system)
+            if dp is None:
+                dp = eng_units.decimals(quantity, self.system)
         flag = "+" if sign else ""
         return f"{value:{flag}.{dp}f}"
 
@@ -97,8 +140,10 @@ class UnitView:
     # -- input ---------------------------------------------------------------------
     def to_si(self, quantity: str, display_value: float) -> float:
         """Display value entered by the user -> canonical SI value for the engine."""
+        if self._flow_toggled(quantity):
+            return display_value * _M3H_PER_M3S
         return eng_units.to_si(quantity, display_value, self.system)
 
 
 def current_view() -> UnitView:
-    return UnitView(get_unit_system())
+    return UnitView(get_unit_system(), get_flow_unit())

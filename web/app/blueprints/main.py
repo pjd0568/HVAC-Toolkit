@@ -2,9 +2,16 @@ from flask import Blueprint, jsonify, redirect, render_template, request, url_fo
 from flask_login import login_required
 
 from app.teaser import P_ATM, resolve_teaser_state, teaser_payload
-from app.units import set_unit_system
+from app.units import set_flow_unit, set_unit_system
 
 bp = Blueprint("main", __name__)
+
+
+def _safe_redirect_target(raw: str) -> str:
+    """Only honour same-app relative paths, never an absolute/off-site URL."""
+    if not raw.startswith("/") or raw.startswith("//"):
+        return url_for("main.dashboard")
+    return raw
 
 
 @bp.get("/")
@@ -23,11 +30,15 @@ def dashboard():
 def set_units():
     """Flip the active unit system (SI/IP) and return to the page in use."""
     set_unit_system(request.form.get("system", ""))
-    nxt = request.form.get("next", "")
-    # Only honour same-app relative paths, never an absolute/off-site URL.
-    if not nxt.startswith("/") or nxt.startswith("//"):
-        nxt = url_for("main.dashboard")
-    return redirect(nxt)
+    return redirect(_safe_redirect_target(request.form.get("next", "")))
+
+
+@bp.post("/preferences/flow-unit")
+@login_required
+def set_flow_unit_pref():
+    """Flip the airflow display unit (m³/h vs m³/s) and return to the page in use."""
+    set_flow_unit(request.form.get("unit", ""))
+    return redirect(_safe_redirect_target(request.form.get("next", "")))
 
 
 @bp.post("/api/psychro/teaser")
