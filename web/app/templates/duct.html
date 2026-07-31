@@ -7,8 +7,10 @@
 <div id="duct-error">{% if error %}<div class="error">{{ error }}</div>{% endif %}</div>
 
 <div class="note-banner">
-  All three shapes below are sized from the same top inputs at once. Updates
-  are instant; no page reload. Rectangular's width and height, and flat
+  All three shapes below are sized from the same top inputs at once.
+  Changing air volume or target updates velocity and friction live without
+  resizing the ducts — press Calculate to re-propose sizes (rectangular
+  defaults to a 1:1 aspect). Rectangular's width and height, and flat
   oval's major and minor axis, are each fully independent — change one and
   watch velocity, aspect ratio and friction rate respond, using the
   traffic-light status to judge the result. Flat oval only steps through
@@ -107,7 +109,7 @@
       <button type="button" class="col-reset" data-reset="rectangular">Reset to calculated</button>
     </div>
     <div class="col-subhead">Width and height are independent — change either and watch velocity,
-      aspect ratio and friction rate respond. Lock a side to keep it fixed when the inputs above change
+      aspect ratio and friction rate respond. Lock a side to keep it fixed when you press Calculate
       (e.g. a shallow ceiling void).</div>
 
     <div class="rect-round25-row">

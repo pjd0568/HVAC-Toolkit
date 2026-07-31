@@ -221,11 +221,12 @@
       Object.keys(overrides).forEach(function (k) { params.set(k, overrides[k]); });
     }
     setLoading(true);
-    fetch(API_STATE_URL + "?" + params.toString(), { headers: { "Accept": "application/json" } })
+    return fetch(API_STATE_URL + "?" + params.toString(), { headers: { "Accept": "application/json" } })
       .then(function (resp) { return resp.json(); })
       .then(function (data) {
         setLoading(false);
         applyState(data);
+        return data;
       })
       .catch(function () {
         setLoading(false);
@@ -233,10 +234,39 @@
       });
   }
 
-  // -- Top-input changes: clear circular/oval pinned state, and clear
+  // -- Live top-input edits (volume / target / basis): keep every current
+  // duct size pinned and only refresh outputs (velocity, friction, etc.).
+  // Circular "Auto" has an empty circular_mm, so freeze the displayed
+  // diameter for the request, then restore Auto in the UI afterwards.
+  function onLivePrimaryChange() {
+    var wasAuto = !els.circularMm.value;
+    var overrides = {};
+    if (wasAuto) {
+      var dEl = document.getElementById("circ-diameter");
+      var d = dEl ? dEl.textContent.trim() : "";
+      if (d) overrides.circular_mm = d;
+    }
+    fetchState(overrides).then(function () {
+      if (!wasAuto) return;
+      // Keep Auto selected; sizes stay frozen until Calculate.
+      els.circularMm.value = "";
+      els.circularSelect.value = "";
+      var gaugeRow = document.getElementById("circ-gauge-row");
+      if (gaugeRow) gaugeRow.style.display = "none";
+      if (window.history && window.history.replaceState) {
+        var p = new URLSearchParams(window.location.search);
+        p.delete("circular_mm");
+        var qs = p.toString();
+        window.history.replaceState(null, "", window.location.pathname + (qs ? "?" + qs : ""));
+      }
+    });
+  }
+
+  // -- Calculate button: clear circular/oval pinned state, and clear
   // rectangular width/height independently unless each is individually
-  // locked (Correction #4 -- no more single shared lock) --
-  function onPrimaryChange() {
+  // locked (Correction #4 -- no more single shared lock), then re-propose
+  // sizes from the design target (rectangular at 1:1 aspect by default).
+  function onCalculate() {
     els.circularMm.value = "";
     els.ovalMajorHidden.value = "";
     els.ovalMinorHidden.value = "";
@@ -255,11 +285,11 @@
     fetchState(overrides);
   }
 
-  var debouncedPrimaryChange = debounce(onPrimaryChange, 250);
+  var debouncedLivePrimaryChange = debounce(onLivePrimaryChange, 250);
 
   [els.volume, els.target].forEach(function (el) {
-    el.addEventListener("change", onPrimaryChange);
-    el.addEventListener("input", debouncedPrimaryChange);
+    el.addEventListener("change", onLivePrimaryChange);
+    el.addEventListener("input", debouncedLivePrimaryChange);
   });
 
   els.basis.addEventListener("change", function () {
@@ -267,7 +297,7 @@
     if (els.targetUnit) {
       els.targetUnit.textContent = isVelocity ? els.targetUnit.dataset.velocitySym : els.targetUnit.dataset.frictionSym;
     }
-    onPrimaryChange();
+    onLivePrimaryChange();
   });
 
   // -- Circular stock-size select --
@@ -365,10 +395,10 @@
     });
   });
 
-  // -- Prevent the plain form submit from double-firing when JS is active --
+  // -- Calculate: re-propose duct sizes from the design inputs --
   form.addEventListener("submit", function (evt) {
     evt.preventDefault();
-    onPrimaryChange();
+    onCalculate();
   });
 
   // ===========================================================================

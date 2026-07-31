@@ -15,8 +15,9 @@ inputs.
 
 Correction #4: rectangular width and height are fully independent — no
 solving one from the other. `rect_lock_width` / `rect_lock_height` are
-independent booleans; a locked dimension survives a top-input change, an
-unlocked one resets to a fresh 2:1-derived value.
+independent booleans; a locked dimension survives a Calculate (full
+re-size), an unlocked one resets to a fresh 1:1-derived value. Live
+edits to volume/target keep all current sizes and only refresh outputs.
 
 Correction #5: flat oval's major and minor are independent too, but every
 code path snaps the working pair to a genuine `LINDAB_FLAT_OVAL_CATALOG`
@@ -89,7 +90,7 @@ BASES = ("velocity", "friction_rate")
 # Constants for fields removed from the visible UI (Correction #3) -- still
 # readable from the query string (kept flexible for a hand-built/shared
 # link), just no longer rendered as editable top-level inputs.
-DEFAULT_RECT_ASPECT = 2.0
+DEFAULT_RECT_ASPECT = 1.0
 
 # -- Index Leg (Correction #6) ------------------------------------------------
 
@@ -244,8 +245,9 @@ def _compute_state(args, U):
         # Correction #4: width and height are now fully independent -- no
         # solving between them anywhere. Each is either pinned (typed/nudged
         # this request or a previous one) or freshly derived from the
-        # reference De at a 2:1 aspect ratio. Lock only controls whether a
-        # TOP-input change clears the pin; see the module docstring.
+        # reference De at a 1:1 aspect ratio. Lock only controls whether a
+        # Calculate (full re-size) clears the pin; live volume/target edits
+        # keep pinned sizes and only refresh outputs.
         lock_width = args.get("rect_lock_width") == "1"
         lock_height = args.get("rect_lock_height") == "1"
         fields["rect_lock_width"] = "1" if lock_width else ""
