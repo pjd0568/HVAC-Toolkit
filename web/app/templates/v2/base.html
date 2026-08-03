@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#14171C">
+<meta name="theme-color" content="#F7F9FC">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <title>{% block title %}{{ brand_name }}{% endblock %}</title>
 <link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-19">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=1">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-6">
 {% block extra_head %}{% endblock %}
 </head>
 <body class="v2-body">
@@ -22,9 +22,20 @@
     <img src="{{ brand_mark_url }}" alt="" width="28" height="28">
     <span class="v2-brand-text">{{ brand_name }}</span>
   </a>
+  <nav class="v2-suite-nav" aria-label="Suites">
+    <a href="{{ url_for('v2.dashboard') }}" class="{{ 'active' if nav == 'home' }}">Home</a>
+    <a href="{{ url_for('v2.psychro_picker') }}" class="{{ 'active' if nav == 'psychro' }}">Psychro</a>
+    <a href="{{ url_for('v2.duct') }}" class="{{ 'active' if nav == 'duct' }}">Air</a>
+    <a href="{{ url_for('v2.pipe') }}" class="{{ 'active' if nav == 'pipe' }}">Water</a>
+    <a href="{{ url_for('v2.more') }}" class="{{ 'active' if nav == 'more' }}">More</a>
+  </nav>
   <div class="v2-topbar-title">{% block page_title %}{% endblock %}</div>
-  <button type="button" class="v2-icon-btn" id="v2-climate-btn" title="Climate slots" aria-label="Climate slots">◎</button>
-  <button type="button" class="v2-icon-btn" id="v2-menu-btn" title="Menu" aria-label="Open menu">☰</button>
+  <button type="button" class="v2-icon-btn" id="v2-climate-btn" title="Climate slots" aria-label="Climate slots">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+  <button type="button" class="v2-icon-btn" id="v2-menu-btn" title="Menu" aria-label="Open menu">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
 </header>
 
 <div class="v2-menu" id="v2-menu" role="dialog" aria-label="Menu">
@@ -33,9 +44,9 @@
     <h2>Menu</h2>
     <ul class="v2-menu-list">
       {% if access.tier == 'trial' and access.trial_days_remaining is not none %}
-      <li><span style="display:block;padding:8px 12px;color:#8fd9d2;">Trial · {{ access.trial_days_remaining }}d left</span></li>
+      <li><span class="v2-menu-status">Trial · {{ access.trial_days_remaining }}d left</span></li>
       {% elif access.tier == 'pro' %}
-      <li><span style="display:block;padding:8px 12px;color:#8fd9d2;">Subscribed</span></li>
+      <li><span class="v2-menu-status">Subscribed</span></li>
       {% endif %}
       <li><a href="{{ url_for('billing.subscribe') }}">Pricing</a></li>
       {% set help_anchor = help_anchor_for.get(active) %}
@@ -71,14 +82,14 @@
       </li>
       {% endif %}
     </ul>
-    <button type="button" class="v2-btn v2-btn-ghost" data-v2-close style="width:100%;margin-top:16px;color:#c8d0d8;border-color:#2a3038;">Close</button>
+    <button type="button" class="v2-btn v2-btn-ghost" data-v2-close style="width:100%;margin-top:16px;">Close</button>
   </div>
 </div>
 
 <div class="v2-climate-sheet" id="v2-climate-sheet" role="dialog" aria-label="Climate slots">
   <div class="v2-menu-backdrop" data-v2-close></div>
   <div class="v2-climate-panel">
-    <h2 style="font-size:16px;margin-bottom:4px;">Climate slots</h2>
+    <h2>Climate slots</h2>
     <p style="font-size:13px;color:var(--v2-muted);margin-bottom:8px;">Paste into psychrometric tools from weather memory slots.</p>
     {% for i in range(3) %}
     {% set slot = climate_slots[i] %}
@@ -118,20 +129,27 @@
 </main>
 
 <nav class="v2-bottom-nav" aria-label="Primary">
-  <a href="{{ url_for('v2.dashboard') }}" class="{{ 'active' if nav == 'home' }}">
-    <span class="ico" aria-hidden="true">⌂</span>Home
+  <a href="{{ url_for('v2.psychro_picker') }}" class="v2-dock-item {{ 'active' if nav == 'psychro' }}">
+    <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14c2.5-4 5.5-4 8 0s5.5 4 8 0"/><path d="M4 8c2.5-4 5.5-4 8 0s5.5 4 8 0"/></svg></span>
+    <span class="v2-dock-label">Psychro</span>
   </a>
-  <a href="{{ url_for('v2.psychro_picker') }}" class="{{ 'active' if nav == 'psychro' }}">
-    <span class="ico" aria-hidden="true">〜</span>Psychro
+  <a href="{{ url_for('v2.duct') }}" class="v2-dock-item {{ 'active' if nav == 'duct' }}">
+    <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 12h16M4 16h16"/><path d="M8 6v4M16 10v4M10 14v4"/></svg></span>
+    <span class="v2-dock-label">Air</span>
   </a>
-  <a href="{{ url_for('v2.duct') }}" class="{{ 'active' if nav == 'duct' }}">
-    <span class="ico" aria-hidden="true">≋</span>Air
+  <a href="{{ url_for('v2.dashboard') }}" class="v2-dock-home {{ 'active' if nav == 'home' }}" aria-label="Home">
+    <span class="v2-dock-home-btn" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg>
+    </span>
+    <span class="v2-dock-label">Home</span>
   </a>
-  <a href="{{ url_for('v2.pipe') }}" class="{{ 'active' if nav == 'pipe' }}">
-    <span class="ico" aria-hidden="true">‖</span>Water
+  <a href="{{ url_for('v2.pipe') }}" class="v2-dock-item {{ 'active' if nav == 'pipe' }}">
+    <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16M17 4v16M7 8h10M7 16h10"/></svg></span>
+    <span class="v2-dock-label">Water</span>
   </a>
-  <a href="{{ url_for('v2.more') }}" class="{{ 'active' if nav == 'more' }}">
-    <span class="ico" aria-hidden="true">⋯</span>More
+  <a href="{{ url_for('v2.more') }}" class="v2-dock-item {{ 'active' if nav == 'more' }}">
+    <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></span>
+    <span class="v2-dock-label">More</span>
   </a>
 </nav>
 

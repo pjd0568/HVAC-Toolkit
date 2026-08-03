@@ -2,14 +2,20 @@
   var root = document.querySelector("[data-v2-wizard]");
   if (!root) return;
 
-  var steps = Array.prototype.slice.call(root.querySelectorAll("[data-step]"));
+  var steps = Array.prototype.slice.call(root.querySelectorAll(".v2-step[data-step]"));
   if (!steps.length) return;
 
   var labelEl = root.querySelector("[data-step-label]");
-  var backBtn = root.querySelector("[data-step-back]");
-  var nextBtn = root.querySelector("[data-step-next]");
+  var nav = root.querySelector(".v2-step-nav");
+  var backBtn = nav ? nav.querySelector("[data-step-back]") : root.querySelector("[data-step-back]");
+  var nextBtn = nav ? nav.querySelector("[data-step-next]") : root.querySelector("[data-step-next]");
   var initial = parseInt(root.getAttribute("data-initial-step") || "1", 10);
   if (isNaN(initial) || initial < 1) initial = 1;
+
+  // Keep Back/Continue above page content (avoids stacking under panels).
+  if (nav && nav.parentElement !== document.body) {
+    document.body.appendChild(nav);
+  }
 
   var params = new URLSearchParams(window.location.search);
   var fromQuery = parseInt(params.get("step") || "", 10);

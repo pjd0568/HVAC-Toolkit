@@ -426,6 +426,7 @@
     <button type="button" class="btn-ghost" data-step-back>Back</button>
     <button type="button" class="btn-accent" data-step-next>Continue</button>
   </div>
+  <div class="v2-step-spacer" aria-hidden="true"></div>
 </div><!-- wizard -->
 
 
@@ -447,7 +448,7 @@
 </script>
 {% endif %}
 <script src="{{ url_for('static', filename='js/ductsizer.js') }}"></script>
-<script src="{{ url_for('static', filename='js/v2_wizard.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='js/v2_wizard.js') }}?v=2"></script>
 <script>
 (function(){
   var tabs=document.getElementById('v2-shape-tabs');

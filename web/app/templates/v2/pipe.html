@@ -129,7 +129,8 @@
     <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Design limits reference →</a>
   </span>
 </div>
-
+{% endif %}
+</div><!-- pipe-page-stack -->
 </div><!-- end step 1 -->
 
 <div class="v2-step" data-step="2" data-step-title="Size &amp; detail">
@@ -484,21 +485,24 @@
   </div>
 </div>
 </div><!-- table-scroll -->
+{% if report_fields %}
+{{ report_form(url_for('pipe.report'), report_fields, panel_class='tile-water-border') }}
+{% endif %}
 </div><!-- step 3 -->
 {% else %}
 <div class="v2-step" data-step="3" data-step-title="System">
 <div class="panel"><div class="panel-head">Pipe system</div><div class="panel-body"><p class="suffix">System builder needs suite access.</p></div></div>
-</div>
-{% endif %}
-
+{% if report_fields %}
 {{ report_form(url_for('pipe.report'), report_fields, panel_class='tile-water-border') }}
 {% endif %}
 </div>
+{% endif %}
 
   <div class="v2-step-nav">
     <button type="button" class="btn-ghost" data-step-back>Back</button>
     <button type="button" class="btn-accent" data-step-next>Continue</button>
   </div>
+  <div class="v2-step-spacer" aria-hidden="true"></div>
 </div><!-- wizard -->
 
 {% endblock %}
@@ -508,7 +512,7 @@
 {% if access.can('pipe.system') %}
 <script src="{{ url_for('static', filename='js/pipesystem.js') }}"></script>
 {% endif %}
-<script src="{{ url_for('static', filename='js/v2_wizard.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='js/v2_wizard.js') }}?v=2"></script>
 <script>
 (function () {
   var form = document.getElementById('pipe-form');

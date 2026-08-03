@@ -47,6 +47,28 @@ def login():
         from app.ui_prefs import prefer_v2
 
         return redirect(url_for("v2.dashboard") if prefer_v2() else url_for("main.dashboard"))
+    # Local preview helper — only when ACCESS_DEV_TIER is set (never in prod).
+    if current_app.config.get("ACCESS_DEV_TIER") and request.args.get("preview") == "1":
+        from datetime import date
+
+        from app.extensions import db
+        from app.models import User
+
+        email = "preview@example.com"
+        user = User.query.filter_by(email=email).first()
+        if user is None:
+            user = User(
+                email=email,
+                trial_started_at=date.today(),
+                subscription_status="active",
+            )
+            user.set_password("preview")
+            db.session.add(user)
+            db.session.commit()
+        login_user(user, remember=True)
+        from app.ui_prefs import redirect_with_ui
+
+        return redirect_with_ui("v2", url_for("v2.dashboard"))
     return render_template(
         "auth/login.html",
         next=request.args.get("next", ""),

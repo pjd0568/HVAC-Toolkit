@@ -1,15 +1,15 @@
 {% extends "v2/base.html" %}
-{% block page_title %}Home{% endblock %}
+{% block page_title %}{% endblock %}
 {% block content %}
 
 <div class="v2-greeting">Welcome</div>
-<div class="v2-greeting-sub">Mobile toolkit — same engines as the classic app.</div>
+<div class="v2-greeting-sub">Bright, focused calculators — same engines as the classic desktop suite.</div>
 
 <div class="v2-section-label">Design suites</div>
 
 <article class="v2-card">
   <h2>Psychrometrics</h2>
-  <p>States, mixing, coils, desiccant, heat &amp; humidify, evaporative cooling, AHU design.</p>
+  <p>States, mixing, coils, desiccant, heat &amp; humidify, evaporative cooling, and AHU design.</p>
   <ul class="v2-card-links">
     <li><a href="{{ url_for('v2.psychro_picker') }}">Open psychrometrics</a></li>
   </ul>
