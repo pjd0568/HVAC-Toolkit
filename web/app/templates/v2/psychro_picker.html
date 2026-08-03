@@ -1,0 +1,18 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Psychrometrics{% endblock %}
+{% block content %}
+
+<div class="v2-greeting">Psychrometrics</div>
+<div class="v2-greeting-sub">Pick a tool — AHU uses a stepped flow on mobile.</div>
+
+<ul class="v2-picker-list">
+  <li><a href="{{ url_for('v2.single_point') }}">Single point</a></li>
+  <li><a href="{{ url_for('v2.mixed_air') }}">Mixed air</a></li>
+  <li><a href="{{ url_for('v2.cooling_coil') }}">Cooling coil</a></li>
+  <li><a href="{{ url_for('v2.desiccant') }}">Desiccant dehumidification</a></li>
+  <li><a href="{{ url_for('v2.heat_humidify') }}">Heat &amp; humidify</a></li>
+  <li><a href="{{ url_for('v2.adiabatic_cool') }}">Adiabatic cool</a></li>
+  <li><a href="{{ url_for('v2.ahu') }}">AHU design</a></li>
+</ul>
+
+{% endblock %}

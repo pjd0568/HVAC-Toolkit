@@ -57,7 +57,8 @@
   var form = document.getElementById("duct-form");
   if (!form) return;
 
-  var API_STATE_URL = window.location.pathname.replace(/\/$/, "") + "/api/state";
+  var API_BASE = (window.DUCT_API_BASE || window.location.pathname).replace(/\/$/, "");
+  var API_STATE_URL = API_BASE + "/api/state";
   var NUDGE_STEP = parseFloat(form.dataset.nudgeStep || "10");
   var ROUND25_STEP = parseFloat(form.dataset.round25Step || "25");
 
@@ -408,7 +409,7 @@
   var legPanel = document.getElementById("leg-panel");
   if (!legPanel) return;
 
-  var LEG_API_URL = window.location.pathname.replace(/\/$/, "") + "/api/leg-state";
+  var LEG_API_URL = (window.DUCT_API_BASE || window.location.pathname).replace(/\/$/, "") + "/api/leg-state";
   var ROW_FIELDS = ["type", "shape", "volume", "diameter", "width", "height",
                      "major", "minor", "length", "fitting", "label", "dp"];
 

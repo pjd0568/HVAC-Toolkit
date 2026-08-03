@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#14171C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>{% block title %}{{ brand_name }}{% endblock %}</title>
+<link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-19">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=1">
+{% block extra_head %}{% endblock %}
+</head>
+<body class="v2-body">
+
+<header class="v2-topbar">
+  <a class="v2-topbar-brand" href="{{ url_for('v2.dashboard') }}" title="{{ brand_name }}">
+    <img src="{{ brand_mark_url }}" alt="" width="28" height="28">
+    <span class="v2-brand-text">{{ brand_name }}</span>
+  </a>
+  <div class="v2-topbar-title">{% block page_title %}{% endblock %}</div>
+  <button type="button" class="v2-icon-btn" id="v2-climate-btn" title="Climate slots" aria-label="Climate slots">◎</button>
+  <button type="button" class="v2-icon-btn" id="v2-menu-btn" title="Menu" aria-label="Open menu">☰</button>
+</header>
+
+<div class="v2-menu" id="v2-menu" role="dialog" aria-label="Menu">
+  <div class="v2-menu-backdrop" data-v2-close></div>
+  <div class="v2-menu-panel">
+    <h2>Menu</h2>
+    <ul class="v2-menu-list">
+      {% if access.tier == 'trial' and access.trial_days_remaining is not none %}
+      <li><span style="display:block;padding:8px 12px;color:#8fd9d2;">Trial · {{ access.trial_days_remaining }}d left</span></li>
+      {% elif access.tier == 'pro' %}
+      <li><span style="display:block;padding:8px 12px;color:#8fd9d2;">Subscribed</span></li>
+      {% endif %}
+      <li><a href="{{ url_for('billing.subscribe') }}">Pricing</a></li>
+      {% set help_anchor = help_anchor_for.get(active) %}
+      <li><a href="{{ url_for('help.index') }}{% if help_anchor %}#{{ help_anchor }}{% endif %}">Help</a></li>
+      <li><a href="{{ url_for('guides.index') }}">Design Guides</a></li>
+      <li><a href="{{ url_for('methodology.index') }}">Methodology</a></li>
+      <li><a href="{{ url_for('pages.contact') }}">Contact</a></li>
+    </ul>
+
+    <div class="v2-menu-section">Units</div>
+    <form method="post" action="{{ url_for('main.set_units') }}" class="v2-unit-row">
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}">SI</button>
+      <button type="submit" name="system" value="IP" class="unit-pill {{ 'on' if units == 'IP' }}">IP</button>
+    </form>
+    {% set flow_unit_tools = ['psychro_mix', 'psychro_coil', 'psychro_desiccant', 'psychro_heat_humidify', 'psychro_adiabatic_cool', 'psychro_ahu'] %}
+    {% if units == 'SI' and active in flow_unit_tools %}
+    <form method="post" action="{{ url_for('main.set_flow_unit_pref') }}" class="v2-unit-row" style="margin-top:8px;">
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button type="submit" name="unit" value="m3h" class="unit-pill {{ 'on' if U.flow_unit == 'm3h' }}">m³/h</button>
+      <button type="submit" name="unit" value="m3s" class="unit-pill {{ 'on' if U.flow_unit == 'm3s' }}">m³/s</button>
+    </form>
+    {% endif %}
+
+    <div class="v2-menu-section">Account</div>
+    <ul class="v2-menu-list">
+      <li><a href="{{ url_for('v2.use_classic') }}">Classic UI</a></li>
+      {% if current_user.is_authenticated %}
+      <li>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <button type="submit" class="linkish">Sign out</button>
+        </form>
+      </li>
+      {% endif %}
+    </ul>
+    <button type="button" class="v2-btn v2-btn-ghost" data-v2-close style="width:100%;margin-top:16px;color:#c8d0d8;border-color:#2a3038;">Close</button>
+  </div>
+</div>
+
+<div class="v2-climate-sheet" id="v2-climate-sheet" role="dialog" aria-label="Climate slots">
+  <div class="v2-menu-backdrop" data-v2-close></div>
+  <div class="v2-climate-panel">
+    <h2 style="font-size:16px;margin-bottom:4px;">Climate slots</h2>
+    <p style="font-size:13px;color:var(--v2-muted);margin-bottom:8px;">Paste into psychrometric tools from weather memory slots.</p>
+    {% for i in range(3) %}
+    {% set slot = climate_slots[i] %}
+    <div class="v2-slot {{ 'empty' if not slot }}">
+      <div class="v2-slot-label">{{ i + 1 }}{% if slot %} — {{ slot.label }}{% endif %}</div>
+      {% if slot %}
+      <div class="v2-slot-values">
+        {{ U.fmt('temperature', slot.db, 1) }}{{ U.sym('temperature') }} DB
+        {% if slot.rh is not none %} · {{ '%.0f'|format(slot.rh * 100) }}% RH{% endif %}
+      </div>
+      <form method="post" action="{{ url_for('weather.clear_slot_route') }}" style="margin-top:8px;">
+        <input type="hidden" name="index" value="{{ i }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <button type="submit" class="btn-ghost">Clear</button>
+      </form>
+      {% else %}
+      <div class="v2-slot-values">Empty</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <button type="button" class="v2-btn v2-btn-ghost" data-v2-close style="width:100%;margin-top:14px;">Close</button>
+  </div>
+</div>
+
+<main class="v2-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="v2-flash-stack">
+    {% for category, message in messages %}
+    <div class="v2-flash v2-flash-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<nav class="v2-bottom-nav" aria-label="Primary">
+  <a href="{{ url_for('v2.dashboard') }}" class="{{ 'active' if nav == 'home' }}">
+    <span class="ico" aria-hidden="true">⌂</span>Home
+  </a>
+  <a href="{{ url_for('v2.psychro_picker') }}" class="{{ 'active' if nav == 'psychro' }}">
+    <span class="ico" aria-hidden="true">〜</span>Psychro
+  </a>
+  <a href="{{ url_for('v2.duct') }}" class="{{ 'active' if nav == 'duct' }}">
+    <span class="ico" aria-hidden="true">≋</span>Air
+  </a>
+  <a href="{{ url_for('v2.pipe') }}" class="{{ 'active' if nav == 'pipe' }}">
+    <span class="ico" aria-hidden="true">‖</span>Water
+  </a>
+  <a href="{{ url_for('v2.more') }}" class="{{ 'active' if nav == 'more' }}">
+    <span class="ico" aria-hidden="true">⋯</span>More
+  </a>
+</nav>
+
+<script src="{{ url_for('static', filename='js/v2_shell.js') }}?v=1"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").catch(function () {});
+  });
+}
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

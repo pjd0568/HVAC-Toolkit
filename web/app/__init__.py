@@ -79,6 +79,7 @@ def create_app(config_class: type = Config) -> Flask:
     from app.blueprints.pipe import bp as pipe_bp
     from app.blueprints.projects import bp as projects_bp
     from app.blueprints.psychro import bp as psychro_bp
+    from app.blueprints.v2 import bp as v2_bp
     from app.blueprints.weather import bp as weather_bp
 
     app.register_blueprint(main_bp)
@@ -94,6 +95,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(guides_bp, url_prefix="/reference")
     app.register_blueprint(help_bp, url_prefix="/help")
     app.register_blueprint(methodology_bp, url_prefix="/methodology")
+    app.register_blueprint(v2_bp)
 
     @app.before_request
     def require_login_for_app():

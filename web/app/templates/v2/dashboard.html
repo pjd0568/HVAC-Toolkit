@@ -1,0 +1,52 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Home{% endblock %}
+{% block content %}
+
+<div class="v2-greeting">Welcome</div>
+<div class="v2-greeting-sub">Mobile toolkit — same engines as the classic app.</div>
+
+<div class="v2-section-label">Design suites</div>
+
+<article class="v2-card">
+  <h2>Psychrometrics</h2>
+  <p>States, mixing, coils, desiccant, heat &amp; humidify, evaporative cooling, AHU design.</p>
+  <ul class="v2-card-links">
+    <li><a href="{{ url_for('v2.psychro_picker') }}">Open psychrometrics</a></li>
+  </ul>
+</article>
+
+<article class="v2-card">
+  <h2>Air distribution</h2>
+  <p>Duct sizing by shape, plus index-leg pressure drop.</p>
+  <ul class="v2-card-links">
+    <li><a href="{{ url_for('v2.duct') }}">Duct sizing</a></li>
+  </ul>
+</article>
+
+<article class="v2-card">
+  <h2>Hydronics</h2>
+  <p>Pipe DN / flow sizing and system schedule with pump head.</p>
+  <ul class="v2-card-links">
+    <li><a href="{{ url_for('v2.pipe') }}">Pipe sizing</a></li>
+  </ul>
+</article>
+
+<article class="v2-card">
+  <h2>Utilities</h2>
+  <p>Unit conversion across SI and imperial.</p>
+  <ul class="v2-card-links">
+    <li><a href="{{ url_for('v2.converter') }}">Unit converter</a></li>
+  </ul>
+</article>
+
+<div class="v2-section-label">Reference</div>
+<article class="v2-card">
+  <ul class="v2-card-links">
+    <li><a href="{{ url_for('guides.index') }}">Design guides</a></li>
+    <li><a href="{{ url_for('methodology.index') }}">Methodology &amp; limitations</a></li>
+    <li><a href="{{ url_for('help.index') }}">Help</a></li>
+    <li><a href="{{ url_for('v2.use_classic') }}">Switch to classic UI</a></li>
+  </ul>
+</article>
+
+{% endblock %}

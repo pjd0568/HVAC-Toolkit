@@ -1,0 +1,237 @@
+{% extends "v2/base.html" %}
+{% from "_state_input.html" import state_input with context %}
+{% from "_site_conditions.html" import site_conditions with context %}
+{% from "_report_form.html" import report_form with context %}
+{% block page_title %}AHU Design{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div data-v2-wizard data-initial-step="{{ initial_step|default(1) }}">
+  <div class="v2-stepper">
+    <span data-step-label>Step 1 of 6</span>
+  </div>
+
+  <form method="post" id="ahu-form">
+    <div class="v2-step" data-step="1" data-step-title="Site &amp; season">
+      <div class="panel">
+        <div class="panel-head">Site &amp; season</div>
+        <div class="panel-body">
+          {{ site_conditions(form, pressure) }}
+          <div class="section-label">Season</div>
+          <div class="form-grid psychro-stack">
+            <div>
+              <label>Design season</label>
+              <select name="season" id="ahu-season">
+                <option value="summer" {{ 'selected' if form.season != 'winter' }}>Summer — cool / dehumidify / reheat</option>
+                <option value="winter" {{ 'selected' if form.season == 'winter' }}>Winter — heat / humidify</option>
+              </select>
+              <div class="suffix">Switches typical OA / RA / supply defaults.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v2-step" data-step="2" data-step-title="Outdoor air">
+      <div class="panel">
+        <div class="panel-head">Outdoor air</div>
+        <div class="panel-body">
+          <div class="form-grid psychro-stack">
+            {{ state_input("oa", "Outdoor Air", form, second_properties) }}
+            <div>
+              <label>Outdoor Air Flow ({{ U.sym('vol_flow') }})</label>
+              <input name="oa_flow" value="{{ form.oa_flow }}">
+              <div class="suffix">Fresh-air volume at the outdoor condition.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v2-step" data-step="3" data-step-title="Return air">
+      <div class="panel">
+        <div class="panel-head">Return air</div>
+        <div class="panel-body">
+          <div class="form-grid psychro-stack">
+            {{ state_input("ra", "Return Air", form, second_properties) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v2-step" data-step="4" data-step-title="Supply">
+      <div class="panel">
+        <div class="panel-head">Required supply</div>
+        <div class="panel-body">
+          <p class="suffix" style="margin-bottom:10px;">Off-unit condition delivered into the room.</p>
+          <div class="form-grid psychro-stack">
+            {{ state_input("sup", "Supply", form, second_properties) }}
+            <div><label>Supply Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v2-step" data-step="5" data-step-title="Coil &amp; fan">
+      <div class="panel">
+        <div class="panel-head" id="ahu-coil-fan-head">
+          {% if form.season == 'winter' %}Heating / humidification &amp; fan{% else %}Cooling coil &amp; fan{% endif %}
+        </div>
+        <div class="panel-body">
+          <div class="section-label" id="ahu-coil-label" {% if form.season == 'winter' %}hidden{% endif %}>Cooling coil model</div>
+          <div class="form-grid psychro-stack" id="ahu-coil-fields" {% if form.season == 'winter' %}hidden{% endif %}>
+            <div>
+              <label>Off-coil RH target (%)</label>
+              <input name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
+              <div class="suffix">Default 90% — typical wet-coil practice.</div>
+            </div>
+          </div>
+          <p class="suffix" id="ahu-winter-hint" style="margin:10px 0;" {% if form.season != 'winter' %}hidden{% endif %}>
+            Winter path: heating coil then steam humidification when on-coil is drier than supply.
+          </p>
+          <div class="section-label">Supply fan</div>
+          <div class="form-grid psychro-stack">
+            <div>
+              <label>Fan Position</label>
+              <select name="fan_pos">
+                <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
+                <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before coil</option>
+                <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after last stage</option>
+              </select>
+            </div>
+            <div><label>Fan SFP (W per l/s)</label><input name="fan_sfp" value="{{ form.fan_sfp }}"></div>
+            <div><label>Fan Power (kW) — overrides SFP</label><input name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP"></div>
+          </div>
+          <div class="psychro-actions">
+            <button class="btn-accent" type="submit">Design</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="v2-step" data-step="6" data-step-title="Results">
+    {% if result %}
+      {% for w in result.warnings %}
+      <div class="warn-banner">{{ w }}</div>
+      {% endfor %}
+
+      <div class="panel">
+        <div class="panel-head">Totals</div>
+        <div class="panel-body">
+          <dl class="v2-kv">
+            <dt>Total cooling</dt><dd><strong>{{ U.html('power', -result.cooling_total) }}</strong></dd>
+            <dt>Total heating</dt><dd><strong>{{ U.html('power', result.heating_total) }}</strong></dd>
+            <dt>Moisture added / removed</dt>
+            <dd>{{ U.fmt('moisture_rate', result.moisture_added) }} / {{ U.fmt('moisture_rate', result.moisture_removed) }} {{ U.sym('moisture_rate') }}</dd>
+            <dt>Dry-air mass flow</dt><dd>{{ U.html('mass_flow', result.m_da) }}</dd>
+            {% if oa_frac is not none %}
+            <dt>Outdoor air fraction</dt><dd>{{ '%.1f'|format(oa_frac * 100) }}%</dd>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+
+      <div class="section-label">Derived stages</div>
+      {% for s in result.stages %}
+      <article class="v2-stage-card">
+        <h3>{{ s.label }} — {{ s.name }}{% if s.note %} <span title="{{ s.note }}">!</span>{% endif %}</h3>
+        <dl class="v2-kv">
+          <dt>{{ U.sym('temperature') }} db</dt><dd>{{ U.html('temperature', s.state.t_db) }}</dd>
+          <dt>% RH</dt><dd>{{ '%.0f'|format(s.state.rh * 100) }}%</dd>
+          <dt>{{ U.sym('humidity_ratio') }}</dt><dd>{{ U.html('humidity_ratio', s.state.w) }}</dd>
+          <dt>{{ U.sym('enthalpy') }}</dt><dd>{{ U.html('enthalpy', s.state.h) }}</dd>
+          <dt>Duty</dt><dd>{% if s.q_total %}{{ U.html('power', s.q_total, sign=True) }}{% else %}—{% endif %}</dd>
+          <dt>Moisture</dt><dd>{% if s.moisture %}{{ U.html('moisture_rate', s.moisture, sign=True) }}{% else %}—{% endif %}</dd>
+        </dl>
+      </article>
+      {% endfor %}
+
+      <div class="panel">
+        <div class="panel-head">Psychrometric chart</div>
+        <div class="panel-body">
+          {% include "_psychro_chart_embed.html" %}
+        </div>
+      </div>
+
+      <div class="note-banner">
+        {% if result.moisture_removed > 0 %}
+        Coil duty assumes {{ form.coil_rh_off }}% off-coil RH at the supply moisture content.
+        {% elif result.moisture_added > 0 %}
+        Winter path: heating coil then isothermal steam humidification.
+        {% else %}
+        Sensible-only duty — no net moisture change between on-coil and supply.
+        {% endif %}
+      </div>
+
+      {{ report_form(url_for('psychro.ahu_report'), form, url_for('psychro.ahu_chart_png')) }}
+    {% else %}
+      <div class="panel">
+        <div class="panel-head">Results</div>
+        <div class="panel-body">
+          <p class="suffix">Complete the previous steps and tap <strong>Design</strong> to see stages and chart.</p>
+          <div class="psychro-chart panel" style="margin-top:12px;border:none;padding:0;">
+            {% include "_psychro_chart_embed.html" %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="v2-step-nav">
+    <button type="button" class="btn-ghost" data-step-back>Back</button>
+    <button type="button" class="btn-accent" data-step-next>Continue</button>
+  </div>
+</div>
+
+<script type="application/json" id="ahu-season-defaults">{{ season_defaults | tojson }}</script>
+<script>
+(function () {
+  var sel = document.getElementById("ahu-season");
+  var raw = document.getElementById("ahu-season-defaults");
+  if (!sel || !raw) return;
+  var defaults = JSON.parse(raw.textContent);
+  var head = document.getElementById("ahu-coil-fan-head");
+  var coilLabel = document.getElementById("ahu-coil-label");
+  var coilFields = document.getElementById("ahu-coil-fields");
+  var winterHint = document.getElementById("ahu-winter-hint");
+
+  function applySeasonUi(season) {
+    var winter = season === "winter";
+    if (head) {
+      head.textContent = winter
+        ? "Heating / humidification & fan"
+        : "Cooling coil & fan";
+    }
+    if (coilLabel) coilLabel.hidden = winter;
+    if (coilFields) coilFields.hidden = winter;
+    if (winterHint) winterHint.hidden = !winter;
+  }
+
+  function applySeasonDefaults(season) {
+    var d = defaults[season];
+    if (!d) return;
+    var form = document.getElementById("ahu-form");
+    if (!form) return;
+    [["oa", "oa"], ["ra", "ra"], ["sup", "sup"]].forEach(function (pair) {
+      var prefix = pair[0];
+      var key = pair[1];
+      var t = form.querySelector('[name="' + prefix + '_t"]');
+      var prop = form.querySelector('[name="' + prefix + '_prop"]');
+      var val = form.querySelector('[name="' + prefix + '_val"]');
+      if (t) t.value = d[key + "_t"];
+      if (prop) prop.value = d[key + "_prop"];
+      if (val) val.value = d[key + "_val"];
+    });
+  }
+
+  sel.addEventListener("change", function () {
+    applySeasonDefaults(sel.value);
+    applySeasonUi(sel.value);
+  });
+})();
+</script>
+<script src="{{ url_for('static', filename='js/v2_wizard.js') }}?v=1"></script>
+
+{% endblock %}

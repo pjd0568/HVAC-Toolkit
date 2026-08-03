@@ -1,0 +1,138 @@
+{% extends "v2/base.html" %}
+{% from "_state_row.html" import state_cells with context %}
+{% from "_state_input.html" import state_input with context %}
+{% from "_site_conditions.html" import site_conditions with context %}
+{% from "_report_form.html" import report_form with context %}
+{% block page_title %}Psychrometrics - Heating & Humidification{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="psychro-layout">
+  <form method="post" class="psychro-inputs panel" id="heat-humidify-form">
+    <div class="panel-head">Heating &amp; steam humidification</div>
+    <div class="panel-body">
+      <div class="mode-tabs">
+        <label class="mode-tab {{ 'active' if form.mode != 'duty' }}">
+          <input type="radio" name="mode" value="state" {{ 'checked' if form.mode != 'duty' }}>
+          State target
+        </label>
+        <label class="mode-tab {{ 'active' if form.mode == 'duty' }}">
+          <input type="radio" name="mode" value="duty" {{ 'checked' if form.mode == 'duty' }}>
+          Duty &amp; airflow
+        </label>
+      </div>
+
+      {{ site_conditions(form, pressure) }}
+
+      <div class="section-label">Entering air (1)</div>
+      <div class="form-grid psychro-stack">
+        {{ state_input("on", "Entering", form, second_properties) }}
+        <div><label>Airflow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
+      </div>
+
+      <div id="mode-state-fields" {% if form.mode == 'duty' %}style="display:none"{% endif %}>
+        <div class="section-label">Leaving target (2)</div>
+        <div class="form-grid psychro-stack">
+          {{ state_input("off", "Leaving", form, second_properties) }}
+        </div>
+      </div>
+
+      <div id="mode-duty-fields" {% if form.mode != 'duty' %}style="display:none"{% endif %}>
+        <div class="section-label">Heating &amp; steam duties</div>
+        <div class="form-grid psychro-stack">
+          <div>
+            <label>Sensible Heating Duty ({{ U.sym('power') }})</label>
+            <input name="q_sensible" value="{{ form.q_sensible }}">
+          </div>
+          <div>
+            <label>Steam Injection Rate ({{ U.sym('moisture_rate') }})</label>
+            <input name="steam_rate" value="{{ form.steam_rate }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="psychro-actions">
+        <button class="btn-accent" type="submit">Calculate</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
+  </div>
+
+  {% if result %}
+  <div class="psychro-results panel">
+    <div class="panel-head">Process result</div>
+    <table class="results">
+      <tr><th></th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th></tr>
+      <tr><td>1 — Entering</td>{{ state_cells(on) }}</tr>
+      <tr><td>X — After heating</td>{{ state_cells(result.state_x) }}</tr>
+      <tr><td>2 — Leaving</td>{{ state_cells(result.state) }}</tr>
+    </table>
+    <table class="results">
+      <tr><td>Sensible heating</td><td class="num"><strong>{{ U.html('power', result.q_sensible) }}</strong></td></tr>
+      <tr><td>Latent / steam duty</td><td class="num">{{ U.html('power', result.q_latent) }}</td></tr>
+      <tr><td>Total heat to air</td><td class="num"><strong>{{ U.html('power', result.q_total) }}</strong></td></tr>
+      <tr><td>Steam injection rate</td><td class="num">{{ U.html('moisture_rate', result.steam_rate) }}</td></tr>
+      <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', m_da) }}</td></tr>
+    </table>
+    <div class="note-banner" style="margin:14px 16px 16px;">
+      Path on the chart: heat at constant moisture to state X
+      ({{ U.html('temperature', result.state_x.t_db) }}), then inject steam isothermally to state 2.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if result %}
+<details class="notes">
+  <summary>Heating &amp; humidification notes</summary>
+  <div class="notes-body">
+    <p><strong>Two-stage winter path.</strong> A heating coil raises dry-bulb at constant
+    humidity ratio (1 → X). Steam humidification then adds moisture at constant dry-bulb
+    (X → 2). That is the standard AHU sequence when both heat and humidity are needed.</p>
+    <p><strong>Duties.</strong> Sensible load is the moist-air enthalpy rise across the
+    heating coil. Latent load is the isothermal steam enthalpy rise
+    (≈ ṁ<sub>w</sub> · h<sub>fg</sub> with h<sub>fg</sub> ≈ 2501 kJ/kg).</p>
+    <p><strong>Mode A — state target.</strong> Enter states 1 and 2; the tool forms
+    intermediate X at (T<sub>2</sub>, W<sub>1</sub>) and reports coil / steam duties.</p>
+    <p><strong>Mode B — duty &amp; airflow.</strong> Enter heating kW and steam rate;
+    leaving T and W are calculated, with X at (T<sub>2</sub>, W<sub>1</sub>).</p>
+    <p><strong>Further reading.</strong> See the reference article
+    <a href="{{ url_for('guides.article', slug='steam-humidification') }}">Thermodynamics of Steam Humidification</a>
+    for the energy balance behind the isothermal chart model and when a full
+    enthalpy-slope solution is warranted.</p>
+  </div>
+</details>
+
+{{ report_form(url_for('psychro.heat_humidify_report'), form, url_for('psychro.heat_humidify_chart_png')) }}
+{% endif %}
+
+<script>
+(function () {
+  var form = document.getElementById('heat-humidify-form');
+  if (!form) return;
+  function syncMode() {
+    var mode = (form.querySelector('input[name="mode"]:checked') || {}).value || 'state';
+    var stateFields = document.getElementById('mode-state-fields');
+    var dutyFields = document.getElementById('mode-duty-fields');
+    if (stateFields) stateFields.style.display = mode === 'duty' ? 'none' : '';
+    if (dutyFields) dutyFields.style.display = mode === 'duty' ? '' : 'none';
+    form.querySelectorAll('.mode-tab').forEach(function (tab) {
+      var input = tab.querySelector('input[type="radio"]');
+      tab.classList.toggle('active', !!(input && input.checked));
+    });
+  }
+  form.querySelectorAll('input[name="mode"]').forEach(function (el) {
+    el.addEventListener('change', syncMode);
+  });
+  syncMode();
+})();
+</script>
+
+{% endblock %}

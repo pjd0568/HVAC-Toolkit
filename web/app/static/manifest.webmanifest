@@ -1,0 +1,31 @@
+{
+  "name": "hvac-calcs.app",
+  "short_name": "HVAC Calcs",
+  "description": "HVAC calculators for engineers — psychrometrics, duct sizing, and pipe sizing.",
+  "start_url": "/v2/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#14171C",
+  "theme_color": "#14171C",
+  "icons": [
+    {
+      "src": "/static/images/brand/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/images/brand/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/images/brand/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

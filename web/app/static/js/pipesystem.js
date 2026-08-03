@@ -13,8 +13,9 @@
   var panel = document.getElementById("sys-panel");
   if (!form || !panel) return;
 
-  var API_URL = window.location.pathname.replace(/\/$/, "") + "/api/system-state";
-  var CSV_URL = window.location.pathname.replace(/\/$/, "") + "/system/export.csv";
+  var PIPE_BASE = (window.PIPE_API_BASE || window.location.pathname).replace(/\/$/, "");
+  var API_URL = PIPE_BASE + "/api/system-state";
+  var CSV_URL = PIPE_BASE + "/system/export.csv";
 
   var ROW_FIELDS = ["type", "dn", "flow_ls", "length", "fitting", "label", "dp"];
 

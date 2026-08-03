@@ -1,0 +1,20 @@
+{% extends "v2/base.html" %}
+{% block page_title %}More{% endblock %}
+{% block content %}
+
+<div class="v2-greeting">More</div>
+<div class="v2-greeting-sub">Utilities, reference, and classic desktop UI.</div>
+
+<ul class="v2-picker-list">
+  <li><a href="{{ url_for('v2.converter') }}">Unit converter</a></li>
+  <li><a href="{{ url_for('guides.index') }}">Design guides</a></li>
+  <li><a href="{{ url_for('methodology.index') }}">Methodology &amp; limitations</a></li>
+  <li><a href="{{ url_for('help.index') }}">Help</a></li>
+  <li><a href="{{ url_for('billing.subscribe') }}">Pricing</a></li>
+  <li><a href="{{ url_for('pages.contact') }}">Contact</a></li>
+  <li><a href="{{ url_for('weather.index') }}">Weather &amp; design conditions <span class="soon">Coming soon</span></a></li>
+  <li><a href="{{ url_for('projects.index') }}">Projects <span class="soon">Coming soon</span></a></li>
+  <li><a href="{{ url_for('v2.use_classic') }}">Classic UI</a></li>
+</ul>
+
+{% endblock %}

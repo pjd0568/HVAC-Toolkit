@@ -298,7 +298,10 @@ def hydrate_teaser():
         _set_saved_points([session_point_from_si(si, "A")])
     except (TypeError, ValueError, KeyError) as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
-    return jsonify({"ok": True, "redirect": url_for("psychro.single_point")})
+    from app.ui_prefs import prefer_v2
+
+    dest = url_for("v2.single_point") if prefer_v2() else url_for("psychro.single_point")
+    return jsonify({"ok": True, "redirect": dest})
 
 
 @bp.route("/", methods=["GET", "POST"])

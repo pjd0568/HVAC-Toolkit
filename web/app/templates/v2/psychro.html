@@ -1,0 +1,83 @@
+{% extends "v2/base.html" %}
+{% from "_state_input.html" import state_input with context %}
+{% from "_site_conditions.html" import site_conditions with context %}
+{% from "_report_form.html" import report_form with context %}
+{% block page_title %}Psychrometrics - Single Point{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="psychro-layout">
+  {# NW — compact vertical inputs #}
+  <form method="post" class="psychro-inputs panel">
+    <div class="panel-head">Inputs</div>
+    <div class="panel-body">
+      {{ site_conditions(form, pressure) }}
+
+      <div class="section-label">State</div>
+      <div class="form-grid psychro-stack">
+        {{ state_input("s", "State", form, second_properties) }}
+      </div>
+
+      <div class="psychro-actions">
+        <button class="btn-accent" type="submit" name="action" value="calculate">
+          {% if has_points %}Update Point A{% else %}Calculate{% endif %}
+        </button>
+        {% if can_add_b %}
+        <button class="btn-accent" type="submit" name="action" value="add_b">
+          {% if saved_points|length >= 2 %}Update Point B{% else %}Add Point B{% endif %}
+        </button>
+        {% endif %}
+        {% if has_points %}
+        <button class="btn-ghost" type="submit" name="action" value="reset">Reset points</button>
+        {% endif %}
+      </div>
+      {% if can_add_b and saved_points|length < 2 %}
+      <p class="psychro-hint">Change the inputs, then <strong>Add Point B</strong> to plot a second state.</p>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
+  </div>
+
+  {# S — full-width results for each saved point #}
+  {% if saved_points %}
+  <div class="psychro-results panel">
+    <div class="panel-head">Resolved states</div>
+    <div class="psychro-results-grid">
+      {% for pt in saved_points %}
+      <div class="psychro-point-block">
+        <div class="psychro-point-label">Point {{ pt.label }}</div>
+        <table class="results">
+          <tr><th>Property</th><th>Value</th></tr>
+          <tr><td>Dry-bulb temperature</td><td class="num">{{ U.html('temperature', pt.t_db, 2) }}</td></tr>
+          <tr><td>Wet-bulb temperature</td><td class="num">{{ U.html('temperature', pt.t_wb, 2) }}</td></tr>
+          <tr><td>Dew-point temperature</td><td class="num">{% if pt.t_dp < -273 %}<span class="suffix">— (dry air)</span>{% else %}{{ U.html('temperature', pt.t_dp, 2) }}{% endif %}</td></tr>
+          <tr><td>Relative humidity</td><td class="num"><span class="valunit"><span class="v">{{ '%.1f'|format(pt.rh * 100) }}</span><span class="u">%</span></span></td></tr>
+          <tr><td>Humidity ratio</td><td class="num">{{ U.html('humidity_ratio', pt.w, suffix='dry air') }}</td></tr>
+          <tr><td>Specific enthalpy</td><td class="num">{{ U.html('enthalpy', pt.h, 2, suffix='dry air') }}</td></tr>
+          <tr><td>Specific volume</td><td class="num">{{ U.html('specific_volume', pt.v, suffix='dry air') }}</td></tr>
+          <tr><td>Density</td><td class="num">{{ U.html('density', pt.rho) }}</td></tr>
+          <tr><td>Vapour pressure</td><td class="num">{{ U.html('pressure', pt.p_w, 4) }}</td></tr>
+        </table>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if saved_points %}
+{{ report_form(url_for('psychro.single_point_report'), form, url_for('psychro.single_point_chart_png')) }}
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/psychro_teaser_hydrate.js') }}?v=teaser-1" defer></script>
+{% endblock %}
