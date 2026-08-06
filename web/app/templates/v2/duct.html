@@ -9,30 +9,31 @@
 <div class="v2-duct-chrome">
 <form id="duct-form" method="get" data-nudge-step="{{ nudge_step }}" data-round25-step="{{ round25_step }}" data-dim-unit="{{ U.sym('duct_dimension') }}">
   <div class="v2-duct-duty" id="duct-duty-panel">
-    <div class="panel-head">Design Inputs</div>
-    <div class="form-grid three v2-duct-duty-grid">
-      <div>
-        <label>Air Volume ({{ U.sym('duct_flow') }})</label>
+    <div class="v2-duct-duty-row">
+      <div class="v2-duct-field v2-duct-field-vol">
+        <label for="f-volume">Volume <span class="v2-duct-unit">({{ U.sym('duct_flow') }})</span></label>
         <input id="f-volume" name="volume" value="{{ fields.volume }}" inputmode="decimal">
       </div>
-      <div>
-        <label>Size By</label>
+      <div class="v2-duct-field v2-duct-field-basis">
+        <label for="f-basis">Size by</label>
         <select id="f-basis" name="basis">
           <option value="velocity" {{ 'selected' if fields.basis == 'velocity' }}>Velocity</option>
-          <option value="friction_rate" {{ 'selected' if fields.basis == 'friction_rate' }}>Friction / PD (Pa/m)</option>
+          <option value="friction_rate" {{ 'selected' if fields.basis == 'friction_rate' }}>Friction / PD</option>
         </select>
       </div>
-      <div>
-        <label id="f-target-label">Target (<span id="f-target-unit" data-velocity-sym="{{ U.sym('velocity') }}" data-friction-sym="{{ U.sym('friction_rate') }}">{{ U.sym(fields.basis) }}</span>)</label>
+      <div class="v2-duct-field v2-duct-field-target">
+        <label id="f-target-label" for="f-target">Target <span class="v2-duct-unit">(<span id="f-target-unit" data-velocity-sym="{{ U.sym('velocity') }}" data-friction-sym="{{ U.sym('friction_rate') }}">{{ U.sym(fields.basis) }}</span>)</span></label>
         <input id="f-target" name="target_value" value="{{ fields.target_value }}" inputmode="decimal">
       </div>
+      <div class="v2-duct-field v2-duct-field-actions">
+        <span class="v2-duct-label-spacer" aria-hidden="true">&nbsp;</span>
+        <div class="v2-duct-actions">
+          <button class="btn-accent" type="submit" title="Propose sizes from volume and design rule">Calculate</button>
+          <a class="btn-ghost" href="{{ url_for('v2.duct') }}" title="Reset all to calculated">Reset</a>
+          <span id="duct-loading" class="suffix" style="display:none;">…</span>
+        </div>
+      </div>
     </div>
-    <div class="v2-duct-duty-actions">
-      <button class="btn-accent" type="submit">Calculate</button>
-      <a class="btn-ghost" style="text-decoration:none;" href="{{ url_for('v2.duct') }}">Reset</a>
-      <span id="duct-loading" class="suffix" style="display:none;">Updating…</span>
-    </div>
-    <p class="v2-duct-duty-hint">Calculate sets size from volume + design rule. Afterwards, adjust volume or size freely — Calculate again only when you want a new proposed size.</p>
   </div>
 
   <input type="hidden" id="f-circular-mm" name="circular_mm" value="{{ fields.circular_mm }}">

@@ -850,13 +850,13 @@ a:hover { color: var(--v2-green-ink); }
   box-shadow: var(--v2-shadow);
 }
 
-/* Sticky design inputs + shape tabs on duct sizer */
+/* Sticky compact duct header: duty row + shape tabs */
 .v2-duct-chrome {
   position: sticky;
   top: var(--v2-top);
   z-index: 25;
-  margin: -4px -4px 12px;
-  padding: 10px 10px 8px;
+  margin: -4px -4px 8px;
+  padding: 6px 8px 6px;
   background: var(--v2-chrome);
   backdrop-filter: saturate(1.2) blur(12px);
   -webkit-backdrop-filter: saturate(1.2) blur(12px);
@@ -864,32 +864,117 @@ a:hover { color: var(--v2-green-ink); }
   border-radius: var(--v2-radius);
   box-shadow: var(--v2-shadow);
 }
-.v2-duct-duty .panel-head {
-  margin: 0 0 10px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.v2-duct-duty-grid {
-  gap: 10px !important;
-  margin-bottom: 0;
-}
-.v2-duct-duty-actions {
-  margin-top: 12px;
+.v2-duct-duty { margin: 0; }
+.v2-duct-duty-row {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 0;
 }
-.v2-duct-duty-hint {
-  margin: 8px 0 0;
-  font-size: 11.5px;
-  line-height: 1.4;
+.v2-duct-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+  gap: 2px;
+}
+.v2-duct-field-vol { flex: 1.1 1 0; }
+.v2-duct-field-basis { flex: 1.35 1 0; }
+.v2-duct-field-target { flex: 1 1 0; }
+.v2-duct-field-actions {
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+.v2-duct-duty .v2-duct-field > label,
+.v2-duct-duty .v2-duct-label-spacer {
+  display: block;
+  margin: 0;
+  padding: 0;
+  min-height: 1.2em;
+  height: 1.2em;
+  line-height: 1.2;
+  font-size: 10.5px;
+  font-weight: 650;
   color: var(--v2-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.v2-duct-unit {
+  font-weight: 500;
+  opacity: 0.85;
+}
+.v2-duct-duty .v2-duct-field > input,
+.v2-duct-duty .v2-duct-field > select {
+  width: 100%;
+  min-height: 0;
+  height: 34px;
+  padding: 4px 8px;
+  font-size: 13px;
+  border-radius: 7px;
+  box-sizing: border-box;
+}
+.v2-duct-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+}
+.v2-duct-actions .btn-accent,
+.v2-duct-actions .btn-ghost {
+  height: 34px;
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.v2-duct-actions .btn-ghost {
+  padding: 0 8px;
 }
 .v2-duct-chrome .shape-tabs {
-  margin: 12px 0 0;
+  margin: 6px 0 0;
+  padding: 2px;
+  gap: 4px;
   position: static;
+}
+.v2-duct-chrome .shape-tabs button {
+  min-height: 32px;
+  font-size: 12.5px;
+  padding: 0 6px;
+}
+.v2-main:has(.v2-duct-chrome) .status-legend {
+  margin: 0 0 8px;
+  padding: 4px 0;
+  gap: 12px;
+  font-size: 11px;
+}
+.v2-main:has(.v2-duct-chrome) .col-subhead {
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.v2-main:has(.v2-duct-chrome) .col-head {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 420px) {
+  .v2-duct-duty-row { gap: 4px; }
+  .v2-duct-duty .v2-duct-field > input,
+  .v2-duct-duty .v2-duct-field > select,
+  .v2-duct-actions,
+  .v2-duct-actions .btn-accent,
+  .v2-duct-actions .btn-ghost {
+    height: 32px;
+    min-height: 32px;
+  }
+  .v2-duct-actions .btn-accent { padding: 0 8px; }
+  .v2-duct-unit { display: none; }
 }
 .v2-main .col-panel { display: none; }
 .v2-main .col-panel.active { display: block; }
