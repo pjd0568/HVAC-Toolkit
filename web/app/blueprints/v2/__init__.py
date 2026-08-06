@@ -114,12 +114,17 @@ def converter():
     )
 
 
+@bp.get("/air/")
+@login_required
+def air_picker():
+    return render_template("v2/air_picker.html", active="duct", nav="duct")
+
+
 @bp.get("/duct-sizing/")
 @require_module("duct.sizer")
 def duct():
     U = current_view()
     fields, circular, rectangular, flat_oval, error = duct_mod._compute_state(request.args, U)
-    leg = duct_mod._compute_leg_state(request.args, U)
     return render_template(
         "v2/duct.html",
         active="duct",
@@ -130,12 +135,25 @@ def duct():
         rectangular=rectangular,
         flat_oval=flat_oval,
         error=error,
-        leg=leg,
         catalog_options=duct_mod._catalog_options(),
         nudge_step=duct_mod._nudge_step(U),
         round25_step=duct_mod._round25_step(U),
-        report_fields=duct_mod._report_fields_for(fields, leg) if not error else None,
-        initial_step=int(request.args.get("step") or 1),
+        report_fields=duct_mod._report_fields_for_sizer(fields) if not error else None,
+    )
+
+
+@bp.get("/duct-index-leg/")
+@require_module("duct.index_leg")
+def duct_index_leg():
+    U = current_view()
+    leg = duct_mod._compute_leg_state(request.args, U)
+    return render_template(
+        "v2/duct_index_leg.html",
+        active="duct_index_leg",
+        nav="duct",
+        U=U,
+        leg=leg,
+        report_fields=duct_mod._report_fields_for_leg(leg),
     )
 
 

@@ -849,6 +849,48 @@ a:hover { color: var(--v2-green-ink); }
   color: var(--v2-green-ink);
   box-shadow: var(--v2-shadow);
 }
+
+/* Sticky design inputs + shape tabs on duct sizer */
+.v2-duct-chrome {
+  position: sticky;
+  top: var(--v2-top);
+  z-index: 25;
+  margin: -4px -4px 12px;
+  padding: 10px 10px 8px;
+  background: var(--v2-chrome);
+  backdrop-filter: saturate(1.2) blur(12px);
+  -webkit-backdrop-filter: saturate(1.2) blur(12px);
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius);
+  box-shadow: var(--v2-shadow);
+}
+.v2-duct-duty .panel-head {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.v2-duct-duty-grid {
+  gap: 10px !important;
+  margin-bottom: 0;
+}
+.v2-duct-duty-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.v2-duct-duty-hint {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--v2-muted);
+}
+.v2-duct-chrome .shape-tabs {
+  margin: 12px 0 0;
+  position: static;
+}
 .v2-main .col-panel { display: none; }
 .v2-main .col-panel.active { display: block; }
 .v2-main .pipe-results-layout {

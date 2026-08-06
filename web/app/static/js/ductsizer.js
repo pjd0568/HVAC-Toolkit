@@ -11,31 +11,27 @@
  * JSON APIs, and drops already-formatted display strings into the DOM. No
  * engine or unit maths is duplicated here.
  *
- * Correction #6: the top 3-column sizer and the Index Leg builder below it
- * are now fully independent -- two separate state objects, two separate
- * JSON endpoints (/api/state, /api/leg-state), two separate fetch/apply
- * cycles in this file. Nudging/locking/stepping the top sizer never
- * refetches the leg, and editing the leg never refetches the top sizer.
+ * Correction #6: the top 3-column sizer and the Index Leg builder are fully
+ * independent -- two separate state objects, two separate JSON endpoints
+ * (/api/state, /api/leg-state), two separate fetch/apply cycles. They now
+ * also live on separate pages/modules (Correction #8).
  *
- * Correction #7 (this revision): the Index Leg's rows table was a
- * label-over-input grid per row that wrapped to a second line once more
- * than ~4 fields were visible at once (Paul's direct feedback). Rebuilt as
- * one real HTML table -- a header row printed once, one <td> per column
- * per row, fixed column widths (see app.css's <colgroup> rules) shared by
- * every row including the "Add an Item" entry row, which is now the
- * table's own first (tinted) row rather than a separate panel above it.
- * `buildRowCellsHtml()` mirrors templates/duct.html's `leg_row_cells` macro
- * exactly -- keep both in sync.
+ * Correction #7: Index Leg rebuilt as a spreadsheet-style data grid.
+ * `buildRowCellsHtml()` mirrors `_duct_index_leg.html`'s `leg_row_cells`
+ * macro exactly -- keep both in sync.
+ *
+ * Correction #8: Duct Sizing and Index Leg / pressure drop are separate
+ * modules. This file initialises whichever panels are present on the page
+ * (`#duct-form` and/or `#leg-panel`) so either page can load alone.
+ *
+ * Calculate vs live edit (sizer): Calculate clears pinned sizes and
+ * re-proposes from volume + design rule (velocity or friction). After that,
+ * changing volume or size keeps the current duct size pinned and only
+ * refreshes outputs — until Calculate is pressed again.
  *
  * Index Leg state model: every row (and the staging/entry row) carries its
  * own type/shape/volume/size/length-or-fitting-or-label+dp, read fresh from
- * the DOM by LOOP POSITION (not a stored row index) -- removing a row
- * therefore renumbers the rest for free on the next fetch. The whole rows
- * table is rebuilt from the server's JSON response on every update (server
- * is the only place that knows K-factors/friction rate/dp). The staging
- * draft is a *separate* set of `stage_*` query params, computed
- * independently of the committed rows -- a bad draft never affects the
- * table, and vice versa.
+ * the DOM by LOOP POSITION (not a stored row index).
  */
 (function () {
   "use strict";
@@ -54,6 +50,31 @@
     }
   }, true);
 
+  function debounce(fn, wait) {
+    var t = null;
+    return function () {
+      var args = arguments;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(null, args); }, wait);
+    };
+  }
+
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function setDot(wrapperId, status) {
+    var wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    var dot = wrapper.querySelector(".dot");
+    if (dot) dot.className = "dot " + status;
+  }
+
+  // ===========================================================================
+  // Duct Sizer (3-column / shape tabs) — optional; page may be Index Leg only.
+  // ===========================================================================
+  function initSizer() {
   var form = document.getElementById("duct-form");
   if (!form) return;
 
@@ -86,27 +107,6 @@
     loading: document.getElementById("duct-loading"),
     errorBox: document.getElementById("duct-error"),
   };
-
-  function debounce(fn, wait) {
-    var t = null;
-    return function () {
-      var args = arguments;
-      clearTimeout(t);
-      t = setTimeout(function () { fn.apply(null, args); }, wait);
-    };
-  }
-
-  function setText(id, value) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = value;
-  }
-
-  function setDot(wrapperId, status) {
-    var wrapper = document.getElementById(wrapperId);
-    if (!wrapper) return;
-    var dot = wrapper.querySelector(".dot");
-    if (dot) dot.className = "dot " + status;
-  }
 
   function currentStep() {
     return (els.rectRound25 && els.rectRound25.checked) ? ROUND25_STEP : NUDGE_STEP;
@@ -401,11 +401,13 @@
     evt.preventDefault();
     onCalculate();
   });
+  } // initSizer
 
   // ===========================================================================
-  // Index Leg (Correction #6) -- fully independent of everything above.
+  // Index Leg (Correction #6) -- fully independent of the sizer above.
+  // May be the only panel on the page (Correction #8).
   // ===========================================================================
-
+  function initLeg() {
   var legPanel = document.getElementById("leg-panel");
   if (!legPanel) return;
 
@@ -454,7 +456,7 @@
     }).join("");
   }
 
-  // Mirrors templates/duct.html's `leg_row_cells` macro exactly -- same
+  // Mirrors `_duct_index_leg.html`'s `leg_row_cells` macro exactly -- same
   // columns, same data attributes, same order -- one <td> per column, no
   // wrapping element, so the caller can drop these straight into a <tr>
   // alongside the #/Pressure-Drop/Remove cells it builds itself. Used both
@@ -844,4 +846,8 @@
   if (legEls.exportLink && EXPORT_BASE_HREF) {
     legEls.exportLink.href = EXPORT_BASE_HREF + "?" + buildLegParams().toString();
   }
+  } // initLeg
+
+  initSizer();
+  initLeg();
 })();

@@ -38,11 +38,14 @@
       <div class="tool-ico" aria-hidden="true">≋</div>
       <div>
         <h2 class="suite-name">Air Distribution</h2>
-        <p class="suite-desc">Duct sizing by shape, plus index-leg pressure drop.</p>
+        <p class="suite-desc">Duct sizing by shape, plus a separate index-leg pressure-drop builder.</p>
       </div>
     </div>
     <ul class="suite-links">
       <li><a href="{{ url_for('duct.index') }}">Duct Sizing</a></li>
+      {% if access.can('duct.index_leg') %}
+      <li><a href="{{ url_for('duct.index_leg') }}">Index Leg — Pressure Drop</a></li>
+      {% endif %}
     </ul>
   </article>
 

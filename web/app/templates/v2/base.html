@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-19">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-6">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-7">
 {% block extra_head %}{% endblock %}
 </head>
 <body class="v2-body">
@@ -25,7 +25,7 @@
   <nav class="v2-suite-nav" aria-label="Suites">
     <a href="{{ url_for('v2.dashboard') }}" class="{{ 'active' if nav == 'home' }}">Home</a>
     <a href="{{ url_for('v2.psychro_picker') }}" class="{{ 'active' if nav == 'psychro' }}">Psychro</a>
-    <a href="{{ url_for('v2.duct') }}" class="{{ 'active' if nav == 'duct' }}">Air</a>
+    <a href="{{ url_for('v2.air_picker') }}" class="{{ 'active' if nav == 'duct' }}">Air</a>
     <a href="{{ url_for('v2.pipe') }}" class="{{ 'active' if nav == 'pipe' }}">Water</a>
     <a href="{{ url_for('v2.more') }}" class="{{ 'active' if nav == 'more' }}">More</a>
   </nav>
@@ -133,7 +133,7 @@
     <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14c2.5-4 5.5-4 8 0s5.5 4 8 0"/><path d="M4 8c2.5-4 5.5-4 8 0s5.5 4 8 0"/></svg></span>
     <span class="v2-dock-label">Psychro</span>
   </a>
-  <a href="{{ url_for('v2.duct') }}" class="v2-dock-item {{ 'active' if nav == 'duct' }}">
+  <a href="{{ url_for('v2.air_picker') }}" class="v2-dock-item {{ 'active' if nav == 'duct' }}">
     <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 12h16M4 16h16"/><path d="M8 6v4M16 10v4M10 14v4"/></svg></span>
     <span class="v2-dock-label">Air</span>
   </a>

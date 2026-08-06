@@ -1,0 +1,14 @@
+{% extends "v2/base.html" %}
+{% from "_duct_index_leg.html" import index_leg_panel, index_leg_scripts %}
+{% block page_title %}Index Leg{% endblock %}
+{% block content %}
+
+<div class="table-scroll">
+{{ index_leg_panel(leg, report_action=url_for('duct.report_leg'), report_fields=report_fields, panel_style='margin-top:0;') }}
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+{{ index_leg_scripts(leg) }}
+{% endblock %}

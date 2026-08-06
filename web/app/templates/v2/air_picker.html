@@ -1,0 +1,15 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Air{% endblock %}
+{% block content %}
+
+<div class="v2-greeting">Air distribution</div>
+<div class="v2-greeting-sub">Size a duct, or build an index-leg pressure-drop run.</div>
+
+<ul class="v2-picker-list">
+  <li><a href="{{ url_for('v2.duct') }}">Duct sizing</a></li>
+  {% if access.can('duct.index_leg') %}
+  <li><a href="{{ url_for('v2.duct_index_leg') }}">Index leg — pressure drop</a></li>
+  {% endif %}
+</ul>
+
+{% endblock %}

@@ -82,6 +82,7 @@ ACTIVE_TO_ANCHOR = {
     "psychro_adiabatic_cool": "adiabatic-cool",
     "psychro_ahu": "ahu",
     "duct": "duct",
+    "duct_index_leg": "duct",
     "pipe": "pipe",
     "converter": "converter",
     "guides": "guides",

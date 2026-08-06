@@ -7,16 +7,13 @@
 <div id="duct-error">{% if error %}<div class="error">{{ error }}</div>{% endif %}</div>
 
 <div class="note-banner">
-  All three shapes below are sized from the same top inputs at once.
-  Changing air volume or target updates velocity and friction live without
-  resizing the ducts — press Calculate to re-propose sizes (rectangular
-  defaults to a 1:1 aspect). Rectangular's width and height, and flat
-  oval's major and minor axis, are each fully independent — change one and
-  watch velocity, aspect ratio and friction rate respond, using the
-  traffic-light status to judge the result. Flat oval only steps through
-  Lindab's real stocked major/minor combinations, so it's never possible to
-  land on an unmanufactured size. Flat-oval equivalent diameter uses the
-  ASHRAE Fundamentals Ch.21 / Heyt &amp; Diaz (1975) correlation
+  Enter air volume and a design rule (velocity or friction / pressure drop),
+  then press Calculate to set duct sizes. After that you can adjust volume or
+  size and watch velocity and friction update live — sizes stay put until you
+  Calculate again with a new volume and design rule. Rectangular defaults to
+  1:1 aspect; width/height and flat-oval major/minor are independent. Flat oval
+  only steps through Lindab stocked combinations. Flat-oval De uses ASHRAE
+  Fundamentals Ch.21 / Heyt &amp; Diaz (1975):
   De&nbsp;=&nbsp;1.55·A<sup>0.625</sup>/P<sup>0.25</sup>.
 </div>
 
@@ -33,7 +30,7 @@
           <label>Size By</label>
           <select id="f-basis" name="basis">
             <option value="velocity" {{ 'selected' if fields.basis == 'velocity' }}>Velocity</option>
-            <option value="friction_rate" {{ 'selected' if fields.basis == 'friction_rate' }}>Friction Rate (Pa/m)</option>
+            <option value="friction_rate" {{ 'selected' if fields.basis == 'friction_rate' }}>Friction / PD (Pa/m)</option>
           </select>
         </div>
         <div>
@@ -207,189 +204,6 @@
 
 </div>
 
-{# ── Index Leg row cells (Correction #7 -- spreadsheet-style data grid) ─────
-   Emits one <td> per column, in the exact order of the <thead> below, for
-   the staging (entry) row and for every committed row alike. A field that
-   doesn't apply to the row's current type/shape still gets its <td> --
-   just with every candidate input hidden by ductsizer.js's
-   updateFieldVisibility(), leaving the cell blank -- so column widths
-   (fixed via <colgroup>, see app.css) never shift row to row the way the
-   old one-div-per-field grid could wrap. Where a column could hold one of
-   several shape-specific fields (Size 1 = diameter/width/major, Size 2 =
-   height/minor), every candidate input lives in the same <td>, only one
-   ever visible at a time. Mirrors ductsizer.js's buildRowCellsHtml()
-   exactly -- keep both in sync. #}
-{% macro leg_row_cells(prefix, suffix, raw, fittings_by_shape, type_options, shape_options, current_type, current_shape, current_fitting) %}
-<td class="leg-cell">
-  <select data-row-field="type" name="{{ prefix }}type{{ suffix }}">
-    {% for opt in type_options %}<option value="{{ opt.key }}" {{ 'selected' if current_type == opt.key }}>{{ opt.label }}</option>{% endfor %}
-  </select>
-</td>
-<td class="leg-cell">
-  <select data-row-field="shape" data-shape-field name="{{ prefix }}shape{{ suffix }}">
-    {% for opt in shape_options %}<option value="{{ opt.key }}" {{ 'selected' if current_shape == opt.key }}>{{ opt.label }}</option>{% endfor %}
-  </select>
-</td>
-<td class="leg-cell">
-  <input data-row-field="volume" data-shape-field name="{{ prefix }}volume{{ suffix }}" value="{{ raw.volume }}" inputmode="decimal">
-</td>
-<td class="leg-cell">
-  <input data-row-field="diameter" data-size-for="circular" name="{{ prefix }}diameter{{ suffix }}" value="{{ raw.diameter }}" inputmode="decimal">
-  <input data-row-field="width" data-size-for="rectangular" name="{{ prefix }}width{{ suffix }}" value="{{ raw.width }}" inputmode="decimal">
-  <input data-row-field="major" data-size-for="flat_oval" name="{{ prefix }}major{{ suffix }}" value="{{ raw.major }}" inputmode="decimal">
-</td>
-<td class="leg-cell">
-  <input data-row-field="height" data-size-for="rectangular" name="{{ prefix }}height{{ suffix }}" value="{{ raw.height }}" inputmode="decimal">
-  <input data-row-field="minor" data-size-for="flat_oval" name="{{ prefix }}minor{{ suffix }}" value="{{ raw.minor }}" inputmode="decimal">
-</td>
-<td class="leg-cell">
-  <input data-row-field="length" data-type-for="straight flex" name="{{ prefix }}length{{ suffix }}" value="{{ raw.length }}" inputmode="decimal">
-</td>
-<td class="leg-cell">
-  <select data-row-field="fitting" data-fitting-select data-type-for="fitting" name="{{ prefix }}fitting{{ suffix }}">
-    {% for f in fittings_by_shape.get(current_shape, []) %}
-    <option value="{{ f.key }}" {{ 'selected' if current_fitting == f.key }}>{{ f.label }} (K={{ '%.2f'|format(f.k) }})</option>
-    {% endfor %}
-  </select>
-</td>
-<td class="leg-cell">
-  <input data-row-field="label" data-type-for="accessory" name="{{ prefix }}label{{ suffix }}" value="{{ raw.label }}">
-</td>
-<td class="leg-cell">
-  <input data-row-field="dp" data-type-for="accessory" name="{{ prefix }}dp{{ suffix }}" value="{{ raw.dp }}" inputmode="decimal">
-</td>
-{% endmacro %}
-
-{# ── Index Leg pressure-drop builder (Correction #7) ────────────────────────
-   Independent of the 3-column sizer above -- each row (and the staging
-   entry row) carries its own volume/shape/size, since a real index leg is
-   a sequence of different pieces, not one shared duty. See
-   blueprints/duct.py's module docstring and _compute_row().
-
-   Rebuilt this pass as one genuine spreadsheet-style grid (Paul's direct
-   feedback on the previous label-over-input layout, which wrapped to a
-   second line per row): a header row printed once, fixed column widths via
-   <colgroup> shared by every row including the entry row, and the "Add an
-   Item" composer is now the table's own first (tinted) row rather than a
-   separate panel above it -- adding an item is adding a row, the same way
-   a spreadsheet works. #}
-{% if access.can('duct.index_leg') %}
-<div class="panel" style="max-width:1100px; margin-top:22px;" id="leg-panel">
-  <div class="panel-head">Index Leg — Pressure Drop</div>
-  <div class="panel-body">
-
-    <div id="leg-error"></div>
-
-    <div class="note-banner" style="margin-bottom:14px;">
-      Each row is sized independently — its own volume, shape and size — so
-      a run that steps down, changes shape, or ends at a grille can be built
-      piece by piece. Fitting K-factors are indicative single-point values for
-      preliminary sizing — not the full multi-parameter ASHRAE Ch.32 / CIBSE
-      Guide C correlations. Verify critical or high-pressure runs against
-      manufacturer or full geometry-dependent data. Flex-duct rows apply a
-      ×1.5 planning derate to rigid friction (no named standard source —
-      extend fully and check manufacturer data for critical runs). Accessory
-      items (louvers, attenuators, dampers, grilles) take a manually entered
-      pressure drop from your own manufacturer data. Type/shape row: the top
-      row (tinted) composes a new item — fill it in and press "Add" to commit
-      it as a row below.
-    </div>
-
-    <div class="leg-table-scroll">
-    <table class="results leg-rows-table">
-      <colgroup>
-        <col class="col-num"><col class="col-type"><col class="col-shape">
-        <col class="col-volume"><col class="col-size"><col class="col-size">
-        <col class="col-length"><col class="col-fitting"><col class="col-desc">
-        <col class="col-manual-dp"><col class="col-dp"><col class="col-action">
-      </colgroup>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Type</th>
-          <th>Shape</th>
-          <th>Volume<br><span class="th-unit">({{ leg.duct_flow_sym }})</span></th>
-          <th>Size 1<br><span class="th-unit">({{ leg.duct_dimension_sym }})</span></th>
-          <th>Size 2<br><span class="th-unit">({{ leg.duct_dimension_sym }})</span></th>
-          <th>Length<br><span class="th-unit">({{ leg.duct_run_length_sym }})</span></th>
-          <th>Fitting</th>
-          <th>Description</th>
-          <th>Manual ΔP<br><span class="th-unit">({{ leg.velocity_pressure_sym }})</span></th>
-          <th class="num">Pressure Drop</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr id="leg-stage-row" class="leg-stage-row">
-          <td class="leg-row-num">+</td>
-          {{ leg_row_cells("stage_", "", leg.stage_raw, leg.fittings_by_shape, leg.type_options, leg.shape_options,
-                             (leg.stage.type if leg.stage else leg.stage_raw.type) or "straight",
-                             (leg.stage.shape if leg.stage else leg.stage_raw.shape) or "circular",
-                             (leg.stage.fitting_key if leg.stage else None) or leg.stage_raw.fitting) }}
-          <td class="num" id="leg-stage-result-cell">
-            {% if leg.stage_error %}
-            <div class="error" id="leg-stage-error" style="margin:0;">{{ leg.stage_error }}</div>
-            {% else %}
-            <div class="suffix">V: <span id="stage-velocity">{{ leg.stage.velocity_display if leg.stage }}</span> ·
-              VP: <span id="stage-vp">{{ leg.stage.velocity_pressure_display if leg.stage }}</span> ·
-              F/K: <span id="stage-friction">{{ leg.stage.friction_rate_display if leg.stage }}</span></div>
-            <div><span id="stage-dp">{{ leg.stage.dp_display if leg.stage }}</span> <span class="u">{{ leg.velocity_pressure_sym }}</span></div>
-            {% endif %}
-          </td>
-          <td><button type="button" class="btn-accent leg-add-btn" id="leg-add-row">+ Add</button></td>
-        </tr>
-      </tbody>
-      <tbody id="leg-rows-body">
-        {% for row in leg.rows %}
-        <tr data-row data-index="{{ row.index }}" class="{{ 'row-error' if row.error else '' }}">
-          <td class="leg-row-num">{{ row.index + 1 }}</td>
-          {{ leg_row_cells("leg_", "_" ~ row.index, row.raw, leg.fittings_by_shape, leg.type_options, leg.shape_options,
-                             row.type, row.shape or "circular", row.fitting_key or row.raw.fitting) }}
-          <td class="num">
-            {{ row.dp_display }} <span class="u">{{ leg.velocity_pressure_sym }}</span>
-            {% if row.error %}<div class="suffix leg-row-error-text">{{ row.error }}</div>{% endif %}
-          </td>
-          <td><button type="button" class="btn-ghost" data-leg-remove aria-label="Remove row">✕</button></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="10" style="text-align:right; font-weight:600;">Total Pressure Drop</td>
-          <td class="num" style="font-weight:600;"><span id="leg-total">{{ leg.total_display }}</span> <span class="u" id="leg-total-sym">{{ leg.total_sym }}</span></td>
-          <td></td>
-        </tr>
-        <tr id="leg-margin-tr" class="leg-margin-tr" style="{{ '' if leg.safety_margin else 'display:none;' }}">
-          <td colspan="10" style="text-align:right; font-weight:600;">Safety Margin (<span id="leg-margin-pct">{{ '%.0f'|format(leg.safety_margin) }}</span>%)</td>
-          <td class="num" style="font-weight:600;">+ <span id="leg-margin-amount">{{ leg.margin_amount_display }}</span> <span class="u" id="leg-margin-sym">{{ leg.total_sym }}</span></td>
-          <td></td>
-        </tr>
-        <tr id="leg-total-margin-tr" class="leg-total-margin-tr" style="{{ '' if leg.safety_margin else 'display:none;' }}">
-          <td colspan="10" style="text-align:right; font-weight:700;">Total with Margin</td>
-          <td class="num" style="font-weight:700;"><span id="leg-total-margin">{{ leg.total_with_margin_display }}</span> <span class="u" id="leg-total-margin-sym">{{ leg.total_sym }}</span></td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-    </div>
-
-    <div class="leg-safety-margin-row">
-      <label for="leg-safety-margin">Safety Margin</label>
-      <input type="number" id="leg-safety-margin" min="0" max="200" step="1"
-             value="{{ '%.0f'|format(leg.safety_margin) if leg.safety_margin else '0' }}">
-      <span class="u">%</span>
-      <span class="suffix">— added to total pressure drop</span>
-    </div>
-
-    <div style="margin-top:12px; display:flex; gap:10px;">
-      <button type="button" class="btn-ghost" id="leg-clear-table">Clear Table</button>
-      <a class="btn-ghost" style="text-decoration:none;" id="leg-export-csv" href="{{ url_for('duct.export_leg_csv') }}">Export CSV</a>
-    </div>
-
-  </div>
-</div>
-{% endif %}
-
 {% if report_fields %}
 {{ report_form(url_for('duct.report'), report_fields) }}
 {% endif %}
@@ -397,18 +211,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
-{% if access.can('duct.index_leg') %}
-<script>
-  window.DUCT_LEG_FITTINGS_BY_SHAPE = {{ leg.fittings_by_shape | tojson }};
-  window.DUCT_LEG_TYPE_OPTIONS = {{ leg.type_options | tojson }};
-  window.DUCT_LEG_SHAPE_OPTIONS = {{ leg.shape_options | tojson }};
-  window.DUCT_LEG_SYMS = {
-    duct_flow: {{ leg.duct_flow_sym | tojson }},
-    duct_dimension: {{ leg.duct_dimension_sym | tojson }},
-    duct_run_length: {{ leg.duct_run_length_sym | tojson }},
-    velocity_pressure: {{ leg.velocity_pressure_sym | tojson }}
-  };
-</script>
-{% endif %}
+<script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
 <script src="{{ url_for('static', filename='js/ductsizer.js') }}"></script>
 {% endblock %}

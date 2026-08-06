@@ -329,18 +329,17 @@
     <section class="help-section" id="duct" data-help-section
              data-keywords="duct sizing circular rectangular flat oval velocity friction rate pressure drop lindab stock size equivalent diameter aspect ratio index leg fitting k-factor straight run accessory safety margin csv traffic light">
       <h2 class="help-h">Duct Sizing</h2>
-      <p class="help-lead"><span class="help-badge duct">Air Distribution</span> Size a duct in all three shapes at once — circular, rectangular and flat oval — from one air volume and target, then build an index-leg pressure-drop run below. Updates are instant, no page reload.</p>
+      <p class="help-lead"><span class="help-badge duct">Air Distribution</span> Size a duct in all three shapes — circular, rectangular and flat oval — from one air volume and velocity or friction target. The index-leg pressure-drop builder is a separate tool under Air Distribution.</p>
 
       <h3 class="help-sub">When to use it</h3>
-      <p>To pick a duct size for a given airflow to a velocity or friction-rate target, compare the three shapes side by side, and total the pressure drop along the worst-case (index) leg of a system.</p>
+      <p>To pick a duct size for a given airflow to a velocity or friction-rate target and compare the three shapes. Use <strong>Index Leg</strong> separately to total pressure drop along a system run.</p>
 
       <h3 class="help-sub">Design Inputs (top panel)</h3>
       <dl class="help-io">
         <dt>Air Volume</dt><dd>The flow the duct must carry.</dd>
-        <dt>Size By</dt><dd>The basis for the initial size: <strong>Velocity</strong> or <strong>Friction Rate (Pa/m)</strong>.</dd>
-        <dt>Target Value</dt><dd>The target velocity or friction rate to size to. All three shape columns are sized from these top inputs together.</dd>
+        <dt>Size By</dt><dd>The design rule for the initial size: <strong>Velocity</strong> or <strong>Friction / PD (Pa/m)</strong>.</dd>
+        <dt>Target Value</dt><dd>The target velocity or friction rate. Press <strong>Calculate</strong> to propose sizes. After that, changing volume or size updates outputs live without resizing until you Calculate again.</dd>
       </dl>
-
       <h3 class="help-sub">Per-shape controls</h3>
       <dl class="help-io">
         <dt>Circular — Stock Size</dt><dd>Leave on "Auto" for the true calculated diameter, or pick a real Lindab stock diameter (its gauge and whether it's standard or special-order are shown).</dd>
@@ -351,7 +350,7 @@
       <h3 class="help-sub">Reading the shape results</h3>
       <p>Each column shows velocity, velocity pressure, friction rate and (for rectangular/flat oval) equivalent diameter. The <strong>traffic-light dots</strong> flag each figure: green in range, amber borderline, red out of range — the legend is above the columns. Rectangular also warns if the aspect ratio exceeds the 4:1 guide limit.</p>
 
-      <h3 class="help-sub">Index Leg — Pressure Drop (lower panel)</h3>
+      <h3 class="help-sub">Index Leg — Pressure Drop (separate module)</h3>
       <p>A spreadsheet-style builder for totalling the pressure drop along a run. Each row is sized independently — its own volume, shape and size — so a leg that steps down, changes shape and ends at a grille can be built piece by piece.</p>
       <ol class="help-steps">
         <li>Fill in the tinted top row (the composer): choose a <strong>Type</strong> — Straight, Fitting, Flex or Accessory — then its shape, volume, size and the type-specific field.</li>

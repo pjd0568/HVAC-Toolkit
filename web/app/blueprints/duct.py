@@ -784,19 +784,28 @@ def _leg_table_for_report(leg: dict):
     return headers, rows, footer_count
 
 
-def _report_fields_for(fields: dict, leg: dict) -> dict:
-    """Flatten the top sizer's `fields` plus every Index Leg row's raw values
-    into one name->value dict, matching the exact query-string field names
-    `_compute_state`/`_compute_leg_state` read -- this is what `_report_form.html`
-    renders as hidden fields, so POSTing them to `/duct-sizing/report` recomputes
-    precisely the state that's on screen, never a stale snapshot (same principle
-    as every psychrometric tool's report route)."""
-    out = dict(fields)
-    out["leg_row_count"] = str(leg["row_count"])
-    out["leg_safety_margin"] = str(leg.get("safety_margin", 0))
+def _report_fields_for_sizer(fields: dict) -> dict:
+    """Hidden fields for the duct-sizer PDF report (no index-leg state)."""
+    return dict(fields)
+
+
+def _report_fields_for_leg(leg: dict) -> dict:
+    """Hidden fields for the index-leg PDF report (no 3-column sizer state)."""
+    out = {
+        "leg_row_count": str(leg["row_count"]),
+        "leg_safety_margin": str(leg.get("safety_margin", 0)),
+    }
     for row in leg["rows"]:
         for f in ROW_FIELDS:
             out[f"leg_{f}_{row['index']}"] = row["raw"].get(f, "")
+    return out
+
+
+def _report_fields_for(fields: dict, leg: dict) -> dict:
+    """Legacy combined flatten — prefer `_report_fields_for_sizer` /
+    `_report_fields_for_leg` now that the modules are separate pages."""
+    out = _report_fields_for_sizer(fields)
+    out.update(_report_fields_for_leg(leg))
     return out
 
 
@@ -807,56 +816,62 @@ def _report_fields_for(fields: dict, leg: dict) -> dict:
 def index():
     U = current_view()
     fields, circular, rectangular, flat_oval, error = _compute_state(request.args, U)
-    leg = _compute_leg_state(request.args, U)
     return render_template(
         "duct.html", active="duct", U=U, fields=fields,
         circular=circular, rectangular=rectangular, flat_oval=flat_oval,
-        error=error, leg=leg, catalog_options=_catalog_options(),
+        error=error, catalog_options=_catalog_options(),
         nudge_step=_nudge_step(U), round25_step=_round25_step(U),
-        report_fields=_report_fields_for(fields, leg) if not error else None,
+        report_fields=_report_fields_for_sizer(fields) if not error else None,
+    )
+
+
+@bp.route("/index-leg/", methods=["GET"])
+@require_module("duct.index_leg")
+def index_leg():
+    """Standalone Index Leg / duct system pressure-drop module."""
+    U = current_view()
+    leg = _compute_leg_state(request.args, U)
+    return render_template(
+        "duct_index_leg.html",
+        active="duct_index_leg",
+        U=U,
+        leg=leg,
+        report_fields=_report_fields_for_leg(leg),
     )
 
 
 @bp.route("/report", methods=["POST"])
 @require_module("duct.sizer")
 def report():
-    """Download PDF Report -- recomputes both the 3-column sizer and the Index
-    Leg from the posted hidden fields (see `_report_fields_for`), the same
-    "never a stale snapshot" pattern every psychrometric tool's /report route
-    uses. request.form behaves like request.args for `.get(key, default)`, so
-    it can be handed straight to `_compute_state`/`_compute_leg_state` with no
-    translation layer.
-
-    PDF structure depends on what's been built:
-    - Index leg rows present → leg-table-first: header + Project/System/etc
-      metadata, then the full index-leg pressure-drop table with all design
-      data columns (Paul's request: "the table is what I wanted, not the duct
-      sizer values"). The 3-column sizer values are omitted.
-    - No leg rows → original 3-column sizer format: Inputs + Results tables.
-    """
+    """Download PDF Report for the 3-column duct sizer only."""
     U = current_view()
     fields, circular, rectangular, flat_oval, error = _compute_state(request.form, U)
     if error:
         return Response(f"Cannot generate report: {error}", status=400)
-    leg = _compute_leg_state(request.form, U)
     meta = report_meta_from_form("Air Distribution - Duct Sizing")
-
-    if leg["rows"]:
-        # Leg-table-first: skip 3-column sizer, show index leg as main content.
-        headers, rows, footer_count = _leg_table_for_report(leg)
-        pdf = build_pdf(
-            meta,
-            input_rows=None,
-            result_rows=None,
-            extra_tables=[("Index Leg — Pressure Drop", headers, rows, _LEG_PDF_COL_WIDTHS_MM, footer_count)],
-        )
-    else:
-        # No leg rows: 3-column sizer report only (original behaviour).
-        input_rows = _duct_input_rows(fields, U)
-        result_rows = _duct_result_rows(circular, rectangular, flat_oval, U)
-        pdf = build_pdf(meta, input_rows=input_rows, result_rows=result_rows)
-
+    input_rows = _duct_input_rows(fields, U)
+    result_rows = _duct_result_rows(circular, rectangular, flat_oval, U)
+    pdf = build_pdf(meta, input_rows=input_rows, result_rows=result_rows)
     return pdf_response(pdf, meta=meta, fallback="duct-sizing")
+
+
+@bp.route("/index-leg/report", methods=["POST"])
+@require_module("duct.index_leg")
+def report_leg():
+    """Download PDF Report for the Index Leg pressure-drop table."""
+    U = current_view()
+    leg = _compute_leg_state(request.form, U)
+    if not leg["rows"]:
+        return Response("Cannot generate report: add at least one index-leg row.", status=400)
+    meta = report_meta_from_form("Air Distribution - Index Leg")
+    headers, rows, footer_count = _leg_table_for_report(leg)
+    pdf = build_pdf(
+        meta,
+        input_rows=None,
+        result_rows=None,
+        extra_tables=[("Index Leg — Pressure Drop", headers, rows, _LEG_PDF_COL_WIDTHS_MM, footer_count)],
+    )
+    return pdf_response(pdf, meta=meta, fallback="duct-index-leg")
 
 
 @bp.route("/api/state", methods=["GET"])
