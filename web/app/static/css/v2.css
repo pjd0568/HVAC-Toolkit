@@ -751,13 +751,28 @@ a:hover { color: var(--v2-green-ink); }
 .v2-main .results th {
   padding: 9px 10px;
   border-top: 1px solid var(--v2-line);
-  vertical-align: top;
+  vertical-align: middle;
 }
+.v2-main .results th.num,
 .v2-main .results .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-family: var(--v2-font-mono);
   font-size: 12.5px;
+}
+.v2-main .results th.num {
+  font-family: var(--v2-font);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--v2-muted);
+  white-space: nowrap;
+}
+.v2-main .psychro-results-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.v2-main .psychro-results-scroll .results {
+  min-width: 520px;
 }
 .v2-main .suffix { font-size: 12px; color: var(--v2-muted); margin-top: 4px; }
 

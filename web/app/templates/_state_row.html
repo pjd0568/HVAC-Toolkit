@@ -1,6 +1,7 @@
 {% macro state_cells(s) -%}
-<td class="num">{{ U.html('temperature', s.t_db) }}</td>
-<td class="num"><span class="valunit"><span class="v">{{ '%.0f'|format(s.rh * 100) }}</span><span class="u">%</span></span></td>
-<td class="num">{{ U.html('humidity_ratio', s.w) }}</td>
-<td class="num">{{ U.html('enthalpy', s.h) }}</td>
+{# Numbers only — column headers carry the units so values line up. #}
+<td class="num">{{ U.fmt('temperature', s.t_db) }}</td>
+<td class="num">{{ '%.0f'|format(s.rh * 100) }}</td>
+<td class="num">{{ U.fmt('humidity_ratio', s.w) }}</td>
+<td class="num">{{ U.fmt('enthalpy', s.h) }}</td>
 {%- endmacro %}

@@ -419,14 +419,17 @@ def mixed_air_report():
         ("Stream A Dry Bulb", U.fmt('temperature', sa.t_db), U.sym('temperature')),
         ("Stream A Humidity Ratio", U.fmt('humidity_ratio', sa.w), U.sym('humidity_ratio')),
         ("Stream A Mass Flow", U.fmt('mass_flow', ma), f"{U.sym('mass_flow')} dry air"),
+        ("Stream A Volume Flow", U.fmt('vol_flow', ma * sa.v * 3600), U.sym('vol_flow')),
         ("Stream B Dry Bulb", U.fmt('temperature', sb.t_db), U.sym('temperature')),
         ("Stream B Humidity Ratio", U.fmt('humidity_ratio', sb.w), U.sym('humidity_ratio')),
         ("Stream B Mass Flow", U.fmt('mass_flow', mb), f"{U.sym('mass_flow')} dry air"),
+        ("Stream B Volume Flow", U.fmt('vol_flow', mb * sb.v * 3600), U.sym('vol_flow')),
         ("Mixed Dry Bulb", U.fmt('temperature', mres.state.t_db), U.sym('temperature')),
         ("Mixed Relative Humidity", f"{mres.state.rh * 100:.0f}", "%"),
         ("Mixed Humidity Ratio", U.fmt('humidity_ratio', mres.state.w), U.sym('humidity_ratio')),
         ("Mixed Enthalpy", U.fmt('enthalpy', mres.state.h), U.sym('enthalpy')),
         ("Mixed Mass Flow", U.fmt('mass_flow', mres.m_da), f"{U.sym('mass_flow')} dry air"),
+        ("Mixed Volume Flow", U.fmt('vol_flow', mres.m_da * mres.state.v * 3600), U.sym('vol_flow')),
     ]
     if mres.fog:
         result_rows.append((

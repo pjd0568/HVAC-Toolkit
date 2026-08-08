@@ -46,12 +46,37 @@
   {% endif %}
   <div class="psychro-results panel">
     <div class="panel-head">Result</div>
+    <div class="psychro-results-scroll">
     <table class="results">
-      <tr><th>Stream</th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th><th>{{ U.sym('mass_flow') }} dry air</th></tr>
-      <tr><td>A</td>{{ state_cells(result.a) }}<td class="num">{{ U.html('mass_flow', result.m_a) }}</td></tr>
-      <tr><td>B</td>{{ state_cells(result.b) }}<td class="num">{{ U.html('mass_flow', result.m_b) }}</td></tr>
-      <tr><td><strong>Mixed</strong></td>{{ state_cells(mres.state) }}<td class="num">{{ U.html('mass_flow', mres.m_da) }}</td></tr>
+      <tr>
+        <th>Stream</th>
+        <th class="num">{{ U.sym('temperature') }} db</th>
+        <th class="num">% RH</th>
+        <th class="num">{{ U.sym('humidity_ratio') }}</th>
+        <th class="num">{{ U.sym('enthalpy') }}</th>
+        <th class="num">{{ U.sym('mass_flow') }}</th>
+        <th class="num">{{ U.sym('vol_flow') }}</th>
+      </tr>
+      <tr>
+        <td>A</td>
+        {{ state_cells(result.a) }}
+        <td class="num">{{ U.fmt('mass_flow', result.m_a) }}</td>
+        <td class="num">{{ U.fmt('vol_flow', result.m_a * result.a.v * 3600) }}</td>
+      </tr>
+      <tr>
+        <td>B</td>
+        {{ state_cells(result.b) }}
+        <td class="num">{{ U.fmt('mass_flow', result.m_b) }}</td>
+        <td class="num">{{ U.fmt('vol_flow', result.m_b * result.b.v * 3600) }}</td>
+      </tr>
+      <tr>
+        <td><strong>Mixed</strong></td>
+        {{ state_cells(mres.state) }}
+        <td class="num">{{ U.fmt('mass_flow', mres.m_da) }}</td>
+        <td class="num">{{ U.fmt('vol_flow', mres.m_da * mres.state.v * 3600) }}</td>
+      </tr>
     </table>
+    </div>
   </div>
   {% endif %}
 </div>

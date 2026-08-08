@@ -41,7 +41,7 @@
   <div class="psychro-results panel">
     <div class="panel-head">Coil duty</div>
     <table class="results">
-      <tr><th></th><th>{{ U.sym('temperature') }} db</th><th>% RH</th><th>{{ U.sym('humidity_ratio') }}</th><th>{{ U.sym('enthalpy') }}</th></tr>
+      <tr><th></th><th class="num">{{ U.sym('temperature') }} db</th><th class="num">% RH</th><th class="num">{{ U.sym('humidity_ratio') }}</th><th class="num">{{ U.sym('enthalpy') }}</th></tr>
       <tr><td>On coil</td>{{ state_cells(on) }}</tr>
       <tr><td>Off coil</td>{{ state_cells(result.state) }}</tr>
     </table>
