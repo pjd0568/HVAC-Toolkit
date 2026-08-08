@@ -13,22 +13,21 @@
    so one <form> can submit to either route depending on which button was pressed
    -- no second form/duplicated hidden fields needed. #}
 {% macro report_form(action, form, png_action=None, panel_class='') %}
-<div class="section-label">Report</div>
-<div class="panel {{ panel_class }}" style="max-width:920px;">
-  <div class="panel-head">Download PDF Report</div>
+<div class="panel report-panel {{ panel_class }}">
+  <div class="panel-head">Report</div>
   <div class="panel-body">
     <form method="post" action="{{ action }}">
       {% for name, value in form.items() %}
       <input type="hidden" name="{{ name }}" value="{{ value }}">
       {% endfor %}
-      <div class="form-grid four">
+      <div class="form-grid four report-meta">
         <div><label>Project</label><input name="report_project" placeholder="e.g. Riverside Office Fit-Out"></div>
         <div><label>System</label><input name="report_system" placeholder="e.g. AHU-1"></div>
         <div><label>Revision</label><input name="report_revision" value="A"></div>
         <div><label>Author</label><input name="report_author"></div>
       </div>
-      <div style="margin-top:16px;display:flex;gap:10px;">
-        <button class="btn-green" type="submit">Download PDF Report</button>
+      <div class="report-actions">
+        <button class="btn-green" type="submit">Download PDF</button>
         {% if png_action %}
         <button class="btn-ghost" type="submit" formaction="{{ png_action }}">Export Chart (PNG)</button>
         {% endif %}

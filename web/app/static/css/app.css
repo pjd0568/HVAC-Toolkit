@@ -364,6 +364,36 @@ body {
 .panel-head { padding: 14px 18px; border-bottom: 1px solid var(--line); font-weight: 650; font-size: 13px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .panel-body { padding: 18px; }
 
+/* Compact shared report / export panel (see _report_form.html) */
+.report-panel { max-width: 920px; }
+.report-panel .panel-head { padding: 8px 12px; font-size: 12px; }
+.report-panel .panel-body { padding: 10px 12px 12px; }
+.report-panel .report-meta {
+  gap: 8px 10px;
+  margin-bottom: 0;
+}
+.report-panel .report-meta label {
+  min-height: 0;
+  margin-bottom: 3px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.report-panel .report-meta input {
+  padding: 6px 9px;
+}
+.report-panel .report-actions {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.report-panel .report-actions .btn-green,
+.report-panel .report-actions .btn-ghost {
+  padding: 7px 12px;
+  font-size: 12.5px;
+}
+
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 560px; margin-bottom: 20px; }
 .form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
 .form-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: none; }

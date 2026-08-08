@@ -584,6 +584,51 @@ a:hover { color: var(--v2-green-ink); }
   font-weight: 600;
   margin: 14px 0 8px;
 }
+
+/* Report panel: keep meta fields two-up on phones so the block stays short */
+.v2-main .report-panel {
+  margin-bottom: 8px;
+}
+.v2-main .report-panel .panel-head {
+  padding: 8px 12px;
+  font-size: 12px;
+  background: #fafbfc;
+}
+.v2-main .report-panel .panel-body {
+  padding: 10px 12px 12px;
+}
+.v2-main .report-panel .report-meta {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px 10px;
+}
+.v2-main .report-panel .report-meta label {
+  min-height: 0;
+  margin-bottom: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v2-muted);
+}
+.v2-main .report-panel .report-meta input {
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+.v2-main .report-panel .report-actions {
+  margin-top: 8px;
+  gap: 8px;
+}
+.v2-main .report-panel .report-actions .btn-green,
+.v2-main .report-panel .report-actions .btn-ghost {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+@media (max-width: 420px) {
+  .v2-main .report-panel .report-meta {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .v2-main label {
   display: block;
   font-size: 13px;
