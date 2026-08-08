@@ -104,6 +104,48 @@ a:hover { color: var(--v2-green-ink); }
   text-align: center;
 }
 
+.v2-topbar-units {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.v2-unit-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--v2-bg);
+  border: 1px solid var(--v2-line);
+  border-radius: 8px;
+  margin: 0;
+}
+.v2-unit-toggle .unit-pill {
+  appearance: none;
+  margin: 0;
+  padding: 5px 8px;
+  min-height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--v2-muted);
+  font-family: var(--v2-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.v2-unit-toggle .unit-pill.on {
+  background: var(--v2-panel);
+  color: var(--v2-green-ink);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+}
+.v2-unit-toggle .unit-pill:hover:not(.on) {
+  color: var(--v2-ink);
+}
+
 .v2-icon-btn {
   appearance: none;
   border: 1px solid var(--v2-line);
@@ -1059,6 +1101,9 @@ a:hover { color: var(--v2-green-ink); }
 @media (max-width: 520px) {
   .v2-brand-text { display: none; }
   .v2-suite-nav { display: none !important; }
+  .v2-topbar-title { display: none; }
+  .v2-topbar { gap: 8px; padding: 0 10px; }
+  .v2-unit-toggle .unit-pill { padding: 5px 7px; font-size: 10.5px; }
 }
 
 @media (min-width: 900px) {
@@ -1075,14 +1120,15 @@ a:hover { color: var(--v2-green-ink); }
   /* Keep suite links in the top bar on desktop; dock stays as compact center control */
   .v2-suite-nav { display: inline-flex; }
   .v2-topbar-title {
-    margin-left: auto;
-    text-align: right;
-    max-width: 280px;
+    margin-left: 8px;
+    text-align: left;
+    max-width: 220px;
     color: var(--v2-muted);
     font-weight: 500;
     font-size: 13px;
   }
   .v2-topbar-title:empty { display: none; }
+  .v2-topbar-units { margin-left: auto; }
   .v2-bottom-nav {
     width: 360px;
     bottom: 18px;
