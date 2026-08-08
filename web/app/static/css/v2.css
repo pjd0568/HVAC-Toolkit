@@ -1131,13 +1131,7 @@ a:hover { color: var(--v2-green-ink); }
 .v2-main .dim-scrub {
   height: 32px;
   border-color: var(--v2-line);
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 8px,
-      rgba(90, 99, 110, 0.16) 8px 9px
-    ),
-    var(--v2-bg);
+  background: var(--v2-bg);
 }
 .v2-main .dim-scrub-thumb {
   top: 4px;
@@ -1145,10 +1139,24 @@ a:hover { color: var(--v2-green-ink); }
   width: 20px;
   margin-left: -10px;
 }
+.v2-main .dim-scrub-marks {
+  font-size: 10px;
+  color: var(--v2-muted);
+}
+@media (max-width: 640px) {
+  .v2-main .rect-wh-pair {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .v2-main .rect-wh-x {
+    padding: 0;
+    font-size: 18px;
+  }
+}
 
 @media (max-width: 420px) {
   .v2-duct-duty-row { gap: 4px; }
-  .v2-main .rect-wh-x { font-size: 18px; padding-top: 22px; }
+  .v2-main .rect-wh-x { font-size: 16px; padding: 2px 0; }
   .v2-duct-duty .v2-duct-field > input,
   .v2-duct-duty .v2-duct-field > select,
   .v2-duct-actions,

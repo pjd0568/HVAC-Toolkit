@@ -878,6 +878,23 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   background: #f4f6f8;
   border-color: #b8c0ca;
 }
+@media (max-width: 640px) {
+  .rect-wh-pair {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .rect-wh-x {
+    align-self: center;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .rect-dim-card {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
 .rect-dim-main {
   display: flex;
   align-items: center;
