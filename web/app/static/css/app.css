@@ -860,11 +860,11 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--muted, #5A636E);
   line-height: 1;
-  padding-top: 18px;
+  align-self: center;
 }
 .rect-dim-card {
   flex: 1 1 0;
@@ -872,43 +872,42 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   border: 1px solid var(--line, #C5CCD5);
   border-radius: 10px;
   background: var(--panel, #fff);
-  padding: 10px 12px 12px;
+  padding: 10px;
 }
 .rect-dim-card.is-locked {
   background: #f4f6f8;
   border-color: #b8c0ca;
 }
-.rect-dim-top {
+.rect-dim-main {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
 }
 .rect-dim-card .rect-dim-label {
   width: auto;
-  font-size: 12px;
+  flex: 0 0 auto;
+  font-size: 11px;
   font-weight: 700;
   color: var(--muted, #5A636E);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  line-height: 1;
 }
-.rect-dim-value {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-.rect-dim-value input[type="number"] {
+.rect-dim-main input[type="number"] {
   flex: 1 1 auto;
   min-width: 0;
   width: auto;
-  text-align: right;
+  text-align: center;
   font-variant-numeric: tabular-nums;
 }
-.rect-dim-value input[type="number"]:disabled {
+.rect-dim-main input[type="number"]:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+.rect-dim-main .stepper-unit {
+  flex: 0 0 auto;
+  margin-left: 0;
 }
 
 /* Icon-only padlock toggle */

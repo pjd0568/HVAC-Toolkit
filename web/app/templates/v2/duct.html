@@ -105,8 +105,11 @@
 
     <div class="rect-wh-pair">
       <div class="rect-dim-card" id="rect-width-card" data-dim="width">
-        <div class="rect-dim-top">
+        <div class="rect-dim-main">
           <span class="rect-dim-label">Width</span>
+          <input type="number" step="any" id="rect-width" value="{{ fields.rect_width }}" data-field="rect_width"
+                 {{ 'disabled' if fields.rect_lock_width == '1' }}>
+          <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
           <button type="button" class="lock-icon-btn" id="rect-width-lock"
                   data-locked="{{ 'true' if fields.rect_lock_width == '1' else 'false' }}"
                   aria-pressed="{{ 'true' if fields.rect_lock_width == '1' else 'false' }}"
@@ -115,11 +118,6 @@
             <svg class="lock-icon lock-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
             <svg class="lock-icon lock-closed" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
           </button>
-        </div>
-        <div class="rect-dim-value">
-          <input type="number" step="any" id="rect-width" value="{{ fields.rect_width }}" data-field="rect_width"
-                 {{ 'disabled' if fields.rect_lock_width == '1' }}>
-          <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
         </div>
         <div class="dim-scrub {{ 'is-disabled' if fields.rect_lock_width == '1' }}"
              data-nudge-scrub="rect_width"
@@ -136,8 +134,11 @@
       <div class="rect-wh-x" aria-hidden="true">×</div>
 
       <div class="rect-dim-card" id="rect-height-card" data-dim="height">
-        <div class="rect-dim-top">
+        <div class="rect-dim-main">
           <span class="rect-dim-label">Height</span>
+          <input type="number" step="any" id="rect-height" value="{{ fields.rect_height }}" data-field="rect_height"
+                 {{ 'disabled' if fields.rect_lock_height == '1' }}>
+          <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
           <button type="button" class="lock-icon-btn" id="rect-height-lock"
                   data-locked="{{ 'true' if fields.rect_lock_height == '1' else 'false' }}"
                   aria-pressed="{{ 'true' if fields.rect_lock_height == '1' else 'false' }}"
@@ -146,11 +147,6 @@
             <svg class="lock-icon lock-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
             <svg class="lock-icon lock-closed" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
           </button>
-        </div>
-        <div class="rect-dim-value">
-          <input type="number" step="any" id="rect-height" value="{{ fields.rect_height }}" data-field="rect_height"
-                 {{ 'disabled' if fields.rect_lock_height == '1' }}>
-          <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
         </div>
         <div class="dim-scrub {{ 'is-disabled' if fields.rect_lock_height == '1' }}"
              data-nudge-scrub="rect_height"
@@ -229,7 +225,7 @@
 
 {% block extra_scripts %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
-<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=rect-wh-2"></script>
+<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=rect-wh-3"></script>
 <script>
 (function(){
   var tabs=document.getElementById('v2-shape-tabs');

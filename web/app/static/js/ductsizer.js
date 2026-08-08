@@ -61,7 +61,9 @@
 
   function setText(id, value) {
     var el = document.getElementById(id);
-    if (el) el.textContent = value;
+    if (!el) return;
+    var next = value == null ? "" : String(value);
+    if (el.textContent !== next) el.textContent = next;
   }
 
   function setDot(wrapperId, status) {
@@ -168,7 +170,7 @@
   }
 
   var debouncedNudgeFetch = debounce(function (field, value) {
-    fetchState({ nudge: field, nudge_value: String(value) });
+    fetchState({ nudge: field, nudge_value: String(value) }, { quiet: true });
   }, 120);
 
   function nudgeRectField(field, next, opts) {
@@ -179,7 +181,7 @@
     if (opts && opts.live) {
       debouncedNudgeFetch(field, next);
     } else {
-      fetchState({ nudge: field, nudge_value: String(next) });
+      fetchState({ nudge: field, nudge_value: String(next) }, { quiet: true });
     }
   }
 
@@ -220,8 +222,14 @@
     setDot("rect-dot-friction", r.status_friction);
     var warnRow = document.getElementById("rect-warn-row");
     warnRow.style.display = r.aspect_ratio_warning ? "" : "none";
-    els.rectWidth.value = r.width;
-    els.rectHeight.value = r.height;
+    // Prefer patching values in place so scrubbing/typing doesn't fight focus
+    // or cause the number field to visually "blink".
+    if (document.activeElement !== els.rectWidth) {
+      if (String(els.rectWidth.value) !== String(r.width)) els.rectWidth.value = r.width;
+    }
+    if (document.activeElement !== els.rectHeight) {
+      if (String(els.rectHeight.value) !== String(r.height)) els.rectHeight.value = r.height;
+    }
     els.rectWidthHidden.value = r.width;
     els.rectHeightHidden.value = r.height;
 
@@ -252,21 +260,22 @@
     window.history.replaceState(null, "", newUrl);
   }
 
-  function fetchState(overrides) {
+  function fetchState(overrides, opts) {
+    var quiet = !!(opts && opts.quiet);
     var params = buildBaseParams();
     if (overrides) {
       Object.keys(overrides).forEach(function (k) { params.set(k, overrides[k]); });
     }
-    setLoading(true);
+    if (!quiet) setLoading(true);
     return fetch(API_STATE_URL + "?" + params.toString(), { headers: { "Accept": "application/json" } })
       .then(function (resp) { return resp.json(); })
       .then(function (data) {
-        setLoading(false);
+        if (!quiet) setLoading(false);
         applyState(data);
         return data;
       })
       .catch(function () {
-        setLoading(false);
+        if (!quiet) setLoading(false);
         showError("Could not reach the server — check your connection and try again.");
       });
   }
@@ -351,7 +360,7 @@
       var next = !locked;
       setLockButton(els.rectWidthLockBtn, next);
       els.rectLockWidthHidden.value = next ? "1" : "";
-      fetchState({ rect_lock_width: els.rectLockWidthHidden.value });
+      fetchState({ rect_lock_width: els.rectLockWidthHidden.value }, { quiet: true });
     });
   }
   if (els.rectHeightLockBtn) {
@@ -360,25 +369,25 @@
       var next = !locked;
       setLockButton(els.rectHeightLockBtn, next);
       els.rectLockHeightHidden.value = next ? "1" : "";
-      fetchState({ rect_lock_height: els.rectLockHeightHidden.value });
+      fetchState({ rect_lock_height: els.rectLockHeightHidden.value }, { quiet: true });
     });
   }
 
   // -- Round-to-25mm checkbox --
   els.rectRound25.addEventListener("change", function () {
     els.rectRound25Hidden.value = els.rectRound25.checked ? "1" : "";
-    fetchState({ rect_round25: els.rectRound25Hidden.value });
+    fetchState({ rect_round25: els.rectRound25Hidden.value }, { quiet: true });
   });
 
   // -- Rectangular nudge inputs (direct type-in; flat oval is readonly and
   // has no equivalent -- see the oval catalogue-step handler below) --
   els.rectWidth.addEventListener("change", function () {
     if (els.rectWidth.disabled) return;
-    fetchState({ nudge: "rect_width", nudge_value: els.rectWidth.value });
+    fetchState({ nudge: "rect_width", nudge_value: els.rectWidth.value }, { quiet: true });
   });
   els.rectHeight.addEventListener("change", function () {
     if (els.rectHeight.disabled) return;
-    fetchState({ nudge: "rect_height", nudge_value: els.rectHeight.value });
+    fetchState({ nudge: "rect_height", nudge_value: els.rectHeight.value }, { quiet: true });
   });
 
   // -- Rectangular stepper +/- buttons (continuous, computed client-side) --
@@ -463,7 +472,7 @@
         resetThumb();
         var input = document.querySelector('input[data-field="' + endedField + '"]');
         if (input && !input.disabled) {
-          fetchState({ nudge: endedField, nudge_value: String(input.value) });
+          fetchState({ nudge: endedField, nudge_value: String(input.value) }, { quiet: true });
         }
       }
       scrub.addEventListener("pointerup", endDrag);

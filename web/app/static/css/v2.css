@@ -714,9 +714,17 @@ a:hover { color: var(--v2-green-ink); }
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1;
+  min-height: 0;
   cursor: pointer;
   color: var(--v2-ink);
+}
+.v2-main .rect-round25-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  align-self: center;
 }
 .v2-main input:focus,
 .v2-main select:focus,
@@ -1099,10 +1107,15 @@ a:hover { color: var(--v2-green-ink); }
   border-color: var(--v2-line);
   box-shadow: var(--v2-shadow);
 }
-.v2-main .rect-dim-value input[type="number"] {
+.v2-main .rect-dim-main input[type="number"] {
   min-height: 40px;
   width: auto;
   padding: 8px 10px;
+  text-align: center;
+}
+.v2-main .rect-dim-main .lock-icon-btn {
+  width: 40px;
+  height: 40px;
 }
 .v2-main .lock-icon-btn {
   width: 40px;
