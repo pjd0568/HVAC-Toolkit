@@ -848,6 +848,150 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 .rect-round25-row label { display: flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
 .rect-round25-row input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--blue); cursor: pointer; }
 
+/* Rectangular width × height pair (V2): side-by-side cards with scrubbers */
+.rect-wh-pair {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.rect-wh-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--muted, #5A636E);
+  line-height: 1;
+  padding-top: 18px;
+}
+.rect-dim-card {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid var(--line, #C5CCD5);
+  border-radius: 10px;
+  background: var(--panel, #fff);
+  padding: 10px 12px 12px;
+}
+.rect-dim-card.is-locked {
+  background: #f4f6f8;
+  border-color: #b8c0ca;
+}
+.rect-dim-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.rect-dim-card .rect-dim-label {
+  width: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted, #5A636E);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.rect-dim-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.rect-dim-value input[type="number"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.rect-dim-value input[type="number"]:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Icon-only padlock toggle */
+.lock-icon-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line, #C5CCD5);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted, #5A636E);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.lock-icon-btn:hover {
+  border-color: var(--blue, #3B82A0);
+  color: var(--blue-ink, #1E4A5C);
+}
+.lock-icon-btn .lock-icon { display: none; }
+.lock-icon-btn[data-locked="false"] .lock-icon.lock-open { display: block; }
+.lock-icon-btn[data-locked="true"] .lock-icon.lock-closed { display: block; }
+.lock-icon-btn[data-locked="true"] {
+  border-color: var(--blue, #3B82A0);
+  color: var(--blue-ink, #1E4A5C);
+  background: var(--blue-soft, #D5E2EC);
+}
+
+/* Horizontal scrub / jog wheel for nudging a dimension */
+.dim-scrub {
+  position: relative;
+  height: 28px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 7px,
+      rgba(90, 99, 110, 0.18) 7px 8px
+    ),
+    #eef1f5;
+  border: 1px solid var(--line, #C5CCD5);
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+}
+.dim-scrub:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 169, 157, 0.18);
+  border-color: var(--v2-green, #00A99D);
+}
+.dim-scrub-rail {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.dim-scrub-thumb {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 18px;
+  height: 20px;
+  margin-left: -9px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #9aa3ad;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
+  pointer-events: none;
+  transition: left 0.05s linear;
+}
+.dim-scrub.is-active .dim-scrub-thumb {
+  border-color: var(--v2-green, #00A99D);
+  background: var(--v2-green-soft, #e6f7f5);
+}
+.dim-scrub.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Each rectangular dimension's own row: label, stepper, and a lock toggle
    pushed to the right, level with that row's input (Correction #4 -- lock
    is now per-dimension, not a 3-way Free/Width/Height choice). */

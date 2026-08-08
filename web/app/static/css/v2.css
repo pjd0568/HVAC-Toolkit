@@ -1094,9 +1094,48 @@ a:hover { color: var(--v2-green-ink); }
 .v2-main:has(.v2-duct-chrome) .col-head {
   margin-bottom: 4px;
 }
+.v2-main .rect-wh-pair { gap: 8px; }
+.v2-main .rect-dim-card {
+  border-color: var(--v2-line);
+  box-shadow: var(--v2-shadow);
+}
+.v2-main .rect-dim-value input[type="number"] {
+  min-height: 40px;
+  width: auto;
+  padding: 8px 10px;
+}
+.v2-main .lock-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-color: var(--v2-line);
+  border-radius: var(--v2-radius-sm);
+}
+.v2-main .lock-icon-btn[data-locked="true"] {
+  border-color: var(--v2-green);
+  color: var(--v2-green-ink);
+  background: var(--v2-green-soft);
+}
+.v2-main .dim-scrub {
+  height: 32px;
+  border-color: var(--v2-line);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 8px,
+      rgba(90, 99, 110, 0.16) 8px 9px
+    ),
+    var(--v2-bg);
+}
+.v2-main .dim-scrub-thumb {
+  top: 4px;
+  height: 22px;
+  width: 20px;
+  margin-left: -10px;
+}
 
 @media (max-width: 420px) {
   .v2-duct-duty-row { gap: 4px; }
+  .v2-main .rect-wh-x { font-size: 18px; padding-top: 22px; }
   .v2-duct-duty .v2-duct-field > input,
   .v2-duct-duty .v2-duct-field > select,
   .v2-duct-actions,

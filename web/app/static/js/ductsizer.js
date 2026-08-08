@@ -143,8 +143,44 @@
   function setLockButton(btn, locked) {
     if (!btn) return;
     btn.setAttribute("data-locked", locked ? "true" : "false");
+    btn.setAttribute("aria-pressed", locked ? "true" : "false");
     var label = btn.querySelector(".lock-label");
     if (label) label.textContent = locked ? "Locked" : "Unlocked";
+    syncRectDimLocked(btn, locked);
+  }
+
+  function syncRectDimLocked(btn, locked) {
+    if (!btn) return;
+    var card = btn.closest(".rect-dim-card");
+    var input = card
+      ? card.querySelector('input[type="number"]')
+      : null;
+    var scrub = card
+      ? card.querySelector("[data-nudge-scrub]")
+      : null;
+    if (card) card.classList.toggle("is-locked", !!locked);
+    if (input) input.disabled = !!locked;
+    if (scrub) {
+      scrub.classList.toggle("is-disabled", !!locked);
+      scrub.setAttribute("aria-disabled", locked ? "true" : "false");
+      scrub.tabIndex = locked ? -1 : 0;
+    }
+  }
+
+  var debouncedNudgeFetch = debounce(function (field, value) {
+    fetchState({ nudge: field, nudge_value: String(value) });
+  }, 120);
+
+  function nudgeRectField(field, next, opts) {
+    var input = document.querySelector('input[data-field="' + field + '"]');
+    if (!input || input.disabled) return;
+    if (next <= 0) return;
+    input.value = next;
+    if (opts && opts.live) {
+      debouncedNudgeFetch(field, next);
+    } else {
+      fetchState({ nudge: field, nudge_value: String(next) });
+    }
   }
 
   function applyState(data) {
@@ -337,9 +373,11 @@
   // -- Rectangular nudge inputs (direct type-in; flat oval is readonly and
   // has no equivalent -- see the oval catalogue-step handler below) --
   els.rectWidth.addEventListener("change", function () {
+    if (els.rectWidth.disabled) return;
     fetchState({ nudge: "rect_width", nudge_value: els.rectWidth.value });
   });
   els.rectHeight.addEventListener("change", function () {
+    if (els.rectHeight.disabled) return;
     fetchState({ nudge: "rect_height", nudge_value: els.rectHeight.value });
   });
 
@@ -349,15 +387,114 @@
       var field = btn.getAttribute("data-nudge");
       var dir = parseFloat(btn.getAttribute("data-dir"));
       var input = document.querySelector('input[data-field="' + field + '"]');
-      if (!input) return;
+      if (!input || input.disabled) return;
       var step = currentStep();
       var current = parseFloat(input.value) || 0;
       var next = current + dir * step;
       if (next <= 0) next = current; // never step to zero/negative
-      input.value = next;
-      fetchState({ nudge: field, nudge_value: String(next) });
+      nudgeRectField(field, next);
     });
   });
+
+  // -- Horizontal scrub / jog wheel for rectangular dimensions --
+  (function bindDimScrubs() {
+    var PX_PER_STEP = 14;
+    document.querySelectorAll("[data-nudge-scrub]").forEach(function (scrub) {
+      var field = scrub.getAttribute("data-nudge-scrub");
+      var thumb = scrub.querySelector(".dim-scrub-thumb");
+      var dragging = false;
+      var startX = 0;
+      var acc = 0;
+      var pointerId = null;
+
+      function setThumbOffset(px) {
+        if (!thumb) return;
+        var max = Math.max(0, (scrub.clientWidth / 2) - 12);
+        var clamped = Math.max(-max, Math.min(max, px));
+        thumb.style.left = "calc(50% + " + clamped + "px)";
+      }
+
+      function resetThumb() {
+        if (thumb) thumb.style.left = "50%";
+        scrub.classList.remove("is-active");
+      }
+
+      function onMove(clientX) {
+        if (!dragging) return;
+        var dx = clientX - startX;
+        acc += dx;
+        startX = clientX;
+        setThumbOffset(acc);
+        var steps = 0;
+        while (acc >= PX_PER_STEP) { steps += 1; acc -= PX_PER_STEP; }
+        while (acc <= -PX_PER_STEP) { steps -= 1; acc += PX_PER_STEP; }
+        if (!steps) return;
+        var input = document.querySelector('input[data-field="' + field + '"]');
+        if (!input || input.disabled) return;
+        var step = currentStep();
+        var current = parseFloat(input.value) || 0;
+        var next = current + steps * step;
+        if (next <= 0) next = current;
+        if (next === current) return;
+        nudgeRectField(field, next, { live: true });
+      }
+
+      scrub.addEventListener("pointerdown", function (e) {
+        if (scrub.classList.contains("is-disabled") || scrub.getAttribute("aria-disabled") === "true") return;
+        dragging = true;
+        pointerId = e.pointerId;
+        startX = e.clientX;
+        acc = 0;
+        scrub.classList.add("is-active");
+        scrub.setPointerCapture(pointerId);
+        e.preventDefault();
+      });
+      scrub.addEventListener("pointermove", function (e) {
+        if (!dragging || e.pointerId !== pointerId) return;
+        onMove(e.clientX);
+      });
+      function endDrag(e) {
+        if (!dragging) return;
+        if (e && pointerId !== null && e.pointerId !== pointerId) return;
+        dragging = false;
+        var endedField = field;
+        pointerId = null;
+        acc = 0;
+        resetThumb();
+        var input = document.querySelector('input[data-field="' + endedField + '"]');
+        if (input && !input.disabled) {
+          fetchState({ nudge: endedField, nudge_value: String(input.value) });
+        }
+      }
+      scrub.addEventListener("pointerup", endDrag);
+      scrub.addEventListener("pointercancel", endDrag);
+      scrub.addEventListener("lostpointercapture", endDrag);
+
+      scrub.addEventListener("keydown", function (e) {
+        if (scrub.classList.contains("is-disabled")) return;
+        var dir = 0;
+        if (e.key === "ArrowRight" || e.key === "ArrowUp") dir = 1;
+        if (e.key === "ArrowLeft" || e.key === "ArrowDown") dir = -1;
+        if (!dir) return;
+        e.preventDefault();
+        var input = document.querySelector('input[data-field="' + field + '"]');
+        if (!input || input.disabled) return;
+        var step = currentStep();
+        var current = parseFloat(input.value) || 0;
+        var next = current + dir * step;
+        if (next <= 0) next = current;
+        nudgeRectField(field, next);
+      });
+    });
+  })();
+
+  // Sync lock → disabled input/scrub on load (server may have restored locks).
+  if (els.rectWidthLockBtn) {
+    syncRectDimLocked(els.rectWidthLockBtn, els.rectWidthLockBtn.getAttribute("data-locked") === "true");
+  }
+  if (els.rectHeightLockBtn) {
+    syncRectDimLocked(els.rectHeightLockBtn, els.rectHeightLockBtn.getAttribute("data-locked") === "true");
+  }
 
   // -- Flat-oval major/minor stepper +/- buttons (Correction #5): these
   // send a step DIRECTION, not a computed value -- the server looks up the
