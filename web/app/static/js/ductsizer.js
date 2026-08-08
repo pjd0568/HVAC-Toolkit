@@ -446,6 +446,11 @@
     if (els.targetUnit) {
       els.targetUnit.textContent = isVelocity ? els.targetUnit.dataset.velocitySym : els.targetUnit.dataset.frictionSym;
     }
+    var defVel = form.dataset.defaultVelocity || "6";
+    var defFric = form.dataset.defaultFriction || "1";
+    if (els.target) {
+      els.target.value = isVelocity ? defVel : defFric;
+    }
     onLivePrimaryChange();
   });
 

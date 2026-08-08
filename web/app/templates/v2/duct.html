@@ -11,7 +11,9 @@
       data-nudge-step="{{ nudge_step }}"
       data-round25-step="{{ round25_step }}"
       data-dim-unit="{{ U.sym('duct_dimension') }}"
-      data-unit-system="{{ U.system }}">
+      data-unit-system="{{ U.system }}"
+      data-default-velocity="{{ U.fmt('velocity', 6.0) }}"
+      data-default-friction="{{ U.fmt('friction_rate', 1.0) }}">
   <div class="v2-duct-duty" id="duct-duty-panel">
     <div class="v2-duct-duty-row">
       <div class="v2-duct-field v2-duct-field-vol">
@@ -22,7 +24,7 @@
         <label for="f-basis">Size by</label>
         <select id="f-basis" name="basis">
           <option value="velocity" {{ 'selected' if fields.basis == 'velocity' }}>Velocity</option>
-          <option value="friction_rate" {{ 'selected' if fields.basis == 'friction_rate' }}>Friction / PD</option>
+          <option value="friction_rate" {{ 'selected' if fields.basis == 'friction_rate' }}>{{ U.sym('friction_rate') }}</option>
         </select>
       </div>
       <div class="v2-duct-field v2-duct-field-target">
@@ -253,7 +255,7 @@
 
 {% block extra_scripts %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
-<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=rect-wh-4"></script>
+<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=rect-wh-5"></script>
 <script>
 (function(){
   var tabs=document.getElementById('v2-shape-tabs');
