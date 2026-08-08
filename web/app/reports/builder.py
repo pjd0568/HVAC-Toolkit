@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
@@ -27,6 +27,7 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+from xml.sax.saxutils import escape as xml_escape
 
 # Palette matched to app/static/css/app.css :root, so the PDF reads as the same
 # product as the web app.
@@ -110,30 +111,78 @@ def _header(meta: ReportMeta, styles: dict) -> Table:
     return header
 
 
+def _cell(text: str, style: ParagraphStyle) -> Paragraph:
+    """Wrap table text so ReportLab wraps within the column instead of
+    painting over neighbouring cells (plain strings do not wrap)."""
+    return Paragraph(xml_escape(str(text or "")), style)
+
+
 def _data_table(rows: list[tuple[str, str, str]]) -> Table:
     """rows: (label, value, unit). Value and unit are separate table columns --
     value right-aligned, unit left-aligned in its own narrow column with a
     small gutter -- so every row's unit lines up in one vertical column and
     sits a consistent, deliberate gap from its number, the same pairing the
     on-screen results table gets from `.valunit` (see app/units.py, app.css).
-    `unit` is "" for rows that don't carry one (ratios, free-text messages).
+    `unit` is "" for rows that don't carry one (titles, free-text messages).
     """
-    data = [["Property", "Value", ""]] + [[label, value, unit] for label, value, unit in rows]
-    t = Table(data, colWidths=[_CONTENT_WIDTH * 0.52, _CONTENT_WIDTH * 0.30, _CONTENT_WIDTH * 0.18])
+    label_style = ParagraphStyle(
+        "DataLabel",
+        fontName="Helvetica",
+        fontSize=9,
+        leading=11,
+        textColor=_INK,
+        alignment=TA_LEFT,
+    )
+    value_style = ParagraphStyle(
+        "DataValue",
+        fontName="Helvetica",
+        fontSize=9,
+        leading=11,
+        textColor=_INK,
+        alignment=TA_RIGHT,
+    )
+    unit_style = ParagraphStyle(
+        "DataUnit",
+        fontName="Helvetica",
+        fontSize=8,
+        leading=10,
+        textColor=_MUTED,
+        alignment=TA_LEFT,
+    )
+    head_style = ParagraphStyle(
+        "DataHead",
+        fontName="Helvetica-Bold",
+        fontSize=9,
+        leading=11,
+        textColor=_INK,
+        alignment=TA_LEFT,
+    )
+
+    data = [[_cell("Property", head_style), _cell("Value", head_style), ""]]
+    for label, value, unit in rows:
+        data.append([
+            _cell(label, label_style),
+            _cell(value, value_style),
+            _cell(unit, unit_style) if unit else "",
+        ])
+
+    # Long stage notes (AHU Design) wrap in the label column instead of
+    # overflowing into the value.
+    t = Table(
+        data,
+        colWidths=[_CONTENT_WIDTH * 0.48, _CONTENT_WIDTH * 0.34, _CONTENT_WIDTH * 0.18],
+    )
     t.setStyle(TableStyle([
         ("SPAN", (1, 0), (2, 0)),  # single "Value" header spans the value+unit columns
         ("BACKGROUND", (0, 0), (-1, 0), _BLUE_SOFT),
         ("TEXTCOLOR", (0, 0), (-1, -1), _INK),
-        ("TEXTCOLOR", (2, 1), (2, -1), _MUTED),  # unit column reads muted, like .valunit .u
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("FONTSIZE", (2, 1), (2, -1), 8),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("LINEBELOW", (0, 0), (-1, 0), 0.75, _LINE),
         ("LINEBELOW", (0, 1), (-1, -2), 0.5, _LINE),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
         ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("ALIGN", (1, 1), (1, -1), "RIGHT"),
         ("ALIGN", (2, 1), (2, -1), "LEFT"),
         ("LEFTPADDING", (2, 1), (2, -1), 4),
