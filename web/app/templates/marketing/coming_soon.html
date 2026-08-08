@@ -14,7 +14,7 @@
   </p>
   <div class="coming-actions">
     {% if current_user.is_authenticated %}
-      <a class="btn-accent" href="{{ url_for('main.dashboard') }}">Open toolkit</a>
+      <a class="btn-accent" href="{{ url_for('v2.dashboard') }}">Open toolkit</a>
       <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
     {% elif registration_open %}
       <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>

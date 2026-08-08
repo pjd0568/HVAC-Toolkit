@@ -12,4 +12,4 @@ bp = Blueprint("methodology", __name__)
 
 @bp.get("/")
 def index():
-    return render_template("methodology.html", active="methodology")
+    return render_template("methodology.html", active="methodology", nav="more")

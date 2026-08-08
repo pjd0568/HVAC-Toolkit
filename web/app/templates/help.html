@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "v2/base.html" %}
 {% block page_title %}Help &amp; User Guide{% endblock %}
 {% block content %}
 
@@ -26,7 +26,7 @@
   <div class="help-content" id="help-content">
 
     <div class="page-title">Help &amp; User Guide</div>
-    <div class="page-sub">What each tool is for, the inputs it takes, and how to use it. Use the search box or the index on the left. The <span class="help-inline-mark">?</span> Help button in the top bar of any tool jumps straight to that tool's section here.</div>
+    <div class="page-sub">What each tool is for, the inputs it takes, and how to use it. Use the search box or the index on the left. Open Help from the menu on any tool to jump straight to that tool's section here.</div>
 
     <div class="help-noresults" id="help-noresults" style="display:none;">
       No help sections match your search. Try a shorter or different term.
@@ -36,13 +36,13 @@
     <section class="help-section" id="overview" data-help-section
              data-keywords="getting started units si ip imperial metric memory slots pdf report png export shareable url link save print">
       <h2 class="help-h">How the app works</h2>
-      <p class="help-lead">A toolkit of independent HVAC design calculators. Pick a tool from the left-hand navigation, enter your design figures, and read the results. A few things work the same way across every tool — worth knowing once.</p>
+      <p class="help-lead">A toolkit of independent HVAC design calculators. Pick a tool from Home or the bottom dock, enter your design figures, and read the results. A few things work the same way across every tool — worth knowing once.</p>
 
       <h3 class="help-sub">Units — SI or Imperial, everywhere at once</h3>
-      <p>The <strong>SI · Metric / IP · Imperial</strong> toggle in the top bar sets the unit system for the whole app in one click. Every input label, every result and every chart axis switches with it. Imperial conventions used here: duty in Btu/h, humidity ratio in grains/lb, pressure in inHg, plus °F, CFM, lb/h and ft³/lb. Set it before you start typing so you enter values in the units you're thinking in.</p>
+      <p>The <strong>SI / IP</strong> unit toggle in the menu sets the unit system for the whole app in one click. Every input label, every result and every chart axis switches with it. Imperial conventions used here: duty in Btu/h, humidity ratio in grains/lb, pressure in inHg, plus °F, CFM, lb/h and ft³/lb. Set it before you start typing so you enter values in the units you're thinking in.</p>
 
       <h3 class="help-sub">Memory Slots — carry a condition between tools</h3>
-      <p>The three <strong>Memory Slots</strong> in the bar below the top bar are shown on every page. When the weather lookup ships, you will be able to copy a design condition into a slot from that tool. Until then, you can still paste a slot into any psychrometric tool’s airstream if a slot is filled — Clear a slot with the <strong>×</strong> on its chip.</p>
+      <p>The three <strong>Memory Slots</strong> (climate button in the top bar) are available on every page. When the weather lookup ships, you will be able to copy a design condition into a slot from that tool. Until then, you can still paste a slot into any psychrometric tool’s airstream if a slot is filled — Clear a slot from the climate sheet.</p>
 
       <h3 class="help-sub">Every result is a shareable link</h3>
       <p>Tool results live in the page's web address. Copy the URL after a calculation and it reopens with the same inputs and answer — handy for saving a case, sending it to a colleague, or bookmarking a standard scenario.</p>

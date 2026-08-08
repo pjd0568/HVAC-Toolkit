@@ -298,81 +298,15 @@ def hydrate_teaser():
         _set_saved_points([session_point_from_si(si, "A")])
     except (TypeError, ValueError, KeyError) as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
-    from app.ui_prefs import prefer_v2
-
-    dest = url_for("v2.single_point") if prefer_v2() else url_for("psychro.single_point")
-    return jsonify({"ok": True, "redirect": dest})
+    return jsonify({"ok": True, "redirect": url_for("v2.single_point")})
 
 
 @bp.route("/", methods=["GET", "POST"])
 @require_module("psychro.single_point")
 def single_point():
-    U = current_view()
-    error = None
-    pressure = None
-    saved = _get_saved_points()
+    from app.ui_prefs import redirect_to_v2
 
-    if request.method == "POST":
-        action = request.form.get("action", "calculate")
-        form = {k: request.form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}
-
-        if action == "reset":
-            _clear_saved_points()
-            return redirect(url_for("psychro.single_point"))
-
-        try:
-            pressure, result, _, _ = _run_single_point(form, U)
-            entry = _state_to_session("A", result)
-            if action == "add_b":
-                if not saved:
-                    # No Point A yet — treat as first calculate.
-                    _set_saved_points([entry])
-                else:
-                    entry["label"] = "B"
-                    _set_saved_points([saved[0], entry])
-            else:
-                # Calculate: set/replace Point A; keep B if present.
-                entry["label"] = "A"
-                if len(saved) >= 2:
-                    b = dict(saved[1])
-                    b["label"] = "B"
-                    _set_saved_points([entry, b])
-                else:
-                    _set_saved_points([entry])
-            saved = _get_saved_points()
-        except ValueError as exc:
-            error = str(exc)
-            try:
-                pressure = _resolve_pressure(form, U)
-            except ValueError:
-                pressure = None
-    else:
-        teaser_form = session.pop(TEASER_FORM_SESSION_KEY, None)
-        if isinstance(teaser_form, dict):
-            form = {k: teaser_form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}
-        else:
-            form = _display_defaults(_SINGLE_POINT_DEFAULTS, _SINGLE_POINT_FIELD_UNITS, U)
-            _paste_slot_into(form, "s", U)
-        try:
-            pressure = _resolve_pressure(form, U)
-        except ValueError:
-            pressure = None
-    if pressure is None:
-        try:
-            pressure = _resolve_pressure(form, U)
-        except ValueError:
-            pressure = psy.P_ATM
-
-    chart_pts, chart_segs = _chart_points_and_segments(saved)
-    chart = _chart_or_blank(chart_pts, chart_segs, pressure, U.system)
-
-    return render_template(
-        "psychro.html", active="psychro", form=form,
-        second_properties=_second_properties(U), saved_points=saved, error=error,
-        chart=chart, pressure=pressure,
-        can_add_b=len(saved) >= 1,
-        has_points=len(saved) >= 1,
-    )
+    return redirect_to_v2("v2.single_point")
 
 
 @bp.route("/report", methods=["POST"])
@@ -457,37 +391,9 @@ def _run_mixed_air(form, U):
 @bp.route("/mixed-air", methods=["GET", "POST"])
 @require_module("psychro.mixed_air")
 def mixed_air():
-    U = current_view()
-    result = None
-    error = None
-    mres = None
-    pressure = None
-    points, segments = [], []
-    if request.method != "POST":
-        form = _display_defaults(_MIXED_AIR_DEFAULTS, _MIXED_AIR_FIELD_UNITS, U)
-        _paste_slot_into(form, "a", U)
-        _paste_slot_into(form, "b", U)
-        try:
-            pressure = _resolve_pressure(form, U)
-        except ValueError:
-            pressure = None
-    else:
-        form = {k: request.form.get(k, d) for k, d in _MIXED_AIR_DEFAULTS.items()}
-        try:
-            pressure, sa, sb, ma, mb, mres, points, segments = _run_mixed_air(form, U)
-            result = {"a": sa, "b": sb, "m_a": ma, "m_b": mb}
-        except ValueError as exc:
-            error = str(exc)
-            try:
-                pressure = _resolve_pressure(form, U)
-            except ValueError:
-                pressure = None
-    chart = _chart_or_blank(points, segments, pressure, U.system)
-    return render_template(
-        "mixed_air.html", active="psychro_mix", form=form,
-        second_properties=_second_properties(U), result=result, mres=mres,
-        chart=chart, error=error, pressure=pressure,
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.mixed_air")
 
 
 @bp.route("/mixed-air/report", methods=["POST"])
@@ -588,36 +494,9 @@ def _run_cooling_coil(form, U):
 @bp.route("/cooling-coil", methods=["GET", "POST"])
 @require_module("psychro.cooling_coil")
 def cooling_coil():
-    U = current_view()
-    result = None
-    error = None
-    on = None
-    m_da = None
-    pressure = None
-    points, segments = [], []
-    if request.method != "POST":
-        form = _display_defaults(_COOLING_COIL_DEFAULTS, _COOLING_COIL_FIELD_UNITS, U)
-        _paste_slot_into(form, "on", U)
-        try:
-            pressure = _resolve_pressure(form, U)
-        except ValueError:
-            pressure = None
-    else:
-        form = {k: request.form.get(k, d) for k, d in _COOLING_COIL_DEFAULTS.items()}
-        try:
-            pressure, on, m_da, result, points, segments = _run_cooling_coil(form, U)
-        except ValueError as exc:
-            error = str(exc)
-            try:
-                pressure = _resolve_pressure(form, U)
-            except ValueError:
-                pressure = None
-    chart = _chart_or_blank(points, segments, pressure, U.system)
-    return render_template(
-        "coil.html", active="psychro_coil", form=form,
-        second_properties=_second_properties(U), on=on, m_da=m_da,
-        result=result, chart=chart, error=error, pressure=pressure,
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.cooling_coil")
 
 
 @bp.route("/cooling-coil/report", methods=["POST"])
@@ -784,40 +663,9 @@ def _run_ahu(form, U):
 @bp.route("/ahu", methods=["GET", "POST"])
 @require_module("psychro.ahu")
 def ahu():
-    U = current_view()
-    result = None
-    error = None
-    m_da = None
-    pressure = None
-    oa_frac = None
-    pts, segs = [], []
-    if request.method != "POST":
-        form = _display_defaults(_AHU_DEFAULTS, _AHU_FIELD_UNITS, U)
-        _paste_slot_into(form, "oa", U)
-        _paste_slot_into(form, "ra", U)
-        _paste_slot_into(form, "sup", U)
-        try:
-            pressure = _resolve_pressure(form, U)
-        except ValueError:
-            pressure = None
-    else:
-        form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
-        try:
-            pressure, m_da, result, pts, segs, oa_frac = _run_ahu(form, U)
-        except ValueError as exc:
-            result = None
-            error = str(exc)
-            try:
-                pressure = _resolve_pressure(form, U)
-            except ValueError:
-                pressure = None
-    chart = _chart_or_blank(pts, segs, pressure, U.system)
-    return render_template(
-        "ahu.html", active="psychro_ahu", form=form,
-        second_properties=_second_properties(U), result=result, m_da=m_da,
-        chart=chart, error=error, pressure=pressure, oa_frac=oa_frac,
-        season_defaults=_ahu_season_defaults_display(U),
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.ahu")
 
 
 @bp.route("/ahu/report", methods=["POST"])
@@ -948,37 +796,9 @@ def _run_desiccant(form, U):
 @bp.route("/desiccant", methods=["GET", "POST"])
 @require_module("psychro.desiccant")
 def desiccant():
-    U = current_view()
-    result = None
-    error = None
-    on = None
-    m_da = None
-    pressure = None
-    points, segments = [], []
-    if request.method != "POST":
-        form = _display_defaults(_DESICCANT_DEFAULTS, _DESICCANT_FIELD_UNITS, U)
-        # target_val default is humidity ratio; RH mode would be percent — keep w default.
-        _paste_slot_into(form, "on", U)
-        try:
-            pressure = _resolve_pressure(form, U)
-        except ValueError:
-            pressure = None
-    else:
-        form = {k: request.form.get(k, d) for k, d in _DESICCANT_DEFAULTS.items()}
-        try:
-            pressure, on, m_da, result, points, segments = _run_desiccant(form, U)
-        except ValueError as exc:
-            error = str(exc)
-            try:
-                pressure = _resolve_pressure(form, U)
-            except ValueError:
-                pressure = None
-    chart = _chart_or_blank(points, segments, pressure, U.system)
-    return render_template(
-        "desiccant.html", active="psychro_desiccant", form=form,
-        second_properties=_second_properties(U), on=on, m_da=m_da,
-        result=result, chart=chart, error=error, pressure=pressure,
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.desiccant")
 
 
 @bp.route("/desiccant/report", methods=["POST"])
@@ -1096,37 +916,9 @@ def _run_heat_humidify(form, U):
 @bp.route("/heat-humidify", methods=["GET", "POST"])
 @require_module("psychro.heat_humidify")
 def heat_humidify():
-    U = current_view()
-    result = None
-    error = None
-    on = None
-    m_da = None
-    pressure = None
-    points, segments = [], []
-    if request.method != "POST":
-        form = _display_defaults(_HEAT_HUMIDIFY_DEFAULTS, _HEAT_HUMIDIFY_FIELD_UNITS, U)
-        _paste_slot_into(form, "on", U)
-        _paste_slot_into(form, "off", U)
-        try:
-            pressure = _resolve_pressure(form, U)
-        except ValueError:
-            pressure = None
-    else:
-        form = {k: request.form.get(k, d) for k, d in _HEAT_HUMIDIFY_DEFAULTS.items()}
-        try:
-            pressure, on, m_da, result, points, segments = _run_heat_humidify(form, U)
-        except ValueError as exc:
-            error = str(exc)
-            try:
-                pressure = _resolve_pressure(form, U)
-            except ValueError:
-                pressure = None
-    chart = _chart_or_blank(points, segments, pressure, U.system)
-    return render_template(
-        "heat_humidify.html", active="psychro_heat_humidify", form=form,
-        second_properties=_second_properties(U), on=on, m_da=m_da,
-        result=result, chart=chart, error=error, pressure=pressure,
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.heat_humidify")
 
 
 @bp.route("/heat-humidify/report", methods=["POST"])
@@ -1243,38 +1035,9 @@ def _run_adiabatic_cool(form, U):
 @bp.route("/adiabatic-cool", methods=["GET", "POST"])
 @require_module("psychro.adiabatic_cool")
 def adiabatic_cool():
-    U = current_view()
-    result = None
-    error = None
-    on = None
-    m_da = None
-    pressure = None
-    points, segments = [], []
-    if request.method != "POST":
-        form = _display_defaults(
-            _ADIABATIC_COOL_DEFAULTS, _ADIABATIC_COOL_FIELD_UNITS, U
-        )
-        _paste_slot_into(form, "on", U)
-        try:
-            pressure = _resolve_pressure(form, U)
-        except ValueError:
-            pressure = None
-    else:
-        form = {k: request.form.get(k, d) for k, d in _ADIABATIC_COOL_DEFAULTS.items()}
-        try:
-            pressure, on, m_da, result, points, segments = _run_adiabatic_cool(form, U)
-        except ValueError as exc:
-            error = str(exc)
-            try:
-                pressure = _resolve_pressure(form, U)
-            except ValueError:
-                pressure = None
-    chart = _chart_or_blank(points, segments, pressure, U.system)
-    return render_template(
-        "adiabatic_cool.html", active="psychro_adiabatic_cool", form=form,
-        second_properties=_second_properties(U), on=on, m_da=m_da,
-        result=result, chart=chart, error=error, pressure=pressure,
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.adiabatic_cool")
 
 
 @bp.route("/adiabatic-cool/report", methods=["POST"])

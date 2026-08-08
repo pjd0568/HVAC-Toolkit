@@ -73,7 +73,6 @@
 
     <div class="v2-menu-section">Account</div>
     <ul class="v2-menu-list">
-      <li><a href="{{ url_for('v2.use_classic') }}">Classic UI</a></li>
       {% if current_user.is_authenticated %}
       <li>
         <form method="post" action="{{ url_for('auth.logout') }}">

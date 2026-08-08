@@ -22,11 +22,7 @@ def coming_soon():
 @bp.get("/app")
 @login_required
 def dashboard():
-    from app.ui_prefs import prefer_v2
-
-    if prefer_v2() and request.args.get("classic") != "1":
-        return redirect(url_for("v2.dashboard"))
-    return render_template("dashboard.html", active="dashboard")
+    return redirect(url_for("v2.dashboard"))
 
 
 @bp.post("/preferences/units")

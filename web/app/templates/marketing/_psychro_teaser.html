@@ -6,7 +6,7 @@
   itemtype="https://schema.org/WebApplication"
   aria-labelledby="teaser-heading"
   data-teaser-api="{{ url_for('main.psychro_teaser_calculate') }}"
-  data-register-url="{% if current_user.is_authenticated %}{{ url_for('psychro.single_point') }}{% elif registration_open %}{{ url_for('auth.register') }}{% else %}{{ url_for('billing.subscribe') }}{% endif %}"
+  data-register-url="{% if current_user.is_authenticated %}{{ url_for('v2.single_point') }}{% elif registration_open %}{{ url_for('auth.register') }}{% else %}{{ url_for('billing.subscribe') }}{% endif %}"
   data-registration-open="{{ '1' if registration_open else '0' }}"
   data-authenticated="{{ '1' if current_user.is_authenticated else '0' }}"
   data-storage-key="hvac_teaser_state"
@@ -168,7 +168,7 @@
 
         <div class="teaser-cta-row">
           {% if current_user.is_authenticated %}
-          <a class="btn-accent" href="{{ url_for('psychro.single_point') }}">Open full psychrometric suite</a>
+          <a class="btn-accent" href="{{ url_for('v2.single_point') }}">Open full psychrometric suite</a>
           {% else %}
           <button type="button" class="btn-accent" data-teaser-cta>
             Start 14-day free trial
@@ -198,7 +198,7 @@
         Interactive charts, process paths, duct/pipe sizing, saved projects, and PDF reports
         are available in the toolkit.
       </p>
-      <a class="btn-accent" href="{{ url_for('psychro.single_point') }}">Go to Single Point</a>
+      <a class="btn-accent" href="{{ url_for('v2.single_point') }}">Go to Single Point</a>
       {% else %}
       <h3 id="teaser-modal-title">Unlock Full Psychrometric Analysis &amp; Field Tools</h3>
       <p id="teaser-modal-sub" class="teaser-modal-sub">

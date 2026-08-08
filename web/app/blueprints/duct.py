@@ -814,30 +814,18 @@ def _report_fields_for(fields: dict, leg: dict) -> dict:
 @bp.route("/", methods=["GET"])
 @require_module("duct.sizer")
 def index():
-    U = current_view()
-    fields, circular, rectangular, flat_oval, error = _compute_state(request.args, U)
-    return render_template(
-        "duct.html", active="duct", U=U, fields=fields,
-        circular=circular, rectangular=rectangular, flat_oval=flat_oval,
-        error=error, catalog_options=_catalog_options(),
-        nudge_step=_nudge_step(U), round25_step=_round25_step(U),
-        report_fields=_report_fields_for_sizer(fields) if not error else None,
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.duct")
 
 
 @bp.route("/index-leg/", methods=["GET"])
 @require_module("duct.index_leg")
 def index_leg():
     """Standalone Index Leg / duct system pressure-drop module."""
-    U = current_view()
-    leg = _compute_leg_state(request.args, U)
-    return render_template(
-        "duct_index_leg.html",
-        active="duct_index_leg",
-        U=U,
-        leg=leg,
-        report_fields=_report_fields_for_leg(leg),
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.duct_index_leg")
 
 
 @bp.route("/report", methods=["POST"])

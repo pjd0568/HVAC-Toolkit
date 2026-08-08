@@ -6,7 +6,7 @@ mass and energy balances, explains why the dry-bulb drift is typically only abou
 degree, and compares the ideal isothermal model used in most design tools with the
 rigorous enthalpy-slope solution.</p>
 <p>Work a winter heat-then-steam sequence in the
-<a href="{{ url_for('psychro.heat_humidify') }}">Heating &amp; Humidification</a> calculator,
+<a href="{{ url_for('v2.heat_humidify') }}">Heating &amp; Humidification</a> calculator,
 which stages the process and reports coil and steam duties. The toolkit’s steam model
 follows Approach&nbsp;A below (isothermal chart convention).</p>
 
@@ -208,10 +208,10 @@ app — the chart path is vertical and the steam duty is the isothermal enthalpy
 
 <div class="callout">
   Run a heat-then-steam winter sequence in the
-  <a href="{{ url_for('psychro.heat_humidify') }}">Heating &amp; Humidification</a>
+  <a href="{{ url_for('v2.heat_humidify') }}">Heating &amp; Humidification</a>
   calculator (Approach&nbsp;A isothermal steam after a constant-W heating coil), or stage
   steam inside a full supply chain with
-  <a href="{{ url_for('psychro.ahu') }}">AHU Design</a>.
+  <a href="{{ url_for('v2.ahu') }}">AHU Design</a>.
   For the opposite drying process, see
-  <a href="{{ url_for('psychro.desiccant') }}">Desiccant Dehumidification</a>.
+  <a href="{{ url_for('v2.desiccant') }}">Desiccant Dehumidification</a>.
 </div>

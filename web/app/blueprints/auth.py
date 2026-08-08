@@ -34,19 +34,15 @@ def _registration_open() -> bool:
 
 def _safe_next(raw: str | None) -> str:
     """Only honour same-app relative paths."""
-    from app.ui_prefs import prefer_v2
-
     if not raw or not raw.startswith("/") or raw.startswith("//"):
-        return url_for("v2.dashboard") if prefer_v2() else url_for("main.dashboard")
+        return url_for("v2.dashboard")
     return raw
 
 
 @bp.get("/login")
 def login():
     if current_user.is_authenticated:
-        from app.ui_prefs import prefer_v2
-
-        return redirect(url_for("v2.dashboard") if prefer_v2() else url_for("main.dashboard"))
+        return redirect(url_for("v2.dashboard"))
     # Local preview helper — only when ACCESS_DEV_TIER is set (never in prod).
     if current_app.config.get("ACCESS_DEV_TIER") and request.args.get("preview") == "1":
         from datetime import date
@@ -96,9 +92,7 @@ def register():
         flash("Registration is closed while we prepare the launch.", "info")
         return redirect(url_for("main.coming_soon"))
     if current_user.is_authenticated:
-        from app.ui_prefs import prefer_v2
-
-        return redirect(url_for("v2.dashboard") if prefer_v2() else url_for("main.dashboard"))
+        return redirect(url_for("v2.dashboard"))
     return _register_template()
 
 
@@ -147,11 +141,7 @@ def register_post():
 
     flash("Account created. Your 14-day free trial has started.", "success")
     # Land on Single Point so the homepage teaser can hydrate from localStorage.
-    from app.ui_prefs import prefer_v2
-
-    if prefer_v2():
-        return redirect(url_for("v2.single_point", from_teaser=1))
-    return redirect(url_for("psychro.single_point", from_teaser=1))
+    return redirect(url_for("v2.single_point", from_teaser=1))
 
 
 @bp.post("/logout")

@@ -28,7 +28,7 @@
     </ul>
 
     {% if current_user.is_authenticated and current_user.subscription_status == 'active' %}
-      <a class="btn-accent" href="{{ url_for('main.dashboard') }}">Open toolkit</a>
+      <a class="btn-accent" href="{{ url_for('v2.dashboard') }}">Open toolkit</a>
       <p class="pricing-note">
         Your subscription is active. Receipts, card updates and cancellation are
         handled via Stripe / Link emails —

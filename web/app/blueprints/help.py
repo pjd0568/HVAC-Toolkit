@@ -95,4 +95,4 @@ ACTIVE_TO_ANCHOR = {
 
 @bp.get("/")
 def index():
-    return render_template("help.html", active="help", help_nav=HELP_NAV)
+    return render_template("help.html", active="help", nav="more", help_nav=HELP_NAV)

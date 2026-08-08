@@ -751,21 +751,9 @@ def _report_fields_for(fields: dict, system: dict) -> dict:
 @bp.route("/", methods=["GET"])
 @require_module("pipe.sizer")
 def index():
-    U = current_view()
-    state = _compute_state(request.args, U)
-    system = _compute_system_state(request.args, U)
-    report_fields = _report_fields_for(state["fields"], system)
-    return render_template(
-        "pipe.html",
-        active="pipe",
-        U=U,
-        fluids=eng.FLUID_LABELS,
-        materials=eng.MATERIAL_LABELS,
-        applications=eng.APPLICATION_LABELS,
-        system=system,
-        report_fields=report_fields,
-        **state,
-    )
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.pipe")
 
 
 @bp.route("/api/system-state", methods=["GET"])

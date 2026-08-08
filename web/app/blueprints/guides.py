@@ -53,7 +53,7 @@ GUIDES = [
 
 @bp.get("/")
 def index():
-    return render_template("guides.html", active="guides", guides=GUIDES)
+    return render_template("guides.html", active="guides", nav="more", guides=GUIDES)
 
 
 @bp.get("/<slug>")
@@ -61,4 +61,4 @@ def article(slug):
     guide = next((g for g in GUIDES if g["slug"] == slug), None)
     if guide is None:
         abort(404)
-    return render_template("guide_article.html", active="guides", guide=guide)
+    return render_template("guide_article.html", active="guides", nav="more", guide=guide)

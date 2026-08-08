@@ -30,6 +30,7 @@ def index():
     return render_template(
         "weather.html",
         active="weather",
+        nav="more",
         ashrae_viewer_url=ASHRAE_WEATHER_VIEWER_URL,
         ashrae_station_finder_url=ASHRAE_STATION_FINDER_URL,
         ashrae_meteo_url=ASHRAE_METEO_URL,

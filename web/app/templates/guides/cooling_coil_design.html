@@ -5,8 +5,8 @@ condensate, frosting, or a unit that cools fine but never controls humidity. Thi
 covers what the coil is physically doing to the air, why some coils dehumidify and
 others don't, and the handful of selection decisions that follow from the
 psychrometrics. Work through the numbers for a specific duty in the
-<a href="{{ url_for('psychro.cooling_coil') }}">Cooling Coil</a> calculator or the
-<a href="{{ url_for('psychro.ahu') }}">AHU Design</a> tool — both stage the process
+<a href="{{ url_for('v2.cooling_coil') }}">Cooling Coil</a> calculator or the
+<a href="{{ url_for('v2.ahu') }}">AHU Design</a> tool — both stage the process
 described below and report the loads directly.</p>
 
 <h2>Two kinds of heat, one coil</h2>
@@ -197,8 +197,8 @@ up. Where humidity control genuinely matters, face-and-bypass control, a DX hot-
 reheat wrap-around circuit, or splitting cooling and dedicated dehumidification across
 separate plant are all more robust than relying on a single modulating cooling valve.</p>
 
-<div class="callout">Put your own duty through the <a href="{{ url_for('psychro.cooling_coil') }}">Cooling Coil</a>
-calculator for a single coil process, or the <a href="{{ url_for('psychro.ahu') }}">AHU Design</a>
+<div class="callout">Put your own duty through the <a href="{{ url_for('v2.cooling_coil') }}">Cooling Coil</a>
+calculator for a single coil process, or the <a href="{{ url_for('v2.ahu') }}">AHU Design</a>
 tool for the full supply-driven chain (mixing → coil → reheat). Both report sensible,
 latent and (where needed) reheat kW, the condensate rate, and flag frost risk or an
 unreachable supply condition automatically.</div>

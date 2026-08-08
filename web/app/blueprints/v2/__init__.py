@@ -28,14 +28,15 @@ def _safe_next(raw: str | None) -> str:
 @bp.get("/use-mobile")
 @login_required
 def use_mobile():
+    """Legacy bookmark — ensure V2 cookie and land on the dashboard."""
     return redirect_with_ui("v2", _safe_next(request.args.get("next")) or url_for("v2.dashboard"))
 
 
 @bp.get("/use-classic")
 @login_required
 def use_classic():
-    target = request.args.get("next") or url_for("main.dashboard")
-    return redirect_with_ui("v1", _safe_next(target) if target.startswith("/") else url_for("main.dashboard"))
+    """Classic UI is retired — stay on V2."""
+    return redirect_with_ui("v2", url_for("v2.dashboard"))
 
 
 @bp.get("/")

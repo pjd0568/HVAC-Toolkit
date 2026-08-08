@@ -41,4 +41,6 @@ _DEMO_PROJECTS = [
 
 @bp.get("/")
 def index():
-    return render_template("projects.html", active="projects", projects=_DEMO_PROJECTS)
+    return render_template(
+        "projects.html", active="projects", nav="more", projects=_DEMO_PROJECTS
+    )

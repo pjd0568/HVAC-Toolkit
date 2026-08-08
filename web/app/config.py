@@ -96,9 +96,8 @@ class Config:
     # ("free" = trial ended / no suite access; "pro" = subscribed).
     ACCESS_DEV_TIER = os.environ.get("ACCESS_DEV_TIER") or None
 
-    # Default app shell when the ``ui`` cookie is unset: ``v1`` (classic) or ``v2``
-    # (mobile-first). Cutover defaults to v2; set UI_DEFAULT=v1 to force classic.
-    UI_DEFAULT = (os.environ.get("UI_DEFAULT") or "v2").strip().lower()
+    # App shell is V2-only. Kept for env compatibility; classic (v1) is retired.
+    UI_DEFAULT = "v2"
 
     # Public site URL (canonical links, sitemap, Open Graph).
     PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://hvac-calcs.app").rstrip(

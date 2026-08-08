@@ -33,6 +33,7 @@ def require_module(module_id: str):
             return render_template(
                 "access_denied.html",
                 active="dashboard",
+                nav="more",
                 **ctx,
             )
 
