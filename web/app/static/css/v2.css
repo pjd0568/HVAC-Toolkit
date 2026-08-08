@@ -692,11 +692,41 @@ a:hover { color: var(--v2-green-ink); }
   color: var(--v2-ink);
   transition: border-color .12s ease, box-shadow .12s ease;
 }
+.v2-main input[type="checkbox"],
+.v2-main input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--v2-green);
+  border-radius: 3px;
+  box-shadow: none;
+}
+.v2-main .rect-round25-row {
+  margin-bottom: 12px;
+}
+.v2-main .rect-round25-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  color: var(--v2-ink);
+}
 .v2-main input:focus,
 .v2-main select:focus,
 .v2-main textarea:focus {
   outline: none;
   border-color: var(--v2-green);
+  box-shadow: 0 0 0 3px rgba(0, 169, 157, 0.15);
+}
+.v2-main input[type="checkbox"]:focus,
+.v2-main input[type="radio"]:focus {
   box-shadow: 0 0 0 3px rgba(0, 169, 157, 0.15);
 }
 .v2-main .form-grid,
