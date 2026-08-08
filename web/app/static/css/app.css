@@ -939,20 +939,19 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   background: var(--blue-soft, #D5E2EC);
 }
 
-/* Horizontal scrub / jog wheel for nudging a dimension */
+/* Absolute duct-size scale slider (min–mid–max by air volume) */
+.dim-scrub-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .dim-scrub {
   position: relative;
   height: 28px;
   border-radius: 999px;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 7px,
-      rgba(90, 99, 110, 0.18) 7px 8px
-    ),
-    #eef1f5;
+  background: #eef1f5;
   border: 1px solid var(--line, #C5CCD5);
-  cursor: ew-resize;
+  cursor: pointer;
   touch-action: none;
   user-select: none;
   outline: none;
@@ -963,14 +962,36 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 }
 .dim-scrub-rail {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  left: 10px;
+  right: 10px;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 1px;
+  background: rgba(90, 99, 110, 0.28);
   pointer-events: none;
+}
+.dim-scrub-ticks {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.dim-scrub-tick {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: rgba(90, 99, 110, 0.35);
 }
 .dim-scrub-thumb {
   position: absolute;
   top: 3px;
-  left: 50%;
+  left: 10px;
   width: 18px;
   height: 20px;
   margin-left: -9px;
@@ -979,7 +1000,7 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   border: 1px solid #9aa3ad;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
   pointer-events: none;
-  transition: left 0.05s linear;
+  z-index: 1;
 }
 .dim-scrub.is-active .dim-scrub-thumb {
   border-color: var(--v2-green, #00A99D);
@@ -989,6 +1010,29 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
+}
+.dim-scrub-marks {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 2px;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted, #5A636E);
+  line-height: 1.2;
+  gap: 4px;
+}
+.dim-scrub-marks [data-scrub-mark="mid"] {
+  text-align: center;
+}
+.dim-scrub-marks [data-scrub-mark="max"] {
+  text-align: right;
+}
+@media (max-width: 380px) {
+  .dim-scrub-marks [data-scrub-mark="mid"] {
+    display: none;
+  }
 }
 
 /* Each rectangular dimension's own row: label, stepper, and a lock toggle

@@ -114,6 +114,102 @@
     return (els.rectRound25 && els.rectRound25.checked) ? ROUND25_STEP : NUDGE_STEP;
   }
 
+  // Absolute W/H scale: SI mm ranges keyed by air volume (m³/s).
+  // Display values follow the active unit system (mm or in).
+  var UNIT_SYSTEM = form.dataset.unitSystem || "SI";
+  var MM_PER_IN = 25.4;
+  // Matches engine duct_flow IP factor (CFM → m³/h) / 3600 → m³/s.
+  var CFM_TO_M3S = 1.699010796 / 3600.0;
+  var VOL_THRESHOLD_M3S = 7.5;
+  var RANGE_SMALL_MM = { min: 100, mid: 800, max: 1500 };
+  var RANGE_LARGE_MM = { min: 750, mid: 1625, max: 2500 };
+
+  function volumeM3s() {
+    var v = parseFloat(els.volume && els.volume.value) || 0;
+    if (UNIT_SYSTEM === "IP") return v * CFM_TO_M3S;
+    return v;
+  }
+
+  function scrubRangeMm() {
+    return volumeM3s() < VOL_THRESHOLD_M3S ? RANGE_SMALL_MM : RANGE_LARGE_MM;
+  }
+
+  function toDisplayDim(mm) {
+    return UNIT_SYSTEM === "IP" ? mm / MM_PER_IN : mm;
+  }
+
+  function formatMark(mm) {
+    var d = toDisplayDim(mm);
+    if (UNIT_SYSTEM === "IP") {
+      var r = Math.round(d * 10) / 10;
+      return (Math.abs(r - Math.round(r)) < 1e-9) ? String(Math.round(r)) : String(r);
+    }
+    return String(Math.round(d));
+  }
+
+  function scrubRangeDisplay() {
+    var r = scrubRangeMm();
+    return {
+      min: toDisplayDim(r.min),
+      mid: toDisplayDim(r.mid),
+      max: toDisplayDim(r.max),
+      minLabel: formatMark(r.min),
+      midLabel: formatMark(r.mid),
+      maxLabel: formatMark(r.max),
+    };
+  }
+
+  function snapDimValue(raw) {
+    var step = currentStep();
+    if (!step || step <= 0) return raw;
+    return Math.round(raw / step) * step;
+  }
+
+  function valueToPct(value, range) {
+    var span = range.max - range.min;
+    if (!(span > 0)) return 0;
+    var pct = ((value - range.min) / span) * 100;
+    return Math.max(0, Math.min(100, pct));
+  }
+
+  function clientXToPct(scrub, clientX) {
+    var rect = scrub.getBoundingClientRect();
+    var pad = 10;
+    var usable = Math.max(1, rect.width - pad * 2);
+    var x = clientX - rect.left - pad;
+    return Math.max(0, Math.min(100, (x / usable) * 100));
+  }
+
+  function syncDimScrub(scrub) {
+    if (!scrub) return;
+    var field = scrub.getAttribute("data-nudge-scrub");
+    var input = document.querySelector('input[data-field="' + field + '"]');
+    var thumb = scrub.querySelector(".dim-scrub-thumb");
+    var wrap = scrub.closest(".dim-scrub-wrap");
+    var range = scrubRangeDisplay();
+    if (wrap) {
+      var minEl = wrap.querySelector('[data-scrub-mark="min"]');
+      var midEl = wrap.querySelector('[data-scrub-mark="mid"]');
+      var maxEl = wrap.querySelector('[data-scrub-mark="max"]');
+      if (minEl) minEl.textContent = range.minLabel;
+      if (midEl) midEl.textContent = range.midLabel;
+      if (maxEl) maxEl.textContent = range.maxLabel;
+    }
+    var value = input ? (parseFloat(input.value) || 0) : range.min;
+    var pct = valueToPct(value, range);
+    if (thumb) {
+      thumb.style.left = "calc(10px + (100% - 20px) * " + (pct / 100) + ")";
+      thumb.style.marginLeft = "-9px";
+    }
+    scrub.setAttribute("aria-valuemin", String(range.min));
+    scrub.setAttribute("aria-valuemax", String(range.max));
+    scrub.setAttribute("aria-valuenow", String(value));
+  }
+
+  function syncAllDimScrubs() {
+    document.querySelectorAll("[data-nudge-scrub]").forEach(syncDimScrub);
+  }
+
   function setLoading(on) {
     if (els.loading) els.loading.style.display = on ? "" : "none";
     document.querySelectorAll(".col-panel").forEach(function (p) {
@@ -178,6 +274,7 @@
     if (!input || input.disabled) return;
     if (next <= 0) return;
     input.value = next;
+    syncAllDimScrubs();
     if (opts && opts.live) {
       debouncedNudgeFetch(field, next);
     } else {
@@ -232,6 +329,7 @@
     }
     els.rectWidthHidden.value = r.width;
     els.rectHeightHidden.value = r.height;
+    syncAllDimScrubs();
 
     // -- flat oval --
     setText("oval-velocity", o.velocity);
@@ -337,6 +435,11 @@
     el.addEventListener("change", onLivePrimaryChange);
     el.addEventListener("input", debouncedLivePrimaryChange);
   });
+  if (els.volume) {
+    els.volume.addEventListener("input", function () {
+      syncAllDimScrubs();
+    });
+  }
 
   els.basis.addEventListener("change", function () {
     var isVelocity = els.basis.value === "velocity";
@@ -377,6 +480,7 @@
   els.rectRound25.addEventListener("change", function () {
     els.rectRound25Hidden.value = els.rectRound25.checked ? "1" : "";
     fetchState({ rect_round25: els.rectRound25Hidden.value }, { quiet: true });
+    syncAllDimScrubs();
   });
 
   // -- Rectangular nudge inputs (direct type-in; flat oval is readonly and
@@ -384,11 +488,15 @@
   els.rectWidth.addEventListener("change", function () {
     if (els.rectWidth.disabled) return;
     fetchState({ nudge: "rect_width", nudge_value: els.rectWidth.value }, { quiet: true });
+    syncAllDimScrubs();
   });
   els.rectHeight.addEventListener("change", function () {
     if (els.rectHeight.disabled) return;
     fetchState({ nudge: "rect_height", nudge_value: els.rectHeight.value }, { quiet: true });
+    syncAllDimScrubs();
   });
+  els.rectWidth.addEventListener("input", function () { syncDimScrub(document.querySelector('[data-nudge-scrub="rect_width"]')); });
+  els.rectHeight.addEventListener("input", function () { syncDimScrub(document.querySelector('[data-nudge-scrub="rect_height"]')); });
 
   // -- Rectangular stepper +/- buttons (continuous, computed client-side) --
   document.querySelectorAll("[data-nudge][data-dir]").forEach(function (btn) {
@@ -405,75 +513,53 @@
     });
   });
 
-  // -- Horizontal scrub / jog wheel for rectangular dimensions --
+  // -- Absolute scale slider for rectangular dimensions --
   (function bindDimScrubs() {
-    var PX_PER_STEP = 14;
     document.querySelectorAll("[data-nudge-scrub]").forEach(function (scrub) {
       var field = scrub.getAttribute("data-nudge-scrub");
-      var thumb = scrub.querySelector(".dim-scrub-thumb");
       var dragging = false;
-      var startX = 0;
-      var acc = 0;
       var pointerId = null;
 
-      function setThumbOffset(px) {
-        if (!thumb) return;
-        var max = Math.max(0, (scrub.clientWidth / 2) - 12);
-        var clamped = Math.max(-max, Math.min(max, px));
-        thumb.style.left = "calc(50% + " + clamped + "px)";
-      }
-
-      function resetThumb() {
-        if (thumb) thumb.style.left = "50%";
-        scrub.classList.remove("is-active");
-      }
-
-      function onMove(clientX) {
-        if (!dragging) return;
-        var dx = clientX - startX;
-        acc += dx;
-        startX = clientX;
-        setThumbOffset(acc);
-        var steps = 0;
-        while (acc >= PX_PER_STEP) { steps += 1; acc -= PX_PER_STEP; }
-        while (acc <= -PX_PER_STEP) { steps -= 1; acc += PX_PER_STEP; }
-        if (!steps) return;
+      function setFromClientX(clientX, opts) {
         var input = document.querySelector('input[data-field="' + field + '"]');
         if (!input || input.disabled) return;
-        var step = currentStep();
-        var current = parseFloat(input.value) || 0;
-        var next = current + steps * step;
-        if (next <= 0) next = current;
-        if (next === current) return;
-        nudgeRectField(field, next, { live: true });
+        var range = scrubRangeDisplay();
+        var pct = clientXToPct(scrub, clientX);
+        var raw = range.min + (pct / 100) * (range.max - range.min);
+        var next = snapDimValue(raw);
+        next = Math.max(range.min, Math.min(range.max, next));
+        if (next <= 0) return;
+        if (String(input.value) === String(next) && !(opts && opts.force)) {
+          syncDimScrub(scrub);
+          return;
+        }
+        nudgeRectField(field, next, opts);
       }
 
       scrub.addEventListener("pointerdown", function (e) {
         if (scrub.classList.contains("is-disabled") || scrub.getAttribute("aria-disabled") === "true") return;
         dragging = true;
         pointerId = e.pointerId;
-        startX = e.clientX;
-        acc = 0;
         scrub.classList.add("is-active");
         scrub.setPointerCapture(pointerId);
+        setFromClientX(e.clientX, { live: true });
         e.preventDefault();
       });
       scrub.addEventListener("pointermove", function (e) {
         if (!dragging || e.pointerId !== pointerId) return;
-        onMove(e.clientX);
+        setFromClientX(e.clientX, { live: true });
       });
       function endDrag(e) {
         if (!dragging) return;
         if (e && pointerId !== null && e.pointerId !== pointerId) return;
         dragging = false;
-        var endedField = field;
         pointerId = null;
-        acc = 0;
-        resetThumb();
-        var input = document.querySelector('input[data-field="' + endedField + '"]');
+        scrub.classList.remove("is-active");
+        var input = document.querySelector('input[data-field="' + field + '"]');
         if (input && !input.disabled) {
-          fetchState({ nudge: endedField, nudge_value: String(input.value) }, { quiet: true });
+          fetchState({ nudge: field, nudge_value: String(input.value) }, { quiet: true });
         }
+        syncDimScrub(scrub);
       }
       scrub.addEventListener("pointerup", endDrag);
       scrub.addEventListener("pointercancel", endDrag);
@@ -488,13 +574,17 @@
         e.preventDefault();
         var input = document.querySelector('input[data-field="' + field + '"]');
         if (!input || input.disabled) return;
+        var range = scrubRangeDisplay();
         var step = currentStep();
         var current = parseFloat(input.value) || 0;
         var next = current + dir * step;
+        next = Math.max(range.min, Math.min(range.max, next));
         if (next <= 0) next = current;
         nudgeRectField(field, next);
       });
     });
+
+    syncAllDimScrubs();
   })();
 
   // Sync lock → disabled input/scrub on load (server may have restored locks).
