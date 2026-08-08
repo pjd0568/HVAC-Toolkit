@@ -32,13 +32,6 @@
     </div>
   </form>
 
-  <div class="psychro-chart panel">
-    <div class="panel-head">Psychrometric chart</div>
-    <div class="panel-body">
-      {% include "_psychro_chart_embed.html" %}
-    </div>
-  </div>
-
   {% if mres %}
   {% if mres.fog %}
   <div class="warn-banner psychro-span">Mixed condition falls in the fog region — settled to saturation.
@@ -54,6 +47,13 @@
     </table>
   </div>
   {% endif %}
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
+  </div>
 </div>
 
 {% if mres %}

@@ -38,14 +38,6 @@
     </div>
   </form>
 
-  <div class="psychro-chart panel">
-    <div class="panel-head">Psychrometric chart</div>
-    <div class="panel-body">
-      {% include "_psychro_chart_embed.html" %}
-    </div>
-  </div>
-
-  {# S — full-width results for each saved point #}
   {% if saved_points %}
   <div class="psychro-results panel">
     <div class="panel-head">Resolved states</div>
@@ -70,6 +62,13 @@
     </div>
   </div>
   {% endif %}
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
+  </div>
 </div>
 
 {% if saved_points %}

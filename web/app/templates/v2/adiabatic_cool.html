@@ -70,13 +70,6 @@
     </div>
   </form>
 
-  <div class="psychro-chart panel">
-    <div class="panel-head">Psychrometric chart</div>
-    <div class="panel-body">
-      {% include "_psychro_chart_embed.html" %}
-    </div>
-  </div>
-
   {% if result %}
   <div class="psychro-results panel">
     <div class="panel-head">Process result</div>
@@ -100,6 +93,13 @@
     </div>
   </div>
   {% endif %}
+
+  <div class="psychro-chart panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
+  </div>
 </div>
 
 {% if result %}
