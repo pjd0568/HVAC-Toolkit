@@ -1181,7 +1181,7 @@ a:hover { color: var(--v2-green-ink); }
   margin: 0 -4px;
   padding: 0 4px;
 }
-.v2-main .leg-rows-table,
+.v2-main .leg-rows-table { min-width: 980px; }
 .v2-main .pipe-sys-table { min-width: 720px; }
 
 /* Soften V1 industrial bits when they leak through */

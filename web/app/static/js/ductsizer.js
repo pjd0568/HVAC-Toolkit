@@ -3,8 +3,9 @@
  * (Correction #3), fully independent width/height with padlock toggles
  * (Correction #4), flat-oval major/minor stepped independently through real
  * catalogue sizes only (Correction #5), a fully independent per-row Index
- * Leg pressure-drop builder (Correction #6), and the Index Leg rebuilt as a
- * genuine spreadsheet-style data grid (Correction #7).
+ * Leg pressure-drop builder (Correction #6), spreadsheet-style data grid
+ * (Correction #7), and a 2-row labeled composer above the grid
+ * (Correction #9).
  *
  * All calculation and unit-conversion happens server-side
  * (blueprints/duct.py); this file only reads/writes form fields, calls the
@@ -16,9 +17,9 @@
  * (/api/state, /api/leg-state), two separate fetch/apply cycles. They now
  * also live on separate pages/modules (Correction #8).
  *
- * Correction #7: Index Leg rebuilt as a spreadsheet-style data grid.
- * `buildRowCellsHtml()` mirrors `_duct_index_leg.html`'s `leg_row_cells`
- * macro exactly -- keep both in sync.
+ * Correction #7 / #9: Index Leg composer is `#leg-stage` (2-row labeled
+ * form); committed rows are a centered spreadsheet grid. `buildRowCellsHtml()`
+ * mirrors `_duct_index_leg.html`'s `leg_row_cells` macro -- keep both in sync.
  *
  * Correction #8: Duct Sizing and Index Leg / pressure drop are separate
  * modules. This file initialises whichever panels are present on the page
@@ -29,7 +30,7 @@
  * changing volume or size keeps the current duct size pinned and only
  * refreshes outputs — until Calculate is pressed again.
  *
- * Index Leg state model: every row (and the staging/entry row) carries its
+ * Index Leg state model: every row (and the staging composer) carries its
  * own type/shape/volume/size/length-or-fitting-or-label+dp, read fresh from
  * the DOM by LOOP POSITION (not a stored row index).
  */
@@ -657,7 +658,7 @@
                      "major", "minor", "length", "fitting", "label", "dp"];
 
   var legEls = {
-    stageRow: document.getElementById("leg-stage-row"),
+    stageRow: document.getElementById("leg-stage"),
     stageResultCell: document.getElementById("leg-stage-result-cell"),
     rowsBody: document.getElementById("leg-rows-body"),
     errorBox: document.getElementById("leg-error"),
@@ -700,8 +701,9 @@
   // Mirrors `_duct_index_leg.html`'s `leg_row_cells` macro exactly -- same
   // columns, same data attributes, same order -- one <td> per column, no
   // wrapping element, so the caller can drop these straight into a <tr>
-  // alongside the #/Pressure-Drop/Remove cells it builds itself. Used both
-  // for the staging/entry row and for every committed row (Correction #7).
+  // alongside the #/Pressure-Drop/Remove cells it builds itself. Used for
+  // every committed data-grid row (composer fields are server-rendered
+  // separately in `#leg-stage`).
   function buildRowCellsHtml(namePrefix, nameSuffix, raw, currentType, currentShape, currentFitting) {
     function name(field) { return namePrefix + field + nameSuffix; }
     var v = function (field) { return escAttr(raw[field]); };
@@ -800,12 +802,10 @@
     legEls.errorBox.appendChild(div);
   }
 
-  // The staging/entry row's Pressure Drop cell doubles as its live preview
-  // (velocity/velocity pressure/friction-or-K, then the item's own pressure
-  // drop) or the stage-level error -- built with the DOM API + textContent
-  // (not innerHTML string concatenation) since `leg.stage_error` can embed
-  // a raw value the user just typed (see blueprints/duct.py's `_f()`), which
-  // must never be interpreted as HTML.
+  // The composer's preview panel shows live velocity / VP / F-or-K and the
+  // item's pressure drop, or the stage-level error -- built with the DOM API
+  // + textContent (not innerHTML) since `leg.stage_error` can embed a raw
+  // value the user just typed (see blueprints/duct.py's `_f()`).
   function updateStageResultCell(leg) {
     if (!legEls.stageResultCell) return;
     legEls.stageResultCell.innerHTML = "";
@@ -821,32 +821,35 @@
     var s = leg.stage;
     if (!s) return;
 
-    var line1 = document.createElement("div");
-    line1.className = "suffix";
-    function labelledSpan(id, prefix, text) {
-      line1.appendChild(document.createTextNode(prefix));
+    var metrics = document.createElement("div");
+    metrics.className = "leg-preview-metrics suffix";
+    function metric(id, label, text) {
+      var wrap = document.createElement("span");
+      wrap.appendChild(document.createTextNode(label + ": "));
       var span = document.createElement("span");
       span.id = id;
       span.textContent = text;
-      line1.appendChild(span);
+      wrap.appendChild(span);
+      metrics.appendChild(wrap);
     }
-    labelledSpan("stage-velocity", "V: ", s.velocity_display);
-    labelledSpan("stage-vp", " · VP: ", s.velocity_pressure_display);
-    labelledSpan("stage-friction", " · F/K: ", s.friction_rate_display);
+    metric("stage-velocity", "V", s.velocity_display);
+    metric("stage-vp", "VP", s.velocity_pressure_display);
+    metric("stage-friction", "F/K", s.friction_rate_display);
 
-    var line2 = document.createElement("div");
+    var dpLine = document.createElement("div");
+    dpLine.className = "leg-preview-dp";
     var dpSpan = document.createElement("span");
     dpSpan.id = "stage-dp";
     dpSpan.textContent = s.dp_display;
-    line2.appendChild(dpSpan);
-    line2.appendChild(document.createTextNode(" "));
+    dpLine.appendChild(dpSpan);
+    dpLine.appendChild(document.createTextNode(" "));
     var symSpan = document.createElement("span");
     symSpan.className = "u";
     symSpan.textContent = LEG_SYMS.velocity_pressure || "";
-    line2.appendChild(symSpan);
+    dpLine.appendChild(symSpan);
 
-    legEls.stageResultCell.appendChild(line1);
-    legEls.stageResultCell.appendChild(line2);
+    legEls.stageResultCell.appendChild(metrics);
+    legEls.stageResultCell.appendChild(dpLine);
   }
 
   // Builds one committed row's <tr> -- the field <td>s come from
@@ -871,7 +874,7 @@
     while (cellsRow.firstChild) tr.appendChild(cellsRow.firstChild);
 
     var dpTd = document.createElement("td");
-    dpTd.className = "num";
+    dpTd.className = "num leg-dp-cell";
     dpTd.appendChild(document.createTextNode(row.dp_display + " "));
     var symSpan = document.createElement("span");
     symSpan.className = "u";
@@ -886,6 +889,7 @@
     tr.appendChild(dpTd);
 
     var removeTd = document.createElement("td");
+    removeTd.className = "leg-action-cell";
     var removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn-ghost";

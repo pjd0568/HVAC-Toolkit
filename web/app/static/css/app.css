@@ -1095,85 +1095,235 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 
 .col-subhead { font-size: 11px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
 
-/* Index Leg pressure-drop builder (Correction #7 -- spreadsheet-style data
-   grid) -- extends the duct-sizing page below the three shape columns, but
-   is fully independent of them: every row (and the "Add an Item" entry row)
-   carries its own volume/shape/size, since a real index leg is a sequence
-   of different pieces, not one shared duty. See blueprints/duct.py's module
-   docstring.
+/* Index Leg pressure-drop builder (Correction #9).
+   Composer is a separate 2-row labeled form above the table so Type/Shape/
+   Size/Fitting are fully readable. Committed rows are a centered spreadsheet
+   data grid (header once with units, values centered in cells). Every row
+   still carries its own volume/shape/size. See blueprints/duct.py.
 
-   Paul's direct feedback on the previous layout (Correction #6): a
-   label-above-input grid per row took too much vertical space/padding and
-   wrapped onto a second line once more than ~4 fields were visible at once
-   (a straight/fitting row needs 5+). Replaced with a genuine HTML table --
-   header row printed once, one <td> per column per row (see the
-   `leg_row_cells` macro / `buildRowCellsHtml()`), fixed column widths via
-   <colgroup> so they never drift row to row the way free-flowing grid
-   columns could. A field that doesn't apply to a row's current type/shape
-   still gets its cell -- its candidate input(s) are just hidden (see
+   A field that doesn't apply to a row's current type/shape still gets its
+   table cell -- its candidate input(s) are just hidden (see
    `updateFieldVisibility` in ductsizer.js), leaving a blank cell, exactly
-   like an empty cell in a real spreadsheet -- never a hidden/removed <td>,
-   which would shift every following cell in that row out of alignment with
-   the header. */
-.leg-table-scroll { overflow-x: auto; }
-table.leg-rows-table { table-layout: fixed; width: 100%; min-width: 0; }
-table.leg-rows-table th, table.leg-rows-table td { padding: 5px 6px; }
+   like an empty cell in a real spreadsheet -- never a hidden/removed <td>. */
+
+/* ── Composer (2-row entry form) ─────────────────────────────────────────── */
+.leg-composer {
+  background: var(--row-hl);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.leg-composer-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px 14px;
+  align-items: end;
+}
+.leg-field label {
+  min-height: 0;
+  margin-bottom: 5px;
+  font-size: 11px;
+}
+.leg-field label .th-unit {
+  font-weight: 500;
+  color: var(--muted);
+}
+.leg-field input,
+.leg-field select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.leg-composer-row + .leg-composer-row { margin-top: 12px; }
+.leg-composer-row-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 14px;
+  align-items: stretch;
+}
+.leg-composer-row-item .leg-field {
+  flex: 1 1 140px;
+  max-width: 260px;
+  align-self: end;
+}
+.leg-composer-row-item .leg-field-wide {
+  flex: 2 1 220px;
+  max-width: 420px;
+}
+.leg-composer-preview {
+  flex: 2 1 220px;
+  min-width: 180px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.leg-preview-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.leg-preview-dp {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  margin-top: 2px;
+}
+.leg-composer-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.leg-add-btn {
+  padding: 9px 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .leg-composer-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .leg-composer-row-item .leg-field,
+  .leg-composer-row-item .leg-field-wide,
+  .leg-composer-preview {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .leg-composer-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+  .leg-composer-actions .leg-add-btn { width: 100%; }
+}
+
+/* ── Data grid (committed rows) ──────────────────────────────────────────── */
+.leg-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.leg-rows-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 980px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+table.leg-rows-table th,
+table.leg-rows-table td {
+  padding: 8px 6px;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid #EEF1F5;
+}
+table.leg-rows-table thead th {
+  background: #F7F9FB;
+  line-height: 1.35;
+  border-bottom: 1px solid var(--line);
+}
 table.leg-rows-table td.leg-cell { overflow: hidden; }
-table.leg-rows-table th { line-height: 1.35; }
-table.leg-rows-table .th-unit { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
+table.leg-rows-table .th-unit {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
 
-/* Column widths as percentages of the table width so the table always
-   fills the panel body (width:100% above) without overflowing or
-   producing a scrollbar regardless of screen size or DPI scaling.
-   Two col-size elements (Size 1 and Size 2) both match col.col-size.
-   Total = 3+11+9+8+8+8+7+13+9+7+10+7 = 100%.
-   NB: col-action is 7% (not a token 4%) because the stage row's "+ Add"
-   button lives in that column; a too-narrow action column let the button
-   overflow its cell (the action <td> doesn't clip) and spill ~16px past
-   the table's right edge, which is what produced the horizontal scrollbar
-   even though the table itself fits the panel. */
-table.leg-rows-table col.col-num { width: 3%; }
-table.leg-rows-table col.col-type { width: 11%; }
-table.leg-rows-table col.col-shape { width: 9%; }
-table.leg-rows-table col.col-volume { width: 8%; }
-table.leg-rows-table col.col-size { width: 8%; }
-table.leg-rows-table col.col-length { width: 7%; }
-table.leg-rows-table col.col-fitting { width: 13%; }
-table.leg-rows-table col.col-desc { width: 9%; }
-table.leg-rows-table col.col-manual-dp { width: 7%; }
-table.leg-rows-table col.col-dp { width: 10%; }
-table.leg-rows-table col.col-action { width: 7%; }
+/* Fixed-ish column widths; table min-width above allows horizontal scroll
+   instead of crushing Type/Fitting text. Two col-size cols share the rule. */
+table.leg-rows-table col.col-num { width: 40px; }
+table.leg-rows-table col.col-type { width: 108px; }
+table.leg-rows-table col.col-shape { width: 100px; }
+table.leg-rows-table col.col-volume { width: 88px; }
+table.leg-rows-table col.col-size { width: 78px; }
+table.leg-rows-table col.col-length { width: 78px; }
+table.leg-rows-table col.col-fitting { width: 150px; }
+table.leg-rows-table col.col-desc { width: 110px; }
+table.leg-rows-table col.col-manual-dp { width: 88px; }
+table.leg-rows-table col.col-dp { width: 100px; }
+table.leg-rows-table col.col-action { width: 48px; }
 
-.leg-cell input, .leg-cell select {
-  width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; padding: 5px 6px;
-  border: 1px solid var(--line); border-radius: 6px;
-  font-size: 11.5px; font-family: inherit; background: white;
+/* Spreadsheet-style cell editors: centered, low chrome until focused. */
+.leg-cell input,
+.leg-cell select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-family: inherit;
+  background: transparent;
+  text-align: center;
+}
+.leg-cell input:hover,
+.leg-cell select:hover { background: rgba(255, 255, 255, 0.9); border-color: var(--line); }
+.leg-cell input:focus,
+.leg-cell select:focus {
+  outline: 2px solid var(--blue-soft);
+  border-color: var(--blue);
+  background: white;
 }
 /* A cell can hold more than one candidate input (Size 1/2 -- diameter vs.
-   width vs. major, etc.) -- updateFieldVisibility() (ductsizer.js) sets
-   inline display:none on every candidate but the current shape/type's, so
-   at most one is ever visible per cell; the rest take up no space. */
+   width vs. major, etc.) -- updateFieldVisibility() sets inline display:none
+   on every candidate but the current shape/type's. */
 
-table.leg-rows-table td { vertical-align: middle; }
-table.leg-rows-table td.leg-row-num { color: var(--muted); font-size: 12px; text-align: center; }
+table.leg-rows-table td.leg-row-num {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+table.leg-rows-table td.leg-dp-cell,
+table.leg-rows-table th.num,
+table.leg-rows-table td.num {
+  text-align: center;
+  font-family: Consolas, monospace;
+}
+table.leg-rows-table td.leg-action-cell { text-align: center; padding: 4px; }
+table.leg-rows-table td.leg-action-cell .btn-ghost {
+  padding: 4px 8px;
+  font-size: 12px;
+}
 table.leg-rows-table tr.row-error { background: #FCEEED; }
-table.leg-rows-table tfoot td { border-top: 2px solid var(--line); border-bottom: none; }
-.leg-row-error-text { color: #b3261e; margin-top: 4px; }
+table.leg-rows-table tbody tr:hover { background: #FAFBFC; }
+table.leg-rows-table tfoot td {
+  border-top: 2px solid var(--line);
+  border-bottom: none;
+  background: #F7F9FB;
+}
+table.leg-rows-table tfoot td.leg-total-label {
+  text-align: right;
+  font-weight: 600;
+  padding-right: 12px;
+  font-family: inherit;
+}
+.leg-row-error-text { color: #b3261e; margin-top: 4px; font-family: inherit; }
 
-/* The "Add an Item" composer is the table's own first row (tinted), not a
-   separate panel above it -- adding an item is adding a row, the same way
-   a spreadsheet works. Its Pressure Drop cell doubles as the live preview
-   (velocity/velocity pressure/friction-or-K, then the item's own pressure
-   drop) or the stage-level error message, replacing the previous separate
-   "leg-preview-strip" panel. */
+/* Pipe system stage row still uses this class when present in the table. */
 tr.leg-stage-row { background: var(--row-hl); }
 tr.leg-stage-row td { vertical-align: top; padding-top: 8px; }
-#leg-stage-result-cell { font-size: 11.5px; line-height: 1.5; }
-#leg-stage-result-cell .suffix { display: block; }
-.leg-add-btn { padding: 5px 6px; font-size: 11.5px; white-space: nowrap; }
 
 /* Safety margin rows in tfoot */
-table.leg-rows-table tfoot tr.leg-margin-tr td { border-top: none; font-size: 12px; color: var(--muted); padding-top: 3px; padding-bottom: 3px; }
+table.leg-rows-table tfoot tr.leg-margin-tr td {
+  border-top: none;
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
 
 /* ── Help / User Guide (see blueprints/help.py, templates/help.html) ─────── */
 
@@ -1266,7 +1416,7 @@ table.leg-rows-table tfoot tr.leg-total-margin-tr td { border-top: 1px solid var
 
 /* Safety margin input strip below the table */
 .leg-safety-margin-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; }
-.leg-safety-margin-row label { font-weight: 600; }
+.leg-safety-margin-row label { font-weight: 600; min-height: 0; margin-bottom: 0; }
 .leg-safety-margin-row input[type=number] { width: 60px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-family: inherit; text-align: right; }
 
 /* ── Pipe sizing (Hydronics) ─────────────────────────────────────────────── */
