@@ -1,9 +1,12 @@
-{# Pipe System — compact composer above Tabulator results grid (mirrors Index Leg).
+{# Pipe System — static fluid/pipe panel + duct-style component composer.
    Calc stays in blueprints/pipe.py (/api/system-state). #}
 {% from "_report_form.html" import report_form %}
 
-{% macro pipe_system_panel(system, U, report_action=None, report_fields=None, panel_style='', show_ctx_error=True, flow_display=None) %}
+{% macro pipe_system_panel(
+     system, U, fluids, materials, glycol_options_by_fluid,
+     report_action=None, report_fields=None, panel_style='') %}
 {% set head = system.head %}
+{% set duty = system.duty_fields or {} %}
 <div class="panel pipe-system-panel tile-water-border" id="sys-panel" style="{{ panel_style }}">
   <details class="panel-help">
     <summary class="panel-head" aria-label="Pipe System. How to use">
@@ -11,35 +14,75 @@
       <span class="help-inline-mark" aria-hidden="true">?</span>
     </summary>
     <div class="panel-help-body">
-      Fill the compact form above (type, DN, flow, length or fitting), check the
-      live preview, then press <strong>Add</strong> to commit a row into the
-      spreadsheet table. Committed rows can still be edited in-place.
-      Each row uses its own DN and optional flow (blank flow inherits the duty
-      flow from Design Inputs). Fitting/valve K-factors are indicative for
-      preliminary sizing — verify critical runs against manufacturer or primary
-      data. Devices take a manufacturer ΔP.
-      You can switch to <strong>Pipe Sizing</strong> and back — Design Inputs
-      and this table are kept in the browser tab until you press
-      <strong>Clear Table</strong> or close the tab.
+      Set fluid and pipe conditions once at the top (they stay fixed for the
+      whole circuit). Below, add components like the Air index-leg tool:
+      enter flow and DN on each row, then either total metres of straight pipe
+      or a fitting type with quantity (e.g. 8 elbows). Live preview updates
+      before you press <strong>Add</strong>. Switch to <strong>Pipe Sizing</strong>
+      to pick catalogue DNs — this table stays in the tab until
+      <strong>Clear Table</strong> or you close the tab.
     </div>
   </details>
   <div class="panel-body">
 
+    <form method="get" id="pipe-form" class="pipe-sys-duty" autocomplete="off">
+      <div class="pipe-sys-section-label">System — fluid &amp; pipe</div>
+      <div class="pipe-inline-grid">
+        <label class="pipe-inline-field" for="fluid">
+          <span>Fluid</span>
+          <select id="fluid" name="fluid">
+            {% for key, label in fluids.items() %}
+            <option value="{{ key }}" {{ 'selected' if duty.fluid == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="pipe-inline-field" for="material">
+          <span>Pipe type</span>
+          <select id="material" name="material">
+            {% for key, label in materials.items() %}
+            <option value="{{ key }}" {{ 'selected' if duty.material == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="pipe-inline-field" for="delta_t">
+          <span>ΔT ({{ system.delta_t_unit }})</span>
+          <input id="delta_t" name="delta_t" value="{{ duty.delta_t }}" inputmode="decimal">
+        </label>
+        <label class="pipe-inline-field" for="lwt">
+          <span>LWT ({{ system.temperature_sym }})</span>
+          <input id="lwt" name="lwt" value="{{ duty.lwt }}" inputmode="decimal">
+        </label>
+        <label class="pipe-inline-field" id="glycol-field" for="glycol_pct"
+               {% if duty.fluid == 'water' %}hidden{% endif %}>
+          <span>Glycol % v/v</span>
+          <select id="glycol_pct" name="glycol_pct">
+            {% for opt in glycol_options_by_fluid.get(duty.fluid, []) %}
+            <option value="{{ opt.pct }}" {{ 'selected' if duty.glycol_pct == opt.pct|string }}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <input type="hidden" name="mode" value="flow_known">
+      <input type="hidden" name="application" value="{{ duty.application or 'lthw' }}">
+      <p class="suffix pipe-sys-fluid-note" id="sys-fluid-label">{{ head.fluid_label or '—' }}</p>
+    </form>
+
+    {% if system.ctx_error %}
+    <div class="error">{{ system.ctx_error }}</div>
+    {% endif %}
+
+    {{ pipe_system_components(system) }}
+
     <div class="pipe-sys-params" id="sys-params">
-      <div class="pipe-sys-params-title">System parameters</div>
-      <div class="form-grid four">
-        <div>
-          <label>Fluid</label>
-          <div class="pipe-sys-fluid" id="sys-fluid-label">{{ head.fluid_label or '—' }}</div>
-          <div class="suffix">From Design Inputs above (duty / properties)</div>
-        </div>
-        <div style="grid-column: span 2;">
-          <label>System type</label>
+      <div class="pipe-sys-section-label">Pump head</div>
+      <div class="pipe-inline-grid pipe-inline-grid-circuit">
+        <div class="pipe-inline-field pipe-inline-field-span">
+          <span>System type</span>
           <div class="mode-tabs" id="circuit-tabs">
             <label class="mode-tab">
               <input type="radio" name="circuit_ui" value="pressurised" id="circuit-pressurised"
                      {{ 'checked' if head.fields.circuit == 'pressurised' }}>
-              Pressurised closed circuit
+              Pressurised closed
             </label>
             <label class="mode-tab">
               <input type="radio" name="circuit_ui" value="open" id="circuit-open"
@@ -48,23 +91,16 @@
             </label>
           </div>
         </div>
-        <div id="lift-field" {% if not head.lift_visible %}style="display:none"{% endif %}>
-          <label for="lift">Static lift height ({{ head.lift_sym }})</label>
+        <label class="pipe-inline-field" id="lift-field" for="lift"
+               {% if not head.lift_visible %}style="display:none"{% endif %}>
+          <span>Static lift ({{ head.lift_sym }})</span>
           <input id="lift" value="{{ head.fields.lift }}" inputmode="decimal" placeholder="0">
-          <div class="suffix">Vertical rise to open water surface — included in pump head</div>
-        </div>
+        </label>
       </div>
-      <p class="suffix" id="head-note" style="margin:10px 0 0;">{{ head.note }}</p>
+      <p class="suffix" id="head-note" style="margin:8px 0 0;">{{ head.note }}</p>
     </div>
 
-    {% if show_ctx_error and system.ctx_error and not flow_display %}
-    <div class="error">{{ system.ctx_error }}</div>
-    {% endif %}
-
-    {{ pipe_system_components(system) }}
-
-    <div class="pipe-sys-section-label" style="margin-top:22px;">Required pump head</div>
-    <div id="head-panel">
+    <div id="head-panel" style="margin-top:14px;">
       {% if head.error %}
       <div class="error">{{ head.error }}</div>
       {% else %}
@@ -121,40 +157,39 @@
 
     <div id="sys-error"></div>
 
-    <div id="sys-stage" class="leg-composer">
-      <div class="leg-composer-row">
-        <div class="leg-field">
-          <label for="stage_type">Type</label>
+    <div id="sys-stage" class="leg-composer pipe-sys-composer">
+      <div class="leg-composer-row pipe-inline-grid">
+        <label class="pipe-inline-field" for="stage_type">
+          <span>Type</span>
           <select id="stage_type" data-row-field="type" name="stage_type">
             {% for opt in system.type_options %}
             <option value="{{ opt.value }}" {{ 'selected' if stage_type == opt.value }}>{{ opt.label }}</option>
             {% endfor %}
           </select>
-        </div>
-        <div class="leg-field" data-pipe-size-field>
-          <label for="stage_dn">DN</label>
+        </label>
+        <label class="pipe-inline-field" for="stage_dn" data-pipe-size-field>
+          <span>DN</span>
           <select id="stage_dn" data-row-field="dn" data-pipe-size-field name="stage_dn">
             {% for opt in system.dn_options %}
             <option value="{{ opt.dn }}" {{ 'selected' if stage.dn == opt.dn|string }}>{{ opt.label }}</option>
             {% endfor %}
           </select>
-        </div>
-        <div class="leg-field" data-pipe-size-field>
-          <label for="stage_flow_ls">Flow <span class="th-unit">(l/s)</span></label>
+        </label>
+        <label class="pipe-inline-field" for="stage_flow_ls" data-pipe-size-field>
+          <span>Flow (l/s)</span>
           <input id="stage_flow_ls" data-row-field="flow_ls" data-pipe-size-field name="stage_flow_ls"
-                 value="{{ stage.flow_ls }}"
-                 placeholder="{{ system.duty_flow_ls }}" inputmode="decimal">
-        </div>
+                 value="{{ stage.flow_ls or defaults.flow_ls }}" inputmode="decimal">
+        </label>
       </div>
 
-      <div class="leg-composer-row leg-composer-row-item">
-        <div class="leg-field" data-type-for="straight">
-          <label for="stage_length">Length <span class="th-unit">({{ system.run_length_sym }})</span></label>
+      <div class="leg-composer-row leg-composer-row-item pipe-inline-grid">
+        <label class="pipe-inline-field" for="stage_length" data-type-for="straight">
+          <span>Length ({{ system.run_length_sym }})</span>
           <input id="stage_length" data-row-field="length" data-type-for="straight" name="stage_length"
                  value="{{ stage.length or defaults.length }}" inputmode="decimal">
-        </div>
-        <div class="leg-field leg-field-wide" data-type-for="fitting">
-          <label for="stage_fitting">Fitting / valve</label>
+        </label>
+        <label class="pipe-inline-field pipe-inline-field-wide" for="stage_fitting" data-type-for="fitting">
+          <span>Fitting / valve</span>
           <select id="stage_fitting" data-row-field="fitting" data-type-for="fitting" name="stage_fitting">
             {% for group in system.fitting_groups %}
             <optgroup label="{{ group.label }}">
@@ -164,17 +199,22 @@
             </optgroup>
             {% endfor %}
           </select>
-        </div>
-        <div class="leg-field leg-field-wide" data-type-for="device">
-          <label for="stage_label">Description</label>
+        </label>
+        <label class="pipe-inline-field pipe-inline-field-qty" for="stage_quantity" data-type-for="fitting">
+          <span>Qty</span>
+          <input id="stage_quantity" data-row-field="quantity" data-type-for="fitting" name="stage_quantity"
+                 value="{{ stage.quantity or defaults.quantity or '1' }}" inputmode="numeric" min="1" max="999">
+        </label>
+        <label class="pipe-inline-field pipe-inline-field-wide" for="stage_label" data-type-for="device">
+          <span>Description</span>
           <input id="stage_label" data-row-field="label" data-type-for="device" name="stage_label"
                  value="{{ stage.label or defaults.label }}">
-        </div>
-        <div class="leg-field" data-type-for="device">
-          <label for="stage_dp">Manual ΔP <span class="th-unit">({{ system.velocity_pressure_sym }})</span></label>
+        </label>
+        <label class="pipe-inline-field" for="stage_dp" data-type-for="device">
+          <span>Manual ΔP ({{ system.velocity_pressure_sym }})</span>
           <input id="stage_dp" data-row-field="dp" data-type-for="device" name="stage_dp"
                  value="{{ stage.dp or defaults.dp }}" inputmode="decimal">
-        </div>
+        </label>
 
         <div class="leg-composer-preview" id="sys-stage-result-cell">
           {% if system.stage_error %}
@@ -218,11 +258,11 @@
       <div class="leg-total-line leg-margin-line">
         <label class="leg-total-label" for="sys-safety-margin">Safety Margin</label>
         <span class="leg-margin-controls">
-          <input type="number" id="sys-safety-margin" name="sys_safety_margin" min="0" max="200" step="1"
-                 value="{{ '%.0f'|format(system.safety_margin) if system.safety_margin else '0' }}">
+          <input id="sys-safety-margin" type="number" min="0" max="100" step="1"
+                 value="{{ system.safety_margin|int }}">
           <span class="u">%</span>
           <span class="leg-margin-amount num">
-            + <span id="sys-margin-amount">{{ system.margin_amount_display }}</span>
+            +<span id="sys-margin-amount">{{ system.margin_amount_display }}</span>
             <span class="u" id="sys-margin-sym">{{ system.total_sym }}</span>
           </span>
         </span>
@@ -237,7 +277,7 @@
     </div>
 {% endmacro %}
 
-{% macro pipe_system_scripts(system) %}
+{% macro pipe_system_scripts(system, glycol_options_by_fluid=None) %}
 <script>
   window.PIPE_SYS_INITIAL = {{ {
     "rows": system.rows,
@@ -248,21 +288,24 @@
     "margin_amount_display": system.margin_amount_display,
     "total_with_margin_display": system.total_with_margin_display,
     "default_row_raw": system.default_row_raw,
-    "stage": system.stage,
-    "stage_raw": system.stage_raw,
-    "stage_error": system.stage_error,
     "type_options": system.type_options,
     "dn_options": system.dn_options,
     "fitting_groups": system.fitting_groups,
     "duty_flow_ls": system.duty_flow_ls,
+    "duty_fields": system.duty_fields,
+    "stage": system.stage,
+    "stage_raw": system.stage_raw,
+    "stage_error": system.stage_error,
+    "ctx_error": system.ctx_error,
     "run_length_sym": system.run_length_sym,
     "velocity_pressure_sym": system.velocity_pressure_sym,
     "head": system.head,
   } | tojson }};
+  window.PIPE_GLYCOL_BY_FLUID = {{ (glycol_options_by_fluid or {}) | tojson }};
 </script>
 <script src="{{ url_for('static', filename='vendor/tabulator/tabulator.min.js') }}?v=6.3.1"></script>
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
-<script src="{{ url_for('static', filename='js/pipesystem.js') }}?v=6"></script>
+<script src="{{ url_for('static', filename='js/pipesystem.js') }}?v=7"></script>
 {% endmacro %}
 
 {% macro pipe_system_styles() %}

@@ -7,7 +7,7 @@
 (function () {
   "use strict";
 
-  var ROW_FIELDS = ["type", "dn", "flow_ls", "length", "fitting", "label", "dp"];
+  var ROW_FIELDS = ["type", "dn", "flow_ls", "length", "fitting", "quantity", "label", "dp"];
 
   function debounce(fn, ms) {
     var t;
@@ -52,11 +52,11 @@
     var DN_OPTIONS = INITIAL.dn_options || [];
     var FITTING_GROUPS = INITIAL.fitting_groups || [];
     var DEFAULT_RAW = INITIAL.default_row_raw || {
-      type: "straight", dn: "", flow_ls: "", length: "5.0",
-      fitting: "", label: "Device", dp: "10"
+      type: "straight", dn: "", flow_ls: "1.0", length: "5.0",
+      fitting: "", quantity: "1", label: "Device", dp: "10"
     };
-    var dutyFlowLs = INITIAL.duty_flow_ls || "";
     var pressureSym = INITIAL.velocity_pressure_sym || "Pa";
+    var GLYCOL_BY_FLUID = window.PIPE_GLYCOL_BY_FLUID || {};
 
     var errorBox = document.getElementById("sys-error");
     var stageResultCell = document.getElementById("sys-stage-result-cell");
@@ -132,6 +132,7 @@
         type: type,
         dn: raw.dn != null && raw.dn !== "" ? String(raw.dn) : (row.dn != null ? String(row.dn) : ""),
         flow_ls: raw.flow_ls || "",
+        quantity: raw.quantity || String(row.quantity || "1"),
         velocity: row.velocity_display || "—",
         vp: row.velocity_pressure_display || "—",
         pam: pamFromApi(row),
@@ -153,6 +154,7 @@
         flow_ls: type === "device" ? "" : (d.flow_ls || ""),
         length: "",
         fitting: "",
+        quantity: "1",
         label: "",
         dp: ""
       };
@@ -160,6 +162,7 @@
         raw.length = d.detail != null ? String(d.detail) : (d.length || "");
       } else if (type === "fitting") {
         raw.fitting = d.detail || d.fitting || firstFittingKey();
+        raw.quantity = d.quantity || "1";
       } else if (type === "device") {
         raw.label = d.detail != null ? String(d.detail) : (d.label || DEFAULT_RAW.label);
         raw.dp = d.pd != null ? String(d.pd) : (d.dp || DEFAULT_RAW.dp);
@@ -461,13 +464,10 @@
           TYPE_OPTIONS = system.type_options || TYPE_OPTIONS;
           DN_OPTIONS = system.dn_options || DN_OPTIONS;
           FITTING_GROUPS = system.fitting_groups || FITTING_GROUPS;
-          dutyFlowLs = system.duty_flow_ls || dutyFlowLs;
           pressureSym = system.velocity_pressure_sym || pressureSym;
           if (system.default_row_raw) DEFAULT_RAW = system.default_row_raw;
 
           refreshDnSelect(system.stage_raw && system.stage_raw.dn);
-          var flowIn = document.getElementById("stage_flow_ls");
-          if (flowIn) flowIn.placeholder = dutyFlowLs || "";
 
           updateStagePreview(system);
           applyTotals(system);
@@ -614,8 +614,7 @@
             var d = cell.getRow().getData();
             if ((d.type || "") === "device") return "—";
             var v = cell.getValue();
-            if (v == null || v === "") return dutyFlowLs ? "(" + dutyFlowLs + ")" : "";
-            return String(v);
+            return v == null || v === "" ? "" : String(v);
           }
         },
         {
@@ -634,6 +633,20 @@
           title: "m", field: "detail", minWidth: 90,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: detailEditor, formatter: detailFormatter, editable: isEditable, tooltip: true
+        },
+        {
+          title: "Qty", field: "quantity", minWidth: 42,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          editor: "input",
+          editable: function (cell) {
+            return (cell.getRow().getData().type || "") === "fitting";
+          },
+          formatter: function (cell) {
+            var d = cell.getRow().getData();
+            if ((d.type || "") !== "fitting") return "—";
+            var v = cell.getValue();
+            return v == null || v === "" ? "1" : String(v);
+          }
         },
         {
           title: "PD", field: "pd", minWidth: 55,
@@ -701,7 +714,7 @@
           });
         } else if (d.type === "fitting") {
           var fk = d.fitting || firstFittingKey();
-          row.update({ detail: fk, fitting: fk });
+          row.update({ detail: fk, fitting: fk, quantity: d.quantity || "1" });
         } else if (!d.detail) {
           row.update({ detail: DEFAULT_RAW.length });
         }
@@ -727,13 +740,15 @@
 
     function clearStagingItemFields() {
       if (!stage) return;
-      ["length", "fitting", "label", "dp"].forEach(function (f) {
+      ["length", "fitting", "quantity", "label", "dp"].forEach(function (f) {
         var input = stage.querySelector('[data-row-field="' + f + '"]');
         if (!input) return;
         if (input.tagName === "SELECT") {
           if (input.options.length) input.selectedIndex = 0;
         } else if (f === "length") {
           input.value = DEFAULT_RAW.length || "";
+        } else if (f === "quantity") {
+          input.value = DEFAULT_RAW.quantity || "1";
         } else if (f === "label") {
           input.value = DEFAULT_RAW.label || "";
         } else if (f === "dp") {
@@ -810,6 +825,41 @@
 
     var checkedCircuit = panel.querySelector('input[name="circuit_ui"]:checked');
     if (checkedCircuit) syncLiftVisibility(checkedCircuit.value);
+
+    function syncGlycol() {
+      var fluid = document.getElementById("fluid");
+      var glycol = document.getElementById("glycol-field");
+      var glycolSel = document.getElementById("glycol_pct");
+      if (!fluid || !glycol || !glycolSel) return;
+      var isWater = fluid.value === "water";
+      glycol.hidden = isWater;
+      if (isWater) return;
+      var opts = GLYCOL_BY_FLUID[fluid.value] || [];
+      var current = glycolSel.value;
+      glycolSel.innerHTML = "";
+      opts.forEach(function (opt) {
+        var el = document.createElement("option");
+        el.value = String(opt.pct);
+        el.textContent = opt.label;
+        if (String(opt.pct) === current) el.selected = true;
+        glycolSel.appendChild(el);
+      });
+      if (!glycolSel.value && opts.length) {
+        glycolSel.value = String(opts[Math.floor(opts.length / 2)].pct);
+      }
+    }
+
+    form.addEventListener("submit", function (evt) { evt.preventDefault(); });
+    form.addEventListener("change", function (evt) {
+      if (evt.target && evt.target.id === "fluid") syncGlycol();
+      debouncedFetch();
+    });
+    form.addEventListener("input", function (evt) {
+      if (evt.target && (evt.target.tagName === "INPUT" || evt.target.tagName === "SELECT")) {
+        debouncedFetch();
+      }
+    });
+    syncGlycol();
 
     applyTotals(INITIAL);
     updateStagePreview(INITIAL);

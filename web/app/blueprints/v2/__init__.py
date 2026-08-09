@@ -189,9 +189,9 @@ def pipe():
 @require_module("pipe.system")
 def pipe_system():
     U = current_view()
-    state = pipe_mod._compute_state(request.args, U)
     system = pipe_mod._compute_system_state(request.args, U)
-    report_fields = pipe_mod._report_fields_for_system(state["fields"], system)
+    fields = system.get("duty_fields") or {}
+    report_fields = pipe_mod._report_fields_for_system(fields, system)
     return render_template(
         "v2/pipe_system.html",
         active="pipe_system",
@@ -201,10 +201,10 @@ def pipe_system():
         materials=eng.MATERIAL_LABELS,
         applications=eng.APPLICATION_LABELS,
         system=system,
+        fields=fields,
         report_fields=report_fields,
         glycol_concentrations_by_fluid=pipe_mod.GLYCOL_CONCENTRATIONS_BY_FLUID,
         glycol_options_by_fluid=pipe_mod._glycol_options_for_view(U),
-        **state,
     )
 
 

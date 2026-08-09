@@ -1940,28 +1940,72 @@ table.leg-rows-table tfoot tr.leg-total-margin-tr td { border-top: 1px solid var
 .pipe-system-placeholder { min-height: 88px; }
 .pipe-system-panel { margin-top: 22px; }
 .pipe-sys-params {
-  padding: 14px 16px;
-  background: #f4f7fb;
-  border: 1px solid #d5dde8;
-  border-radius: 8px;
-  margin-bottom: 4px;
+  margin-top: 18px;
+  padding-top: 4px;
 }
-.pipe-sys-params-title {
-  font-weight: 650;
-  font-size: 13px;
-  margin-bottom: 10px;
-  color: #1e3a5f;
-}
-.pipe-sys-fluid {
-  font-weight: 600;
-  font-size: 14px;
-  padding: 8px 0 2px;
-}
+.pipe-sys-params-title,
 .pipe-sys-section-label {
   font-weight: 650;
   font-size: 13px;
-  margin: 8px 0 10px;
+  margin: 14px 0 10px;
   color: #1e3a5f;
+}
+.pipe-sys-duty { margin-bottom: 4px; }
+.pipe-sys-fluid-note { margin: 8px 0 0; }
+.pipe-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: center;
+}
+@media (min-width: 720px) {
+  .pipe-inline-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .pipe-sys-composer .leg-composer-row.pipe-inline-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .pipe-sys-composer .leg-composer-row-item.pipe-inline-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) 72px minmax(150px, 1.3fr) auto;
+    align-items: stretch;
+  }
+}
+.pipe-inline-field {
+  display: grid;
+  grid-template-columns: minmax(64px, 38%) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.pipe-inline-field > span { line-height: 1.2; }
+.pipe-inline-field input,
+.pipe-inline-field select {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--text);
+}
+.pipe-inline-field-span {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(64px, 120px) minmax(0, 1fr);
+}
+.pipe-inline-field-qty { max-width: 110px; }
+.pipe-sys-composer.leg-composer {
+  background: #f4f7fb;
+}
+.pipe-sys-composer .leg-composer-row {
+  display: grid;
+}
+@media (max-width: 719px) {
+  .pipe-inline-field {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .pipe-inline-field-qty { max-width: none; }
 }
 .pipe-head-panel { margin-top: 22px; }
 .pipe-head-panel .results th { width: 40%; }

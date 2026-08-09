@@ -36,7 +36,7 @@ SYS_ROW_TYPE_LABELS = {
     "device": "Device (manual ΔP)",
 }
 
-SYS_ROW_FIELDS = ("type", "dn", "flow_ls", "length", "fitting", "label", "dp")
+SYS_ROW_FIELDS = ("type", "dn", "flow_ls", "length", "fitting", "quantity", "label", "dp")
 
 DEFAULT_SYS_LENGTH_SI = 5.0  # m
 DEFAULT_SYS_DP_SI = 10.0     # Pa
@@ -300,33 +300,48 @@ def _compute_state(args, U):
 # ── Stage 2 system builder ────────────────────────────────────────────────────
 
 def _duty_context(args, U):
-    """Fluid / material / duty flow shared by system rows — raises ValueError
-    if Design Inputs can't resolve (same parse path as Stage 1)."""
-    state = _compute_state(args, U)
-    if state["error"]:
-        raise ValueError(state["error"])
-    if state["props"] is None or state["duty_flow_ls"] is None:
-        raise ValueError("duty flow and fluid properties are required")
-    material = state["fields"]["material"]
-    application = state["fields"]["application"]
-    default_dn = None
-    if state.get("fields", {}).get("selected_dn"):
-        try:
-            default_dn = int(state["fields"]["selected_dn"])
-        except (TypeError, ValueError):
-            default_dn = None
-    if default_dn is None and state["catalogue_results"]:
-        default_dn = state["catalogue_results"][0].entry.dn
+    """Fluid / material / temperature context for system rows.
+
+    Flow is per-row on the system page (not a shared duty flow). Raises
+    ValueError if fluid properties cannot be resolved from ΔT / LWT.
+    """
+    fluid = _choice(args.get("fluid", ""), set(eng.FLUID_LABELS), "water")
+    material = _choice(args.get("material", ""), set(eng.MATERIAL_LABELS), "carbon_steel")
+    application = _choice(args.get("application", ""), set(eng.CIBSE_LIMITS), "lthw")
+
+    glycol_pct = 0
+    if fluid != "water":
+        glycol_pct = _resolve_glycol_pct(fluid, args.get("glycol_pct", ""))
+
+    fields = {
+        "mode": "flow_known",
+        "application": application,
+        "fluid": fluid,
+        "material": material,
+        "glycol_pct": str(glycol_pct),
+        "load": args.get("load", "100"),
+        "delta_t": args.get("delta_t", "20"),
+        "lwt": args.get("lwt", "50"),
+        "flow_ls": args.get("flow_ls", ""),
+    }
+
+    delta_t_k = _delta_t_k(fields["delta_t"], U)
+    lwt_c = U.to_si("temperature", _f(fields["lwt"], "LWT"))
+    mean_t_c = eng.mean_water_temperature_c(lwt_c, delta_t_k)
+    conc = 0 if fluid == "water" else glycol_pct
+    props = eng.fluid_properties(fluid, mean_t_c, concentration_pct=conc)
+
+    catalogue = list(eng.catalogue_for(material))  # type: ignore[arg-type]
+    default_dn = catalogue[0].dn if catalogue else None
+
     return {
-        "props": state["props"],
+        "props": props,
         "material": material,
         "application": application,
-        "duty_flow_ls": state["duty_flow_ls"],
+        "duty_flow_ls": None,
         "default_dn": default_dn,
-        "dn_options": [
-            {"dn": e.dn, "label": e.label}
-            for e in eng.catalogue_for(material)  # type: ignore[arg-type]
-        ],
+        "dn_options": [{"dn": e.dn, "label": e.label} for e in catalogue],
+        "fields": fields,
     }
 
 
@@ -380,6 +395,7 @@ def _compute_sys_row(get, ctx: dict, U) -> dict:
             "friction_or_k_display": "—",
             "k": None,
             "fitting_key": "",
+            "quantity": 1,
             "length_display": "",
             "dp_display": U.fmt("velocity_pressure", dp_pa),
             "dp_pa": dp_pa,
@@ -395,12 +411,11 @@ def _compute_sys_row(get, ctx: dict, U) -> dict:
     if entry is None:
         raise ValueError(f"DN {dn} is not in the {ctx['material']} catalogue")
 
-    # Flow: blank → duty flow from Design Inputs.
+    # Flow is required per row (no shared duty flow on the system page).
     flow_raw = get("flow_ls")
     if flow_raw in (None, ""):
-        flow_ls = float(ctx["duty_flow_ls"])
-    else:
-        flow_ls = _f(flow_raw, "flow")
+        raise ValueError("flow (l/s) is required")
+    flow_ls = _f(flow_raw, "flow")
     if flow_ls <= 0:
         raise ValueError("flow must be positive")
 
@@ -427,29 +442,39 @@ def _compute_sys_row(get, ctx: dict, U) -> dict:
             "friction_or_k_display": U.fmt("friction_rate", sized.friction_rate_pa_per_m),
             "k": None,
             "fitting_key": "",
+            "quantity": 1,
             "length_display": U.fmt("duct_run_length", length_si),
             "dp_display": U.fmt("velocity_pressure", dp_pa),
             "dp_pa": dp_pa,
         }
 
-    # fitting
+    # fitting — quantity lets engineers enter “8 elbows” as one row
     fitting_key = get("fitting") or pfit.FITTINGS[0].key
     fitting = pfit.FITTINGS_BY_KEY.get(fitting_key)
     if fitting is None:
         raise ValueError(f"unknown fitting: {fitting_key!r}")
-    dp_pa = pfit.fitting_pressure_drop(fitting.k, pv)
+    try:
+        quantity = int(get("quantity") or "1")
+    except (TypeError, ValueError):
+        quantity = 1
+    quantity = max(1, min(999, quantity))
+    dp_one = pfit.fitting_pressure_drop(fitting.k, pv)
+    dp_pa = dp_one * quantity
+    k_display = f"K={fitting.k:g}" if quantity == 1 else f"{quantity}×K={fitting.k:g}"
+    label = fitting.label if quantity == 1 else f"{fitting.label} × {quantity}"
     return {
         "type": row_type,
         "type_label": SYS_ROW_TYPE_LABELS[row_type],
-        "label": fitting.label,
+        "label": label,
         "dn": dn,
         "dn_label": entry.label,
         "flow_ls_display": f"{flow_ls:.3f}",
         "velocity_display": U.fmt("velocity", sized.velocity_ms),
         "velocity_pressure_display": U.fmt("velocity_pressure", pv),
-        "friction_or_k_display": f"K={fitting.k:g}",
+        "friction_or_k_display": k_display,
         "k": fitting.k,
         "fitting_key": fitting_key,
+        "quantity": quantity,
         "length_display": "",
         "dp_display": U.fmt("velocity_pressure", dp_pa),
         "dp_pa": dp_pa,
@@ -469,6 +494,7 @@ def _blank_sys_row(row_type: str, fitting_key: str) -> dict:
         "friction_or_k_display": "—",
         "k": None,
         "fitting_key": fitting_key or "",
+        "quantity": 1,
         "length_display": "",
         "dp_display": "—",
         "dp_pa": 0.0,
@@ -602,6 +628,10 @@ def _compute_system_state(args, U) -> dict:
         stage_raw["fitting"] = pfit.FITTINGS[0].key
     if not stage_raw.get("length"):
         stage_raw["length"] = U.fmt("duct_run_length", DEFAULT_SYS_LENGTH_SI)
+    if not stage_raw.get("flow_ls"):
+        stage_raw["flow_ls"] = "1.0"
+    if not stage_raw.get("quantity"):
+        stage_raw["quantity"] = "1"
     if not stage_raw.get("label"):
         stage_raw["label"] = DEFAULT_SYS_LABEL
     if not stage_raw.get("dp"):
@@ -637,7 +667,7 @@ def _compute_system_state(args, U) -> dict:
         fluid_bits.append(f"mean {U.fmt('temperature', props.temperature_c)} {U.sym('temperature')}")
         head["fluid_label"] = " · ".join(fluid_bits)
     else:
-        head["fluid_label"] = "Set fluid in Design Inputs above"
+        head["fluid_label"] = "Set fluid above"
 
     return {
         "row_count": row_count,
@@ -650,9 +680,10 @@ def _compute_system_state(args, U) -> dict:
         "default_row_raw": {
             "type": "straight",
             "dn": str(ctx["default_dn"]) if ctx and ctx.get("default_dn") is not None else "",
-            "flow_ls": "",
+            "flow_ls": "1.0",
             "length": U.fmt("duct_run_length", DEFAULT_SYS_LENGTH_SI),
             "fitting": pfit.FITTINGS[0].key,
+            "quantity": "1",
             "label": DEFAULT_SYS_LABEL,
             "dp": U.fmt("velocity_pressure", DEFAULT_SYS_DP_SI),
         },
@@ -661,12 +692,25 @@ def _compute_system_state(args, U) -> dict:
         ],
         "dn_options": ctx["dn_options"] if ctx else [],
         "fitting_groups": _fitting_options_grouped(),
-        "duty_flow_ls": f"{ctx['duty_flow_ls']:.3f}" if ctx else "",
+        "duty_flow_ls": "",
+        "duty_fields": ctx["fields"] if ctx else {
+            "fluid": "water",
+            "material": "carbon_steel",
+            "application": "lthw",
+            "glycol_pct": "0",
+            "delta_t": "20",
+            "lwt": "50",
+            "mode": "flow_known",
+            "load": "100",
+            "flow_ls": "",
+        },
         "stage": stage,
         "stage_raw": stage_raw,
         "stage_error": stage_error,
         "ctx_error": ctx_error,
         "run_length_sym": U.sym("duct_run_length"),
+        "temperature_sym": U.sym("temperature"),
+        "delta_t_unit": "°F" if U.system == "IP" else "K",
         "velocity_pressure_sym": U.sym("velocity_pressure"),
         "velocity_sym": U.sym("velocity"),
         "friction_rate_sym": U.sym("friction_rate"),
