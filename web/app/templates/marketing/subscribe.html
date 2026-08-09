@@ -1,14 +1,14 @@
 {% extends "marketing/base.html" %}
-{% block title %}Pricing — {{ brand_name }} HVAC psychrometric, duct &amp; pipe calculators{% endblock %}
-{% block meta_description %}{{ brand_name }} pricing: 14-day free trial of HVAC calculators (psychrometrics, duct sizing, pipe sizing), then £9.50/month. Tax at checkout via Stripe.{% endblock %}
+{% block title %}Pricing/Subscribe — {{ brand_name }} HVAC psychrometric, duct &amp; pipe calculators{% endblock %}
+{% block meta_description %}{{ brand_name }} pricing: 14-day free trial of HVAC calculators (psychrometrics, duct sizing, pipe sizing), then £9.50/month. Subscribe anytime during trial. Tax at checkout via Stripe.{% endblock %}
 {% block content %}
 <section class="pricing-hero">
-  <h1>Pricing</h1>
+  <h1>Pricing/Subscribe</h1>
   <p class="coming-lead">
     Start with a 14-day free trial of the full HVAC calculator suite —
-    psychrometric, duct sizing, and pipe sizing tools included. Then
-    £9.50/month. Tax is calculated at checkout for your location
-    (Stripe Managed Payments).
+    psychrometric, duct sizing, and pipe sizing tools included. Subscribe
+    anytime during the trial for £9.50/month. Tax is calculated at checkout
+    for your location (Stripe Managed Payments).
   </p>
 </section>
 
@@ -39,12 +39,13 @@
         <button type="submit" class="btn-accent">Subscribe — £9.50/month</button>
       </form>
       <p class="pricing-note">
-        Signed in as {{ current_user.email }}. You’ll complete payment on Stripe’s secure checkout.
+        Signed in as {{ current_user.email }}.
+        You can subscribe at any time during your trial — you’ll complete payment on Stripe’s secure checkout.
       </p>
     {% elif stripe_ready and registration_open %}
       <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
       <p class="pricing-note">
-        Create an account for your 14-day trial, then subscribe here when you’re ready.
+        Create an account for your 14-day trial. You can subscribe from this page whenever you’re ready.
       </p>
     {% elif stripe_ready %}
       <a class="btn-accent" href="{{ url_for('auth.login', next=url_for('billing.subscribe')) }}">Log in to subscribe</a>

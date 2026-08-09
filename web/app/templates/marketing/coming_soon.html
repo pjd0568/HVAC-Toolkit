@@ -21,12 +21,12 @@
       <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
       <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
     {% else %}
-      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">See pricing</a>
+      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a>
       <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
       <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
     {% endif %}
     {% if current_user.is_authenticated or registration_open %}
-    <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">See pricing</a>
+    <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a>
     {% endif %}
   </div>
 </section>

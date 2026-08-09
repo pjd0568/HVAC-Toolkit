@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-45">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-23">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-24">
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
 {% block extra_head %}{% endblock %}
 </head>
@@ -67,6 +67,9 @@
     <a href="{{ url_for('v2.more') }}" class="{{ 'active' if nav == 'more' }}">More</a>
   </nav>
   <div class="v2-topbar-title">{% block page_title %}{% endblock %}</div>
+  {% if access.tier != 'pro' %}
+  <a class="v2-topbar-subscribe" href="{{ url_for('billing.subscribe') }}">Subscribe</a>
+  {% endif %}
   <a class="v2-topbar-install" href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}" title="Add to mobile homescreen">
     <svg class="v2-install-phone" viewBox="0 0 24 24" aria-hidden="true">
       <rect x="7" y="2.5" width="10" height="19" rx="2.2"/>
@@ -108,7 +111,10 @@
       {% elif access.tier == 'pro' %}
       <li><span class="v2-menu-status">Subscribed</span></li>
       {% endif %}
-      <li><a href="{{ url_for('billing.subscribe') }}">Pricing</a></li>
+      <li><a href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a></li>
+      {% if access.tier != 'pro' %}
+      <li><a class="v2-menu-subscribe" href="{{ url_for('billing.subscribe') }}">Subscribe — £9.50/month</a></li>
+      {% endif %}
       <li>
         <a class="v2-menu-install" href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">
           <svg class="v2-install-phone" viewBox="0 0 24 24" aria-hidden="true">

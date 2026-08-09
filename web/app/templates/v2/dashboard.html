@@ -5,6 +5,16 @@
 <div class="v2-greeting">Welcome</div>
 <div class="v2-greeting-sub">Full suite of design tools for HVAC professionals</div>
 
+{% if access.tier != 'pro' %}
+<div class="v2-subscribe-banner">
+  <div class="v2-subscribe-banner-copy">
+    <strong>Subscribe anytime</strong>
+    <span>{% if access.tier == 'trial' and access.trial_days_remaining is not none %}Trial · {{ access.trial_days_remaining }}d left — keep full suite access for £9.50/month.{% else %}Full suite access for £9.50/month. See pricing and subscribe when you’re ready.{% endif %}</span>
+  </div>
+  <a class="v2-subscribe-banner-btn" href="{{ url_for('billing.subscribe') }}">Subscribe</a>
+</div>
+{% endif %}
+
 <div class="v2-section-label">Design suites</div>
 
 <article class="v2-card">
@@ -42,6 +52,9 @@
 <div class="v2-section-label">Reference</div>
 <article class="v2-card">
   <ul class="v2-card-links">
+    {% if access.tier != 'pro' %}
+    <li><a href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a></li>
+    {% endif %}
     <li><a href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">Add to mobile homescreen</a></li>
     <li><a href="{{ url_for('guides.index') }}">Design guides</a></li>
     <li><a href="{{ url_for('methodology.index') }}">Methodology &amp; limitations</a></li>
