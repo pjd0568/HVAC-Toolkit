@@ -641,9 +641,16 @@ def _compute_system_state(args, U) -> dict:
         "total_sym": U.sym("velocity_pressure"),
         "safety_margin": safety_margin,
         "margin_amount_display": U.fmt("velocity_pressure", margin_pa),
-        "total_with_margin_display": (
-            U.fmt("velocity_pressure", total_with_margin_pa) if safety_margin > 0 else ""
-        ),
+        "total_with_margin_display": U.fmt("velocity_pressure", total_with_margin_pa),
+        "default_row_raw": {
+            "type": "straight",
+            "dn": str(ctx["default_dn"]) if ctx and ctx.get("default_dn") is not None else "",
+            "flow_ls": "",
+            "length": U.fmt("duct_run_length", DEFAULT_SYS_LENGTH_SI),
+            "fitting": pfit.FITTINGS[0].key,
+            "label": DEFAULT_SYS_LABEL,
+            "dp": U.fmt("velocity_pressure", DEFAULT_SYS_DP_SI),
+        },
         "type_options": [
             {"value": k, "label": v} for k, v in SYS_ROW_TYPE_LABELS.items()
         ],

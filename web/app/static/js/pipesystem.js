@@ -1,583 +1,761 @@
-/* Pipe System — Stage 2 pressure-drop builder.
+/* Pipe System — compact composer + Tabulator results grid.
  *
- * Reads/writes system-row form fields, calls /api/system-state, and rebuilds
- * the committed-rows table from already-formatted server JSON. No engine or
- * unit maths is duplicated here. State travels in `sys_*` / `stage_*` query
- * params (plus the Design Inputs from #pipe-form) so a built schedule stays
- * a shareable URL — same convention as duct Index Leg.
+ * Primary entry is the 2-row #sys-stage form; Add commits into the spreadsheet
+ * table below. Committed rows remain editable in-place. All calc/unit work
+ * stays in blueprints/pipe.py via GET /api/system-state.
  */
 (function () {
   "use strict";
 
-  var form = document.getElementById("pipe-form");
-  var panel = document.getElementById("sys-panel");
-  if (!form || !panel) return;
-
-  var PIPE_BASE = (window.PIPE_API_BASE || window.location.pathname).replace(/\/$/, "");
-  var API_URL = PIPE_BASE + "/api/system-state";
-  var CSV_URL = PIPE_BASE + "/system/export.csv";
-
   var ROW_FIELDS = ["type", "dn", "flow_ls", "length", "fitting", "label", "dp"];
 
-  // Seeded from the first API response / initial page render.
-  var typeOptions = [];
-  var dnOptions = [];
-  var fittingGroups = [];
-  var dutyFlowLs = "";
-  var pressureSym = "Pa";
-  var lengthSym = "m";
-
-  function debounce(fn, wait) {
-    var t = null;
+  function debounce(fn, ms) {
+    var t;
     return function () {
-      var args = arguments;
+      var ctx = this, args = arguments;
       clearTimeout(t);
-      t = setTimeout(function () { fn.apply(null, args); }, wait);
+      t = setTimeout(function () { fn.apply(ctx, args); }, ms);
     };
   }
 
-  function readDesignParams() {
-    var params = new URLSearchParams();
-    var fd = new FormData(form);
-    fd.forEach(function (value, key) {
-      if (value !== null && value !== undefined && String(value) !== "") {
-        params.set(key, String(value));
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text == null ? "" : String(text);
+  }
+
+  function init() {
+    var form = document.getElementById("pipe-form");
+    var mount = document.getElementById("sys-grid");
+    var panel = document.getElementById("sys-panel");
+    var stage = document.getElementById("sys-stage");
+    if (!form || !mount || !panel || typeof Tabulator === "undefined") return;
+
+    var PIPE_BASE = (window.PIPE_API_BASE || window.location.pathname).replace(/\/$/, "");
+    var API_URL = PIPE_BASE + "/api/system-state";
+    var CSV_URL = PIPE_BASE + "/system/export.csv";
+
+    var INITIAL = window.PIPE_SYS_INITIAL || {};
+    var TYPE_OPTIONS = INITIAL.type_options || [];
+    var DN_OPTIONS = INITIAL.dn_options || [];
+    var FITTING_GROUPS = INITIAL.fitting_groups || [];
+    var DEFAULT_RAW = INITIAL.default_row_raw || {
+      type: "straight", dn: "", flow_ls: "", length: "5.0",
+      fitting: "", label: "Device", dp: "10"
+    };
+    var dutyFlowLs = INITIAL.duty_flow_ls || "";
+    var pressureSym = INITIAL.velocity_pressure_sym || "Pa";
+
+    var errorBox = document.getElementById("sys-error");
+    var stageResultCell = document.getElementById("sys-stage-result-cell");
+    var addBtn = document.getElementById("sys-add-row");
+    var clearBtn = document.getElementById("sys-clear");
+    var exportLink = document.getElementById("sys-export-csv");
+    var safetyMargin = document.getElementById("sys-safety-margin");
+
+    var applying = false;
+    var table = null;
+
+    function typeValues() {
+      var o = {};
+      TYPE_OPTIONS.forEach(function (opt) {
+        o[opt.value] = opt.label;
+      });
+      return o;
+    }
+
+    function dnValues() {
+      var o = {};
+      DN_OPTIONS.forEach(function (opt) {
+        o[String(opt.dn)] = opt.label;
+      });
+      return o;
+    }
+
+    function firstFittingKey() {
+      for (var g = 0; g < FITTING_GROUPS.length; g++) {
+        var fits = FITTING_GROUPS[g].fittings || [];
+        if (fits.length) return fits[0].key;
       }
-    });
-    // Radios: FormData includes the checked one; ensure mode is present.
-    var mode = form.querySelector('input[name="mode"]:checked');
-    if (mode) params.set("mode", mode.value);
-    return params;
-  }
-
-  function readStageFields(params) {
-    ROW_FIELDS.forEach(function (field) {
-      var el = panel.querySelector('[name="stage_' + field + '"]');
-      if (el) params.set("stage_" + field, el.value);
-    });
-  }
-
-  function readCommittedRows(params) {
-    var rows = panel.querySelectorAll("#sys-rows-body tr[data-sys-row]");
-    params.set("sys_row_count", String(rows.length));
-    rows.forEach(function (tr, i) {
-      ROW_FIELDS.forEach(function (field) {
-        var el = tr.querySelector('[data-row-field="' + field + '"]');
-        if (el) params.set("sys_" + field + "_" + i, el.value);
-      });
-    });
-    var margin = document.getElementById("sys-safety-margin");
-    if (margin) params.set("sys_safety_margin", margin.value || "0");
-  }
-
-  function buildParams() {
-    var params = readDesignParams();
-    // System-level circuit / lift (visible controls; keep form hiddens in sync).
-    var circuitEl = panel.querySelector('input[name="circuit_ui"]:checked');
-    var circuit = (circuitEl && circuitEl.value) || "pressurised";
-    params.set("circuit", circuit);
-    var liftEl = document.getElementById("lift");
-    params.set("lift", liftEl ? (liftEl.value || "0") : "0");
-    syncCircuitHidden(circuit);
-    if (liftEl) syncLiftHidden(liftEl.value || "0");
-    readStageFields(params);
-    readCommittedRows(params);
-    return params;
-  }
-
-  function syncCircuitHidden(value) {
-    var h = document.getElementById("circuit-hidden");
-    if (h) h.value = value;
-  }
-
-  function syncLiftHidden(value) {
-    var h = document.getElementById("lift-hidden");
-    if (h) h.value = value;
-  }
-
-  function syncLiftVisibility(circuit) {
-    var field = document.getElementById("lift-field");
-    var row = document.getElementById("head-lift-row");
-    var open = circuit === "open";
-    if (field) field.style.display = open ? "" : "none";
-    if (row) row.style.display = open ? "" : "none";
-  }
-
-  function syncTypeVisibility(scope) {
-    var typeEl = scope.querySelector('[data-row-field="type"]');
-    if (!typeEl) return;
-    var t = typeEl.value;
-    function vis(sel, on) {
-      scope.querySelectorAll(sel).forEach(function (el) {
-        el.style.visibility = on ? "visible" : "hidden";
-      });
-    }
-    vis(".sys-field-length", t === "straight");
-    vis(".sys-field-fitting", t === "fitting");
-    vis(".sys-field-desc", t === "device");
-    vis(".sys-field-dp", t === "device");
-    var dn = scope.querySelector('[data-row-field="dn"]');
-    var flow = scope.querySelector('[data-row-field="flow_ls"]');
-    if (dn) dn.style.visibility = t === "device" ? "hidden" : "visible";
-    if (flow) flow.style.visibility = t === "device" ? "hidden" : "visible";
-  }
-
-  function syncAllTypeVisibility() {
-    var stage = document.getElementById("sys-stage-row");
-    if (stage) syncTypeVisibility(stage);
-    panel.querySelectorAll("#sys-rows-body tr[data-sys-row]").forEach(syncTypeVisibility);
-  }
-
-  function fillSelect(sel, options, selected) {
-    sel.innerHTML = "";
-    options.forEach(function (opt) {
-      var el = document.createElement("option");
-      el.value = String(opt.value != null ? opt.value : opt.dn);
-      el.textContent = opt.label;
-      if (String(el.value) === String(selected)) el.selected = true;
-      sel.appendChild(el);
-    });
-  }
-
-  function fillFittingSelect(sel, selected) {
-    sel.innerHTML = "";
-    fittingGroups.forEach(function (group) {
-      var og = document.createElement("optgroup");
-      og.label = group.label;
-      (group.fittings || []).forEach(function (f) {
-        var el = document.createElement("option");
-        el.value = f.key;
-        el.textContent = f.label;
-        if (f.key === selected) el.selected = true;
-        og.appendChild(el);
-      });
-      sel.appendChild(og);
-    });
-  }
-
-  function buildRowTr(row) {
-    var tr = document.createElement("tr");
-    tr.setAttribute("data-sys-row", "");
-    tr.setAttribute("data-index", String(row.index));
-    if (row.error) tr.className = "row-error";
-
-    var raw = row.raw || {};
-    var num = document.createElement("td");
-    num.className = "leg-row-num";
-    num.textContent = String(row.index + 1);
-    tr.appendChild(num);
-
-    // Type
-    var tdType = document.createElement("td");
-    tdType.className = "leg-cell";
-    var typeSel = document.createElement("select");
-    typeSel.setAttribute("data-row-field", "type");
-    typeSel.name = "sys_type_" + row.index;
-    fillSelect(typeSel, typeOptions, raw.type || row.type || "straight");
-    tdType.appendChild(typeSel);
-    tr.appendChild(tdType);
-
-    // DN
-    var tdDn = document.createElement("td");
-    tdDn.className = "leg-cell";
-    var dnSel = document.createElement("select");
-    dnSel.setAttribute("data-row-field", "dn");
-    dnSel.name = "sys_dn_" + row.index;
-    fillSelect(dnSel, dnOptions.map(function (o) {
-      return { value: o.dn, label: o.label };
-    }), raw.dn || row.dn || "");
-    tdDn.appendChild(dnSel);
-    tr.appendChild(tdDn);
-
-    // Flow
-    var tdFlow = document.createElement("td");
-    tdFlow.className = "leg-cell";
-    var flowIn = document.createElement("input");
-    flowIn.setAttribute("data-row-field", "flow_ls");
-    flowIn.name = "sys_flow_ls_" + row.index;
-    flowIn.value = raw.flow_ls || "";
-    flowIn.placeholder = dutyFlowLs;
-    flowIn.setAttribute("inputmode", "decimal");
-    tdFlow.appendChild(flowIn);
-    tr.appendChild(tdFlow);
-
-    // Length
-    var tdLen = document.createElement("td");
-    tdLen.className = "leg-cell sys-field-length";
-    var lenIn = document.createElement("input");
-    lenIn.setAttribute("data-row-field", "length");
-    lenIn.name = "sys_length_" + row.index;
-    lenIn.value = raw.length || "";
-    lenIn.setAttribute("inputmode", "decimal");
-    tdLen.appendChild(lenIn);
-    tr.appendChild(tdLen);
-
-    // Fitting
-    var tdFit = document.createElement("td");
-    tdFit.className = "leg-cell sys-field-fitting";
-    var fitSel = document.createElement("select");
-    fitSel.setAttribute("data-row-field", "fitting");
-    fitSel.name = "sys_fitting_" + row.index;
-    fillFittingSelect(fitSel, raw.fitting || row.fitting_key || "");
-    tdFit.appendChild(fitSel);
-    tr.appendChild(tdFit);
-
-    // Description
-    var tdDesc = document.createElement("td");
-    tdDesc.className = "leg-cell sys-field-desc";
-    var labelIn = document.createElement("input");
-    labelIn.setAttribute("data-row-field", "label");
-    labelIn.name = "sys_label_" + row.index;
-    labelIn.value = raw.label || "";
-    tdDesc.appendChild(labelIn);
-    tr.appendChild(tdDesc);
-
-    // Manual ΔP
-    var tdDp = document.createElement("td");
-    tdDp.className = "leg-cell sys-field-dp";
-    var dpIn = document.createElement("input");
-    dpIn.setAttribute("data-row-field", "dp");
-    dpIn.name = "sys_dp_" + row.index;
-    dpIn.value = raw.dp || "";
-    dpIn.setAttribute("inputmode", "decimal");
-    tdDp.appendChild(dpIn);
-    tr.appendChild(tdDp);
-
-    // Result
-    var tdRes = document.createElement("td");
-    tdRes.className = "num";
-    tdRes.appendChild(document.createTextNode((row.dp_display || "—") + " "));
-    var u = document.createElement("span");
-    u.className = "u";
-    u.textContent = pressureSym;
-    tdRes.appendChild(u);
-    if (row.error) {
-      var err = document.createElement("div");
-      err.className = "suffix leg-row-error-text";
-      err.textContent = row.error;
-      tdRes.appendChild(err);
-    }
-    tr.appendChild(tdRes);
-
-    // Remove
-    var tdAct = document.createElement("td");
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn-ghost";
-    btn.setAttribute("data-sys-remove", "");
-    btn.setAttribute("aria-label", "Remove row");
-    btn.textContent = "✕";
-    tdAct.appendChild(btn);
-    tr.appendChild(tdAct);
-
-    syncTypeVisibility(tr);
-    return tr;
-  }
-
-  function updateStageResult(system) {
-    var cell = document.getElementById("sys-stage-result-cell");
-    if (!cell) return;
-    while (cell.firstChild) cell.removeChild(cell.firstChild);
-    if (system.stage_error) {
-      var err = document.createElement("div");
-      err.className = "error";
-      err.style.margin = "0";
-      err.textContent = system.stage_error;
-      cell.appendChild(err);
-      return;
-    }
-    if (!system.stage) return;
-    var meta = document.createElement("div");
-    meta.className = "suffix";
-    meta.textContent = "V: " + (system.stage.velocity_display || "—") +
-      " · " + (system.stage.friction_or_k_display || "—");
-    cell.appendChild(meta);
-    var dpLine = document.createElement("div");
-    var dpSpan = document.createElement("span");
-    dpSpan.id = "stage-sys-dp";
-    dpSpan.textContent = system.stage.dp_display || "";
-    dpLine.appendChild(dpSpan);
-    dpLine.appendChild(document.createTextNode(" "));
-    var us = document.createElement("span");
-    us.className = "u";
-    us.textContent = system.velocity_pressure_sym || pressureSym;
-    dpLine.appendChild(us);
-    cell.appendChild(dpLine);
-  }
-
-  function applySystemState(system) {
-    typeOptions = (system.type_options || []).map(function (o) {
-      return { value: o.value, label: o.label };
-    });
-    dnOptions = system.dn_options || [];
-    fittingGroups = system.fitting_groups || [];
-    dutyFlowLs = system.duty_flow_ls || "";
-    pressureSym = system.velocity_pressure_sym || "Pa";
-    lengthSym = system.run_length_sym || "m";
-
-    // Refresh stage DN options (material may have changed via design form).
-    var stageDn = document.getElementById("stage_dn");
-    if (stageDn) {
-      var prev = stageDn.value;
-      fillSelect(stageDn, dnOptions.map(function (o) {
-        return { value: o.dn, label: o.label };
-      }), prev || (system.stage_raw && system.stage_raw.dn) || "");
+      return DEFAULT_RAW.fitting || "";
     }
 
-    var body = document.getElementById("sys-rows-body");
-    if (body) {
-      while (body.firstChild) body.removeChild(body.firstChild);
-      (system.rows || []).forEach(function (row) {
-        body.appendChild(buildRowTr(row));
-      });
-    }
-
-    updateStageResult(system);
-
-    var total = document.getElementById("sys-total");
-    if (total) total.textContent = system.total_display || "0";
-    var totalSym = document.getElementById("sys-total-sym");
-    if (totalSym) totalSym.textContent = system.total_sym || pressureSym;
-
-    var margin = system.safety_margin || 0;
-    var marginTr = document.getElementById("sys-margin-tr");
-    var totalMarginTr = document.getElementById("sys-total-margin-tr");
-    var show = margin > 0;
-    if (marginTr) marginTr.style.display = show ? "" : "none";
-    if (totalMarginTr) totalMarginTr.style.display = show ? "" : "none";
-    var pct = document.getElementById("sys-margin-pct");
-    if (pct) pct.textContent = String(Math.round(margin));
-    var amt = document.getElementById("sys-margin-amount");
-    if (amt) amt.textContent = system.margin_amount_display || "";
-    var totM = document.getElementById("sys-total-margin");
-    if (totM) totM.textContent = system.total_with_margin_display || "";
-
-    applyHeadState(system.head);
-
-    syncAllTypeVisibility();
-    syncReportForm(system);
-    replaceUrl();
-    updateCsvLink();
-  }
-
-  function applyHeadState(head) {
-    if (!head) return;
-    var note = document.getElementById("head-note");
-    if (note) note.textContent = head.note || "";
-    var fluid = document.getElementById("sys-fluid-label");
-    if (fluid) fluid.textContent = head.fluid_label || "—";
-    var circuit = document.getElementById("head-circuit-label");
-    if (circuit) circuit.textContent = head.circuit_label || "";
-    var liftVal = document.getElementById("head-lift-val");
-    if (liftVal) liftVal.textContent = head.lift_display || "";
-    var liftSym = document.getElementById("head-lift-sym");
-    if (liftSym) liftSym.textContent = head.lift_sym || "";
-    var st = document.getElementById("head-static-summary");
-    if (st) st.textContent = (head.static && head.static.summary) || "—";
-    var fr = document.getElementById("head-friction-summary");
-    if (fr) fr.textContent = (head.friction && head.friction.summary) || "—";
-    var pu = document.getElementById("head-pump-summary");
-    if (pu) pu.textContent = (head.pump && head.pump.summary) || "—";
-    var circ = (head.fields && head.fields.circuit) || "pressurised";
-    syncLiftVisibility(circ);
-    // Keep radios in sync if server corrected a value.
-    var radio = panel.querySelector('input[name="circuit_ui"][value="' + circ + '"]');
-    if (radio) radio.checked = true;
-    syncCircuitHidden(circ);
-  }
-
-  function syncReportForm(system) {
-    var reportForm = document.querySelector('form[action$="/report"]');
-    if (!reportForm) return;
-    // Remove prior sys_* / stage_* / circuit / lift hidden fields.
-    Array.prototype.slice.call(reportForm.querySelectorAll('input[type="hidden"]')).forEach(function (inp) {
-      var n = inp.name || "";
-      if (n.indexOf("sys_") === 0 || n.indexOf("stage_") === 0 || n === "circuit" || n === "lift") {
-        inp.parentNode.removeChild(inp);
+    function fittingLabel(key) {
+      for (var g = 0; g < FITTING_GROUPS.length; g++) {
+        var fits = FITTING_GROUPS[g].fittings || [];
+        for (var i = 0; i < fits.length; i++) {
+          if (fits[i].key === key) return fits[i].label;
+        }
       }
-    });
-    function addHidden(name, value) {
-      var inp = document.createElement("input");
-      inp.type = "hidden";
-      inp.name = name;
-      inp.value = value == null ? "" : String(value);
-      reportForm.appendChild(inp);
+      return key || "";
     }
-    addHidden("sys_row_count", system.row_count || 0);
-    addHidden("sys_safety_margin", system.safety_margin || 0);
-    (system.rows || []).forEach(function (row) {
-      ROW_FIELDS.forEach(function (field) {
-        addHidden("sys_" + field + "_" + row.index, (row.raw && row.raw[field]) || "");
+
+    function fittingOptionsHtml(selectedKey) {
+      return FITTING_GROUPS.map(function (group) {
+        var opts = (group.fittings || []).map(function (f) {
+          return '<option value="' + f.key + '"' +
+            (f.key === selectedKey ? " selected" : "") + ">" + f.label + "</option>";
+        }).join("");
+        return '<optgroup label="' + group.label + '">' + opts + "</optgroup>";
+      }).join("");
+    }
+
+    function detailFromApi(row) {
+      var raw = row.raw || {};
+      var type = row.type || raw.type || "straight";
+      if (type === "fitting") return row.fitting_key || raw.fitting || "";
+      if (type === "device") return raw.label || row.label || "";
+      return raw.length || row.length_display || "";
+    }
+
+    function pamFromApi(row) {
+      return row.friction_or_k_display || "—";
+    }
+
+    function gridRowFromApi(row) {
+      var raw = Object.assign({}, DEFAULT_RAW, row.raw || {});
+      var type = row.type || raw.type || "straight";
+      return {
+        type: type,
+        dn: raw.dn != null && raw.dn !== "" ? String(raw.dn) : (row.dn != null ? String(row.dn) : ""),
+        flow_ls: raw.flow_ls || "",
+        velocity: row.velocity_display || "—",
+        vp: row.velocity_pressure_display || "—",
+        pam: pamFromApi(row),
+        detail: detailFromApi(row),
+        pd: type === "device" ? (raw.dp || row.dp_display || "") : (row.dp_display || "—"),
+        length: raw.length || "",
+        fitting: row.fitting_key || raw.fitting || "",
+        label: raw.label || "",
+        dp: raw.dp || "",
+        error: row.error || null
+      };
+    }
+
+    function rawFromGridRow(d) {
+      var type = d.type || "straight";
+      var raw = {
+        type: type,
+        dn: type === "device" ? "" : (d.dn || ""),
+        flow_ls: type === "device" ? "" : (d.flow_ls || ""),
+        length: "",
+        fitting: "",
+        label: "",
+        dp: ""
+      };
+      if (type === "straight") {
+        raw.length = d.detail != null ? String(d.detail) : (d.length || "");
+      } else if (type === "fitting") {
+        raw.fitting = d.detail || d.fitting || firstFittingKey();
+      } else if (type === "device") {
+        raw.label = d.detail != null ? String(d.detail) : (d.label || DEFAULT_RAW.label);
+        raw.dp = d.pd != null ? String(d.pd) : (d.dp || DEFAULT_RAW.dp);
+      }
+      return raw;
+    }
+
+    function readFieldsFrom(container) {
+      var raw = {};
+      ROW_FIELDS.forEach(function (f) {
+        var input = container.querySelector('[data-row-field="' + f + '"]');
+        raw[f] = input ? input.value : "";
       });
-    });
-    var head = system.head || {};
-    var hf = head.fields || {};
-    var circuitEl = panel.querySelector('input[name="circuit_ui"]:checked');
-    addHidden("circuit", (circuitEl && circuitEl.value) || hf.circuit || "pressurised");
-    var liftEl = document.getElementById("lift");
-    addHidden("lift", (liftEl && liftEl.value) || hf.lift || "");
-  }
-
-  function replaceUrl() {
-    var params = buildParams();
-    var qs = params.toString();
-    var url = window.location.pathname + (qs ? "?" + qs : "");
-    history.replaceState(null, "", url);
-  }
-
-  function updateCsvLink() {
-    var a = document.getElementById("sys-export-csv");
-    if (!a) return;
-    a.href = CSV_URL + "?" + buildParams().toString();
-  }
-
-  var fetching = false;
-  var pending = false;
-
-  function fetchSystem() {
-    if (fetching) {
-      pending = true;
-      return;
+      return raw;
     }
-    fetching = true;
-    var params = buildParams();
-    fetch(API_URL + "?" + params.toString(), {
-      headers: { Accept: "application/json" },
-    })
-      .then(function (res) { return res.json(); })
-      .then(function (system) {
-        applySystemState(system);
-      })
-      .catch(function () { /* leave table as-is on network error */ })
-      .finally(function () {
-        fetching = false;
-        if (pending) {
-          pending = false;
-          fetchSystem();
+
+    function updateFieldVisibility(container) {
+      if (!container) return;
+      var typeSel = container.querySelector('[data-row-field="type"]');
+      var type = typeSel ? typeSel.value : "straight";
+      var isDevice = type === "device";
+      container.querySelectorAll("[data-pipe-size-field]").forEach(function (el) {
+        el.style.display = isDevice ? "none" : "";
+      });
+      container.querySelectorAll("[data-type-for]").forEach(function (el) {
+        var forTypes = el.getAttribute("data-type-for").split(" ");
+        el.style.display = forTypes.indexOf(type) !== -1 ? "" : "none";
+      });
+    }
+
+    function showError(msg) {
+      if (!errorBox) return;
+      errorBox.innerHTML = "";
+      if (!msg) return;
+      var div = document.createElement("div");
+      div.className = "error";
+      div.textContent = msg;
+      errorBox.appendChild(div);
+    }
+
+    function updateStagePreview(system) {
+      if (!stageResultCell) return;
+      stageResultCell.innerHTML = "";
+      if (system.stage_error) {
+        var errDiv = document.createElement("div");
+        errDiv.className = "error";
+        errDiv.id = "sys-stage-error";
+        errDiv.style.margin = "0";
+        errDiv.textContent = system.stage_error;
+        stageResultCell.appendChild(errDiv);
+        return;
+      }
+      var s = system.stage;
+      if (!s) return;
+
+      var metrics = document.createElement("div");
+      metrics.className = "leg-preview-metrics suffix";
+      function metric(id, label, text) {
+        var wrap = document.createElement("span");
+        wrap.appendChild(document.createTextNode(label + " "));
+        var span = document.createElement("span");
+        span.id = id;
+        span.textContent = text;
+        wrap.appendChild(span);
+        metrics.appendChild(wrap);
+      }
+      metric("stage-sys-velocity", "V", s.velocity_display);
+      metric("stage-sys-vp", "VP", s.velocity_pressure_display);
+      var fk = document.createElement("span");
+      fk.id = "stage-sys-fk";
+      fk.textContent = s.friction_or_k_display || "—";
+      metrics.appendChild(fk);
+
+      var dpLine = document.createElement("div");
+      dpLine.className = "leg-preview-dp";
+      var dpSpan = document.createElement("span");
+      dpSpan.id = "stage-sys-dp";
+      dpSpan.textContent = s.dp_display;
+      dpLine.appendChild(dpSpan);
+      dpLine.appendChild(document.createTextNode(" "));
+      var symSpan = document.createElement("span");
+      symSpan.className = "u";
+      symSpan.textContent = system.velocity_pressure_sym || pressureSym;
+      dpLine.appendChild(symSpan);
+
+      stageResultCell.appendChild(metrics);
+      stageResultCell.appendChild(dpLine);
+    }
+
+    function readDesignParams() {
+      var params = new URLSearchParams();
+      var fd = new FormData(form);
+      fd.forEach(function (value, key) {
+        if (value !== null && value !== undefined && String(value) !== "") {
+          params.set(key, String(value));
         }
       });
-  }
-
-  var debouncedFetch = debounce(fetchSystem, 200);
-
-  function onPanelChange(evt) {
-    var t = evt.target;
-    if (!t || !panel.contains(t)) return;
-    if (t.getAttribute("data-row-field") === "type") {
-      syncTypeVisibility(t.closest("tr") || panel);
+      var mode = form.querySelector('input[name="mode"]:checked');
+      if (mode) params.set("mode", mode.value);
+      return params;
     }
-    debouncedFetch();
-  }
 
-  panel.addEventListener("change", onPanelChange);
-  panel.addEventListener("input", function (evt) {
-    var t = evt.target;
-    if (!t || t.tagName !== "INPUT") return;
-    if (t.hasAttribute("data-row-field") || t.id === "sys-safety-margin") {
-      debouncedFetch();
+    function syncCircuitHidden(value) {
+      var h = document.getElementById("circuit-hidden");
+      if (h) h.value = value;
     }
-  });
 
-  // Stage 3: system type / lift live in the system panel params strip.
-  panel.addEventListener("change", function (evt) {
-    var t = evt.target;
-    if (!t) return;
-    if (t.name === "circuit_ui") {
-      syncLiftVisibility(t.value);
-      syncCircuitHidden(t.value);
-      debouncedFetch();
+    function syncLiftHidden(value) {
+      var h = document.getElementById("lift-hidden");
+      if (h) h.value = value;
     }
-  });
-  panel.addEventListener("input", function (evt) {
-    var t = evt.target;
-    if (t && t.id === "lift") {
-      syncLiftHidden(t.value || "0");
-      debouncedFetch();
-    }
-  });
 
-  var addBtn = document.getElementById("sys-add-row");
-  if (addBtn) {
-    addBtn.addEventListener("click", function () {
-      var params = buildParams();
-      var n = parseInt(params.get("sys_row_count") || "0", 10) || 0;
-      ROW_FIELDS.forEach(function (field) {
-        var el = panel.querySelector('[name="stage_' + field + '"]');
-        params.set("sys_" + field + "_" + n, el ? el.value : "");
+    function syncLiftVisibility(circuit) {
+      var field = document.getElementById("lift-field");
+      var row = document.getElementById("head-lift-row");
+      var open = circuit === "open";
+      if (field) field.style.display = open ? "" : "none";
+      if (row) row.style.display = open ? "" : "none";
+    }
+
+    function buildParams(opts) {
+      opts = opts || {};
+      var params = readDesignParams();
+      var circuitEl = panel.querySelector('input[name="circuit_ui"]:checked');
+      var circuit = (circuitEl && circuitEl.value) || "pressurised";
+      params.set("circuit", circuit);
+      var liftEl = document.getElementById("lift");
+      params.set("lift", liftEl ? (liftEl.value || "0") : "0");
+      syncCircuitHidden(circuit);
+      if (liftEl) syncLiftHidden(liftEl.value || "0");
+
+      var data = table ? table.getData() : [];
+      params.set("sys_row_count", String(data.length));
+      params.set("sys_safety_margin", safetyMargin ? (safetyMargin.value || "0") : "0");
+      data.forEach(function (row, i) {
+        var raw = rawFromGridRow(row);
+        ROW_FIELDS.forEach(function (f) {
+          params.set("sys_" + f + "_" + i, raw[f] == null ? "" : String(raw[f]));
+        });
       });
-      params.set("sys_row_count", String(n + 1));
-      // Preserve type/dn for the next staging draft; clear length/fitting specifics lightly.
-      var stageLen = document.getElementById("stage_length");
-      if (stageLen) stageLen.value = stageLen.value; // keep
-      var stageLabel = document.getElementById("stage_label");
-      if (stageLabel) stageLabel.value = "";
-      var stageDp = document.getElementById("stage_dp");
-      if (stageDp) stageDp.value = stageDp.value;
-
-      fetching = true;
-      fetch(API_URL + "?" + params.toString(), {
-        headers: { Accept: "application/json" },
-      })
-        .then(function (res) { return res.json(); })
-        .then(function (system) {
-          applySystemState(system);
-          // After commit, leave stage type/dn/flow; clear length for next straight, etc.
-          var typeEl = document.getElementById("stage_type");
-          if (typeEl && typeEl.value === "straight" && stageLen) {
-            /* keep length for similar runs */
-          }
-        })
-        .finally(function () { fetching = false; });
-    });
-  }
-
-  panel.addEventListener("click", function (evt) {
-    var btn = evt.target.closest("[data-sys-remove]");
-    if (!btn) return;
-    var tr = btn.closest("tr[data-sys-row]");
-    if (tr && tr.parentNode) {
-      tr.parentNode.removeChild(tr);
-      fetchSystem();
-    }
-  });
-
-  var clearBtn = document.getElementById("sys-clear");
-  if (clearBtn) {
-    clearBtn.addEventListener("click", function () {
-      var body = document.getElementById("sys-rows-body");
-      if (body) {
-        while (body.firstChild) body.removeChild(body.firstChild);
+      if (!opts.skipStaging && stage) {
+        var stageRaw = readFieldsFrom(stage);
+        ROW_FIELDS.forEach(function (f) {
+          params.set("stage_" + f, stageRaw[f] == null ? "" : String(stageRaw[f]));
+        });
       }
-      var margin = document.getElementById("sys-safety-margin");
-      if (margin) margin.value = "0";
-      fetchSystem();
-    });
-  }
+      return params;
+    }
 
-  // Design Inputs changes (Calculate is a full GET) — when user changes material
-  // without submitting, system DN options should refresh on next system edit.
-  // Also preserve system state when selecting a DN size row: those links are
-  // rebuilt server-side without sys_*; after JS boot we rewrite them.
-  function rewriteSizeLinks() {
-    var params = buildParams();
-    document.querySelectorAll("a.pipe-row-link").forEach(function (a) {
+    function syncReportForm(system) {
+      var reportForm = document.querySelector('form[action$="/report"]');
+      if (!reportForm) return;
+      Array.prototype.slice.call(reportForm.querySelectorAll('input[type="hidden"]')).forEach(function (inp) {
+        var n = inp.name || "";
+        if (n.indexOf("sys_") === 0 || n.indexOf("stage_") === 0 || n === "circuit" || n === "lift") {
+          inp.parentNode.removeChild(inp);
+        }
+      });
+      function addHidden(name, value) {
+        var inp = document.createElement("input");
+        inp.type = "hidden";
+        inp.name = name;
+        inp.value = value == null ? "" : String(value);
+        reportForm.appendChild(inp);
+      }
+      addHidden("sys_row_count", system.row_count || 0);
+      addHidden("sys_safety_margin", system.safety_margin || 0);
+      (system.rows || []).forEach(function (row) {
+        ROW_FIELDS.forEach(function (field) {
+          addHidden("sys_" + field + "_" + row.index, (row.raw && row.raw[field]) || "");
+        });
+      });
+      var head = system.head || {};
+      var hf = head.fields || {};
+      var circuitEl = panel.querySelector('input[name="circuit_ui"]:checked');
+      addHidden("circuit", (circuitEl && circuitEl.value) || hf.circuit || "pressurised");
+      var liftEl = document.getElementById("lift");
+      addHidden("lift", (liftEl && liftEl.value) || hf.lift || "");
+    }
+
+    function applyHeadState(head) {
+      if (!head) return;
+      var note = document.getElementById("head-note");
+      if (note) note.textContent = head.note || "";
+      var fluid = document.getElementById("sys-fluid-label");
+      if (fluid) fluid.textContent = head.fluid_label || "—";
+      var circuit = document.getElementById("head-circuit-label");
+      if (circuit) circuit.textContent = head.circuit_label || "";
+      var liftVal = document.getElementById("head-lift-val");
+      if (liftVal) liftVal.textContent = head.lift_display || "";
+      var liftSym = document.getElementById("head-lift-sym");
+      if (liftSym) liftSym.textContent = head.lift_sym || "";
+      var st = document.getElementById("head-static-summary");
+      if (st) st.textContent = (head.static && head.static.summary) || "—";
+      var fr = document.getElementById("head-friction-summary");
+      if (fr) fr.textContent = (head.friction && head.friction.summary) || "—";
+      var pu = document.getElementById("head-pump-summary");
+      if (pu) pu.textContent = (head.pump && head.pump.summary) || "—";
+      var circ = (head.fields && head.fields.circuit) || "pressurised";
+      syncLiftVisibility(circ);
+      var radio = panel.querySelector('input[name="circuit_ui"][value="' + circ + '"]');
+      if (radio) radio.checked = true;
+      syncCircuitHidden(circ);
+    }
+
+    function applyTotals(system) {
+      setText("sys-total", system.total_display);
+      setText("sys-total-sym", system.total_sym);
+      setText("sys-margin-amount", system.margin_amount_display || "0");
+      setText("sys-margin-sym", system.total_sym);
+      setText("sys-total-margin", system.total_with_margin_display || system.total_display);
+      setText("sys-total-margin-sym", system.total_sym);
+      if (safetyMargin && document.activeElement !== safetyMargin) {
+        safetyMargin.value = String(Math.round(system.safety_margin || 0));
+      }
+      if (exportLink) {
+        exportLink.href = CSV_URL + "?" + buildParams().toString();
+      }
+      syncReportForm(system);
+    }
+
+    function replaceUrl() {
+      var params = buildParams();
+      var qs = params.toString();
+      var url = window.location.pathname + (qs ? "?" + qs : "");
+      history.replaceState(null, "", url);
+    }
+
+    function refreshDnSelect(selected) {
+      var stageDn = document.getElementById("stage_dn");
+      if (!stageDn) return;
+      var prev = selected != null ? String(selected) : stageDn.value;
+      stageDn.innerHTML = "";
+      DN_OPTIONS.forEach(function (opt) {
+        var el = document.createElement("option");
+        el.value = String(opt.dn);
+        el.textContent = opt.label;
+        if (el.value === prev) el.selected = true;
+        stageDn.appendChild(el);
+      });
+      if (!stageDn.value && DN_OPTIONS.length) {
+        stageDn.value = String(DN_OPTIONS[0].dn);
+      }
+    }
+
+    function applySystemState(system, opts) {
+      opts = opts || {};
+      applying = true;
       try {
-        var u = new URL(a.href, window.location.origin);
-        var dn = u.searchParams.get("selected_dn");
-        var merged = new URLSearchParams(params.toString());
-        if (dn) merged.set("selected_dn", dn);
-        a.href = u.pathname + "?" + merged.toString();
-      } catch (e) { /* ignore */ }
+        TYPE_OPTIONS = system.type_options || TYPE_OPTIONS;
+        DN_OPTIONS = system.dn_options || DN_OPTIONS;
+        FITTING_GROUPS = system.fitting_groups || FITTING_GROUPS;
+        dutyFlowLs = system.duty_flow_ls || dutyFlowLs;
+        pressureSym = system.velocity_pressure_sym || pressureSym;
+        if (system.default_row_raw) DEFAULT_RAW = system.default_row_raw;
+
+        refreshDnSelect(system.stage_raw && system.stage_raw.dn);
+        var flowIn = document.getElementById("stage_flow_ls");
+        if (flowIn) flowIn.placeholder = dutyFlowLs || "";
+
+        if (!opts.previewOnly) {
+          table.replaceData((system.rows || []).map(gridRowFromApi));
+        }
+        updateStagePreview(system);
+        applyTotals(system);
+        applyHeadState(system.head);
+        replaceUrl();
+        rewriteSizeLinks();
+        showError(null);
+      } finally {
+        applying = false;
+      }
+    }
+
+    function fetchSystem(overrides, opts) {
+      var params = buildParams(opts);
+      if (overrides) {
+        Object.keys(overrides).forEach(function (k) { params.set(k, overrides[k]); });
+      }
+      return fetch(API_URL + "?" + params.toString(), {
+        headers: { Accept: "application/json" }
+      })
+        .then(function (resp) { return resp.json(); })
+        .then(function (data) {
+          applySystemState(data, opts);
+          return data;
+        })
+        .catch(function () {
+          showError("Could not reach the server — check your connection and try again.");
+        });
+    }
+
+    var debouncedFetch = debounce(function () { fetchSystem(); }, 280);
+    var debouncedPreview = debounce(function () {
+      fetchSystem(null, { previewOnly: true });
+    }, 280);
+
+    function isEditable(cell) {
+      var field = cell.getField();
+      var d = cell.getRow().getData();
+      var type = d.type || "straight";
+      if (field === "type") return true;
+      if (field === "dn" || field === "flow_ls") return type !== "device";
+      if (field === "detail") return true;
+      if (field === "pd") return type === "device";
+      return false;
+    }
+
+    function detailEditor(cell, onRendered, success, cancel) {
+      var d = cell.getRow().getData();
+      var type = d.type || "straight";
+      if (type === "fitting") {
+        var sel = document.createElement("select");
+        sel.className = "leg-grid-editor";
+        sel.innerHTML = fittingOptionsHtml(d.detail || d.fitting || firstFittingKey());
+        onRendered(function () { sel.focus(); });
+        sel.addEventListener("change", function () { success(sel.value); });
+        sel.addEventListener("blur", function () { success(sel.value); });
+        return sel;
+      }
+      var input = document.createElement("input");
+      input.type = "text";
+      input.className = "leg-grid-editor";
+      input.value = cell.getValue() == null ? "" : String(cell.getValue());
+      onRendered(function () { input.focus(); input.select(); });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { success(input.value); }
+        if (e.key === "Escape") { cancel(); }
+      });
+      input.addEventListener("blur", function () { success(input.value); });
+      return input;
+    }
+
+    function detailFormatter(cell) {
+      var d = cell.getRow().getData();
+      var type = d.type || "straight";
+      var val = cell.getValue();
+      if (type === "fitting") return fittingLabel(val);
+      if (type === "device") return val || "";
+      return val == null || val === "" ? "" : String(val);
+    }
+
+    function rowFormatter(row) {
+      var el = row.getElement();
+      var d = row.getData();
+      if (d.error) el.classList.add("leg-grid-row-error");
+      else el.classList.remove("leg-grid-row-error");
+    }
+
+    table = new Tabulator(mount, {
+      data: (INITIAL.rows || []).map(gridRowFromApi),
+      layout: "fitData",
+      renderVertical: "basic",
+      renderHorizontal: "basic",
+      reactiveData: false,
+      selectableRows: false,
+      rowHeight: 22,
+      placeholder: "No rows yet — fill the form above and press Add.",
+      columnHeaderVertAlign: "middle",
+      rowFormatter: rowFormatter,
+      columns: [
+        {
+          title: "Item", field: "item", minWidth: 40,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          formatter: function (cell) { return String(cell.getRow().getPosition(true)); }
+        },
+        {
+          title: "Type", field: "type", minWidth: 70,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          editor: "list", editorParams: { values: typeValues() },
+          formatter: function (cell) {
+            var map = { straight: "Straight", fitting: "Fitting", device: "Device" };
+            return map[cell.getValue()] || cell.getValue() || "";
+          },
+          editable: isEditable
+        },
+        {
+          title: "DN", field: "dn", minWidth: 70,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          editor: "list", editorParams: function () {
+            return { values: dnValues() };
+          },
+          formatter: function (cell) {
+            var d = cell.getRow().getData();
+            if ((d.type || "") === "device") return "—";
+            var map = dnValues();
+            var v = cell.getValue();
+            return map[String(v)] || v || "";
+          },
+          editable: isEditable
+        },
+        {
+          title: "Flow", field: "flow_ls", minWidth: 55,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          editor: "input", editable: isEditable,
+          formatter: function (cell) {
+            var d = cell.getRow().getData();
+            if ((d.type || "") === "device") return "—";
+            var v = cell.getValue();
+            if (v == null || v === "") return dutyFlowLs ? "(" + dutyFlowLs + ")" : "";
+            return String(v);
+          }
+        },
+        {
+          title: "Vel", field: "velocity", minWidth: 50,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
+        },
+        {
+          title: "VP", field: "vp", minWidth: 55,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
+        },
+        {
+          title: "Pa/m", field: "pam", minWidth: 55,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
+        },
+        {
+          title: "m", field: "detail", minWidth: 90,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          editor: detailEditor, formatter: detailFormatter, editable: isEditable, tooltip: true
+        },
+        {
+          title: "PD", field: "pd", minWidth: 55,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          editor: "input", editable: isEditable,
+          formatter: function (cell) {
+            var d = cell.getRow().getData();
+            var v = cell.getValue();
+            if (d.error) {
+              var wrap = document.createElement("div");
+              wrap.textContent = v == null ? "—" : String(v);
+              var err = document.createElement("div");
+              err.className = "leg-grid-row-error-text";
+              err.textContent = d.error;
+              wrap.appendChild(err);
+              return wrap;
+            }
+            return v == null ? "" : String(v);
+          }
+        },
+        {
+          title: "Del", field: "_del", minWidth: 36, width: 36,
+          widthGrow: 0, widthShrink: 0,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          formatter: function () {
+            return "<button type=\"button\" class=\"leg-grid-remove\" aria-label=\"Remove row\" title=\"Delete\">×</button>";
+          },
+          cellClick: function (e, cell) {
+            if (!e.target.closest(".leg-grid-remove")) return;
+            cell.getRow().delete().then(function () { fetchSystem(); });
+          }
+        }
+      ]
     });
+
+    function redrawGrid() {
+      if (!table) return;
+      try { table.redraw(true); } catch (e) { /* ignore */ }
+    }
+
+    table.on("tableBuilt", redrawGrid);
+    table.on("dataProcessed", redrawGrid);
+
+    if (typeof ResizeObserver !== "undefined") {
+      var roTimer = null;
+      var ro = new ResizeObserver(function () {
+        clearTimeout(roTimer);
+        roTimer = setTimeout(redrawGrid, 40);
+      });
+      ro.observe(mount.parentElement || panel);
+    }
+    window.addEventListener("resize", redrawGrid);
+
+    table.on("cellEdited", function (cell) {
+      if (applying) return;
+      var field = cell.getField();
+      var row = cell.getRow();
+      var d = row.getData();
+
+      if (field === "type") {
+        if (d.type === "device") {
+          row.update({
+            dn: "", flow_ls: "", velocity: "—", vp: "—", pam: "—",
+            detail: d.detail || DEFAULT_RAW.label, pd: d.pd || DEFAULT_RAW.dp
+          });
+        } else if (d.type === "fitting") {
+          var fk = d.fitting || firstFittingKey();
+          row.update({ detail: fk, fitting: fk });
+        } else if (!d.detail) {
+          row.update({ detail: DEFAULT_RAW.length });
+        }
+      }
+      debouncedFetch();
+    });
+
+    // Composer: live preview; Add commits into the grid
+    if (stage) {
+      updateFieldVisibility(stage);
+      stage.addEventListener("change", function (evt) {
+        var target = evt.target;
+        if (!target.hasAttribute("data-row-field")) return;
+        if (target.getAttribute("data-row-field") === "type") {
+          updateFieldVisibility(stage);
+        }
+        fetchSystem(null, { previewOnly: true });
+      });
+      stage.addEventListener("input", function (evt) {
+        if (evt.target.hasAttribute("data-row-field")) debouncedPreview();
+      });
+    }
+
+    function clearStagingItemFields() {
+      if (!stage) return;
+      ["length", "fitting", "label", "dp"].forEach(function (f) {
+        var input = stage.querySelector('[data-row-field="' + f + '"]');
+        if (!input) return;
+        if (input.tagName === "SELECT") {
+          if (input.options.length) input.selectedIndex = 0;
+        } else if (f === "length") {
+          input.value = DEFAULT_RAW.length || "";
+        } else if (f === "label") {
+          input.value = DEFAULT_RAW.label || "";
+        } else if (f === "dp") {
+          input.value = DEFAULT_RAW.dp || "";
+        } else {
+          input.value = "";
+        }
+      });
+    }
+
+    if (addBtn) {
+      addBtn.addEventListener("click", function () {
+        if (!stage) return;
+        var existingCount = table.getDataCount();
+        var stagingRaw = readFieldsFrom(stage);
+        var overrides = { sys_row_count: String(existingCount + 1) };
+        ROW_FIELDS.forEach(function (f) {
+          overrides["sys_" + f + "_" + existingCount] = stagingRaw[f];
+        });
+        fetchSystem(overrides).then(function () {
+          clearStagingItemFields();
+          updateFieldVisibility(stage);
+          fetchSystem(null, { previewOnly: true });
+        });
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function () {
+        applying = true;
+        table.replaceData([]).then(function () {
+          applying = false;
+          if (safetyMargin) safetyMargin.value = "0";
+          fetchSystem();
+        });
+      });
+    }
+
+    if (safetyMargin) {
+      safetyMargin.addEventListener("input", debounce(function () { fetchSystem(); }, 300));
+      safetyMargin.addEventListener("change", function () { fetchSystem(); });
+    }
+
+    // System parameters (circuit / lift)
+    panel.addEventListener("change", function (evt) {
+      var t = evt.target;
+      if (!t) return;
+      if (t.name === "circuit_ui") {
+        syncLiftVisibility(t.value);
+        syncCircuitHidden(t.value);
+        debouncedFetch();
+      }
+    });
+    panel.addEventListener("input", function (evt) {
+      var t = evt.target;
+      if (t && t.id === "lift") {
+        syncLiftHidden(t.value || "0");
+        debouncedFetch();
+      }
+    });
+
+    function rewriteSizeLinks() {
+      var params = buildParams();
+      document.querySelectorAll("a.pipe-row-link").forEach(function (a) {
+        try {
+          var u = new URL(a.href, window.location.origin);
+          var dn = u.searchParams.get("selected_dn");
+          var merged = new URLSearchParams(params.toString());
+          if (dn) merged.set("selected_dn", dn);
+          a.href = u.pathname + "?" + merged.toString();
+        } catch (e) { /* ignore */ }
+      });
+    }
+
+    var checkedCircuit = panel.querySelector('input[name="circuit_ui"]:checked');
+    if (checkedCircuit) syncLiftVisibility(checkedCircuit.value);
+
+    applyTotals(INITIAL);
+    updateStagePreview(INITIAL);
+    applyHeadState(INITIAL.head);
+    rewriteSizeLinks();
+    if ((INITIAL.rows || []).length) {
+      fetchSystem();
+    } else {
+      fetchSystem(null, { previewOnly: true });
+    }
   }
 
-  syncAllTypeVisibility();
-  updateCsvLink();
-  rewriteSizeLinks();
-  var checkedCircuit = panel.querySelector('input[name="circuit_ui"]:checked');
-  if (checkedCircuit) syncLiftVisibility(checkedCircuit.value);
-
-  // If the URL already carries sys rows, ensure footer/state matches; otherwise
-  // just seed stage preview against current design inputs.
-  fetchSystem();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();

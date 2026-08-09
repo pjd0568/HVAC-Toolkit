@@ -1123,7 +1123,7 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 
 /* Index Leg — Tabulator spreadsheet grid (Correction #11).
    Compact 2-row composer above the results grid; calc in blueprints/duct.py.
-   Pipe system continues to use .leg-rows-table / .leg-stage-row below. */
+   Pipe System (#sys-grid) shares the same spreadsheet shell. */
 
 /* ── Compact 2-row composer (primary input) ─────────────────────────────── */
 .leg-composer {
@@ -1236,7 +1236,8 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   background: #fff;
 }
 
-#leg-grid {
+#leg-grid,
+#sys-grid {
   width: 100%;
 }
 #leg-grid.tabulator,
@@ -1248,7 +1249,8 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   max-width: 100%;
   box-sizing: border-box;
 }
-#leg-grid .tabulator-header {
+#leg-grid .tabulator-header,
+#sys-grid .tabulator-header {
   background: #f0f0f0;
   border-bottom: 1px solid #111;
   font-weight: 700;
@@ -1256,24 +1258,29 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   width: 100% !important;
   overflow: hidden !important;
 }
-#leg-grid .tabulator-headers {
+#leg-grid .tabulator-headers,
+#sys-grid .tabulator-headers {
   display: flex !important;
   width: 100% !important;
   min-width: 100% !important;
 }
-#leg-grid .tabulator-header-contents {
+#leg-grid .tabulator-header-contents,
+#sys-grid .tabulator-header-contents {
   width: 100% !important;
 }
-#leg-grid .tabulator-tableholder {
+#leg-grid .tabulator-tableholder,
+#sys-grid .tabulator-tableholder {
   width: 100% !important;
   overflow-x: hidden !important;
 }
-#leg-grid .tabulator-table {
+#leg-grid .tabulator-table,
+#sys-grid .tabulator-table {
   width: 100% !important;
   min-width: 100% !important;
   display: block !important;
 }
-#leg-grid .tabulator-row {
+#leg-grid .tabulator-row,
+#sys-grid .tabulator-row {
   display: flex !important;
   width: 100% !important;
   min-width: 100% !important;
@@ -1284,7 +1291,9 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 /* Force every column/cell to share the full row width.
    Inline Tabulator pixel widths are overridden on purpose. */
 #leg-grid .tabulator-col,
-#leg-grid .tabulator-cell {
+#leg-grid .tabulator-cell,
+#sys-grid .tabulator-col,
+#sys-grid .tabulator-cell {
   flex: 1 1 0 !important;
   width: auto !important;
   max-width: none !important;
@@ -1292,11 +1301,15 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   box-sizing: border-box !important;
 }
 #leg-grid .tabulator-col[tabulator-field="item"],
-#leg-grid .tabulator-cell[tabulator-field="item"] {
+#leg-grid .tabulator-cell[tabulator-field="item"],
+#sys-grid .tabulator-col[tabulator-field="item"],
+#sys-grid .tabulator-cell[tabulator-field="item"] {
   flex: 0.55 1 0 !important;
 }
 #leg-grid .tabulator-col[tabulator-field="type"],
-#leg-grid .tabulator-cell[tabulator-field="type"] {
+#leg-grid .tabulator-cell[tabulator-field="type"],
+#sys-grid .tabulator-col[tabulator-field="type"],
+#sys-grid .tabulator-cell[tabulator-field="type"] {
   flex: 1.15 1 0 !important;
 }
 #leg-grid .tabulator-col[tabulator-field="shape"],
@@ -1318,32 +1331,48 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 #leg-grid .tabulator-col[tabulator-field="pam"],
 #leg-grid .tabulator-cell[tabulator-field="pam"],
 #leg-grid .tabulator-col[tabulator-field="pd"],
-#leg-grid .tabulator-cell[tabulator-field="pd"] {
+#leg-grid .tabulator-cell[tabulator-field="pd"],
+#sys-grid .tabulator-col[tabulator-field="velocity"],
+#sys-grid .tabulator-cell[tabulator-field="velocity"],
+#sys-grid .tabulator-col[tabulator-field="vp"],
+#sys-grid .tabulator-cell[tabulator-field="vp"],
+#sys-grid .tabulator-col[tabulator-field="pam"],
+#sys-grid .tabulator-cell[tabulator-field="pam"],
+#sys-grid .tabulator-col[tabulator-field="pd"],
+#sys-grid .tabulator-cell[tabulator-field="pd"] {
   flex: 0.95 1 0 !important;
 }
 #leg-grid .tabulator-col[tabulator-field="detail"],
-#leg-grid .tabulator-cell[tabulator-field="detail"] {
+#leg-grid .tabulator-cell[tabulator-field="detail"],
+#sys-grid .tabulator-col[tabulator-field="detail"],
+#sys-grid .tabulator-cell[tabulator-field="detail"] {
   flex: 1.4 1 0 !important;
 }
 #leg-grid .tabulator-col[tabulator-field="_del"],
-#leg-grid .tabulator-cell[tabulator-field="_del"] {
+#leg-grid .tabulator-cell[tabulator-field="_del"],
+#sys-grid .tabulator-col[tabulator-field="_del"],
+#sys-grid .tabulator-cell[tabulator-field="_del"] {
   flex: 0 0 36px !important;
   width: 36px !important;
   max-width: 36px !important;
 }
-#leg-grid .tabulator-col {
+#leg-grid .tabulator-col,
+#sys-grid .tabulator-col {
   background: #f0f0f0;
   border-right: 1px solid #111;
 }
-#leg-grid .tabulator-col-content { padding: 2px 1px; }
-#leg-grid .tabulator-col .tabulator-col-title {
+#leg-grid .tabulator-col-content,
+#sys-grid .tabulator-col-content { padding: 2px 1px; }
+#leg-grid .tabulator-col .tabulator-col-title,
+#sys-grid .tabulator-col .tabulator-col-title {
   text-align: center;
   padding: 0;
   white-space: nowrap;
   font-size: 11px;
   line-height: 1.2;
 }
-#leg-grid .tabulator-row .tabulator-cell {
+#leg-grid .tabulator-row .tabulator-cell,
+#sys-grid .tabulator-row .tabulator-cell {
   border-right: 1px solid #111;
   border-bottom: 1px solid #111;
   padding: 1px 3px;
@@ -1359,30 +1388,47 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 #leg-grid .tabulator-cell[tabulator-field="volume"],
 #leg-grid .tabulator-cell[tabulator-field="size"],
 #leg-grid .tabulator-cell[tabulator-field="detail"],
-#leg-grid .tabulator-cell[tabulator-field="pd"] {
+#leg-grid .tabulator-cell[tabulator-field="pd"],
+#sys-grid .tabulator-cell[tabulator-field="type"],
+#sys-grid .tabulator-cell[tabulator-field="dn"],
+#sys-grid .tabulator-cell[tabulator-field="flow_ls"],
+#sys-grid .tabulator-cell[tabulator-field="detail"],
+#sys-grid .tabulator-cell[tabulator-field="pd"] {
   background: #fff !important;
 }
 /* Calculated / read-only columns — grey */
 #leg-grid .tabulator-cell[tabulator-field="item"],
 #leg-grid .tabulator-cell[tabulator-field="velocity"],
 #leg-grid .tabulator-cell[tabulator-field="vp"],
-#leg-grid .tabulator-cell[tabulator-field="pam"] {
+#leg-grid .tabulator-cell[tabulator-field="pam"],
+#sys-grid .tabulator-cell[tabulator-field="item"],
+#sys-grid .tabulator-cell[tabulator-field="velocity"],
+#sys-grid .tabulator-cell[tabulator-field="vp"],
+#sys-grid .tabulator-cell[tabulator-field="pam"] {
   background: #eceff3 !important;
   color: #334155;
 }
-#leg-grid .tabulator-cell[tabulator-field="_del"] {
+#leg-grid .tabulator-cell[tabulator-field="_del"],
+#sys-grid .tabulator-cell[tabulator-field="_del"] {
   background: #f7f8fa !important;
 }
-#leg-grid .tabulator-row.tabulator-row-even { background: transparent; }
+#leg-grid .tabulator-row.tabulator-row-even,
+#sys-grid .tabulator-row.tabulator-row-even { background: transparent; }
 #leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="type"],
 #leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="shape"],
 #leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="volume"],
 #leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="size"],
 #leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="detail"],
-#leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="pd"] {
+#leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="pd"],
+#sys-grid .tabulator-row:hover .tabulator-cell[tabulator-field="type"],
+#sys-grid .tabulator-row:hover .tabulator-cell[tabulator-field="dn"],
+#sys-grid .tabulator-row:hover .tabulator-cell[tabulator-field="flow_ls"],
+#sys-grid .tabulator-row:hover .tabulator-cell[tabulator-field="detail"],
+#sys-grid .tabulator-row:hover .tabulator-cell[tabulator-field="pd"] {
   background: #f7fafc !important;
 }
-#leg-grid .tabulator-cell.tabulator-editing {
+#leg-grid .tabulator-cell.tabulator-editing,
+#sys-grid .tabulator-cell.tabulator-editing {
   padding: 0;
   border: 1px solid var(--blue);
   height: 22px;
@@ -1390,7 +1436,10 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 }
 #leg-grid .leg-grid-editor,
 #leg-grid .tabulator-editing input,
-#leg-grid .tabulator-editing select {
+#leg-grid .tabulator-editing select,
+#sys-grid .leg-grid-editor,
+#sys-grid .tabulator-editing input,
+#sys-grid .tabulator-editing select {
   width: 100%;
   height: 100%;
   min-height: 20px;
@@ -1402,11 +1451,14 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   text-align: center;
   background: #fff;
 }
-#leg-grid .leg-grid-row-error { background: transparent !important; }
-#leg-grid .leg-grid-row-error .tabulator-cell {
+#leg-grid .leg-grid-row-error,
+#sys-grid .leg-grid-row-error { background: transparent !important; }
+#leg-grid .leg-grid-row-error .tabulator-cell,
+#sys-grid .leg-grid-row-error .tabulator-cell {
   background: #FCEEED !important;
 }
-#leg-grid .leg-grid-row-error-text {
+#leg-grid .leg-grid-row-error-text,
+#sys-grid .leg-grid-row-error-text {
   color: #b3261e;
   font-size: 10px;
   font-family: inherit;
@@ -1414,7 +1466,8 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   white-space: normal;
   line-height: 1.15;
 }
-#leg-grid .leg-grid-remove {
+#leg-grid .leg-grid-remove,
+#sys-grid .leg-grid-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1433,9 +1486,20 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   cursor: pointer;
   font-family: inherit;
 }
-#leg-grid .leg-grid-remove:hover {
+#leg-grid .leg-grid-remove:hover,
+#sys-grid .leg-grid-remove:hover {
   color: #b3261e;
   background: transparent;
+}
+
+/* Pipe System — column flex shares */
+#sys-grid .tabulator-col[tabulator-field="dn"],
+#sys-grid .tabulator-cell[tabulator-field="dn"] {
+  flex: 1.1 1 0 !important;
+}
+#sys-grid .tabulator-col[tabulator-field="flow_ls"],
+#sys-grid .tabulator-cell[tabulator-field="flow_ls"] {
+  flex: 0.9 1 0 !important;
 }
 
 .leg-mobile-hint {

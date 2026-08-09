@@ -1,0 +1,158 @@
+{# Pipe System — compact composer above Tabulator results grid (mirrors Index Leg).
+   Calc stays in blueprints/pipe.py (/api/system-state). #}
+
+{% macro pipe_system_components(system) %}
+{% set stage_type = system.stage_raw.type or "straight" %}
+{% set stage = system.stage_raw %}
+{% set defaults = system.default_row_raw or {} %}
+
+    <div class="pipe-sys-section-label">Components — pressure drop</div>
+
+    <div id="sys-error"></div>
+
+    <div id="sys-stage" class="leg-composer">
+      <div class="leg-composer-row">
+        <div class="leg-field">
+          <label for="stage_type">Type</label>
+          <select id="stage_type" data-row-field="type" name="stage_type">
+            {% for opt in system.type_options %}
+            <option value="{{ opt.value }}" {{ 'selected' if stage_type == opt.value }}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="leg-field" data-pipe-size-field>
+          <label for="stage_dn">DN</label>
+          <select id="stage_dn" data-row-field="dn" data-pipe-size-field name="stage_dn">
+            {% for opt in system.dn_options %}
+            <option value="{{ opt.dn }}" {{ 'selected' if stage.dn == opt.dn|string }}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="leg-field" data-pipe-size-field>
+          <label for="stage_flow_ls">Flow <span class="th-unit">(l/s)</span></label>
+          <input id="stage_flow_ls" data-row-field="flow_ls" data-pipe-size-field name="stage_flow_ls"
+                 value="{{ stage.flow_ls }}"
+                 placeholder="{{ system.duty_flow_ls }}" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="leg-composer-row leg-composer-row-item">
+        <div class="leg-field" data-type-for="straight">
+          <label for="stage_length">Length <span class="th-unit">({{ system.run_length_sym }})</span></label>
+          <input id="stage_length" data-row-field="length" data-type-for="straight" name="stage_length"
+                 value="{{ stage.length or defaults.length }}" inputmode="decimal">
+        </div>
+        <div class="leg-field leg-field-wide" data-type-for="fitting">
+          <label for="stage_fitting">Fitting / valve</label>
+          <select id="stage_fitting" data-row-field="fitting" data-type-for="fitting" name="stage_fitting">
+            {% for group in system.fitting_groups %}
+            <optgroup label="{{ group.label }}">
+              {% for f in group.fittings %}
+              <option value="{{ f.key }}" {{ 'selected' if stage.fitting == f.key }}>{{ f.label }}</option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="leg-field leg-field-wide" data-type-for="device">
+          <label for="stage_label">Description</label>
+          <input id="stage_label" data-row-field="label" data-type-for="device" name="stage_label"
+                 value="{{ stage.label or defaults.label }}">
+        </div>
+        <div class="leg-field" data-type-for="device">
+          <label for="stage_dp">Manual ΔP <span class="th-unit">({{ system.velocity_pressure_sym }})</span></label>
+          <input id="stage_dp" data-row-field="dp" data-type-for="device" name="stage_dp"
+                 value="{{ stage.dp or defaults.dp }}" inputmode="decimal">
+        </div>
+
+        <div class="leg-composer-preview" id="sys-stage-result-cell">
+          {% if system.stage_error %}
+          <div class="error" id="sys-stage-error" style="margin:0;">{{ system.stage_error }}</div>
+          {% elif system.stage %}
+          <div class="leg-preview-metrics suffix">
+            <span>V <span id="stage-sys-velocity">{{ system.stage.velocity_display }}</span></span>
+            <span>VP <span id="stage-sys-vp">{{ system.stage.velocity_pressure_display }}</span></span>
+            <span id="stage-sys-fk">{{ system.stage.friction_or_k_display }}</span>
+          </div>
+          <div class="leg-preview-dp">
+            <span id="stage-sys-dp">{{ system.stage.dp_display }}</span>
+            <span class="u">{{ system.velocity_pressure_sym }}</span>
+          </div>
+          {% endif %}
+        </div>
+        <div class="leg-composer-actions">
+          <button type="button" class="btn-accent leg-add-btn" id="sys-add-row">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="leg-grid-wrap">
+      <div id="sys-grid"></div>
+    </div>
+    <p class="leg-mobile-hint">Rotate view on Mobile for better layout</p>
+
+    <div class="leg-toolbar">
+      <button type="button" class="btn-ghost" id="sys-clear">Clear Table</button>
+      <a class="btn-ghost" style="text-decoration:none;" id="sys-export-csv" href="{{ url_for('pipe.system_export_csv') }}">Export CSV</a>
+    </div>
+
+    <div class="leg-totals-bar" id="sys-totals-bar">
+      <div class="leg-total-line">
+        <span class="leg-total-label">Total Pressure Drop</span>
+        <span class="leg-total-value num">
+          <span id="sys-total">{{ system.total_display }}</span>
+          <span class="u" id="sys-total-sym">{{ system.total_sym }}</span>
+        </span>
+      </div>
+      <div class="leg-total-line leg-margin-line">
+        <label class="leg-total-label" for="sys-safety-margin">Safety Margin</label>
+        <span class="leg-margin-controls">
+          <input type="number" id="sys-safety-margin" name="sys_safety_margin" min="0" max="200" step="1"
+                 value="{{ '%.0f'|format(system.safety_margin) if system.safety_margin else '0' }}">
+          <span class="u">%</span>
+          <span class="leg-margin-amount num">
+            + <span id="sys-margin-amount">{{ system.margin_amount_display }}</span>
+            <span class="u" id="sys-margin-sym">{{ system.total_sym }}</span>
+          </span>
+        </span>
+      </div>
+      <div class="leg-total-line leg-final-line">
+        <span class="leg-total-label">Total with Margin</span>
+        <span class="leg-total-value num">
+          <span id="sys-total-margin">{{ system.total_with_margin_display }}</span>
+          <span class="u" id="sys-total-margin-sym">{{ system.total_sym }}</span>
+        </span>
+      </div>
+    </div>
+{% endmacro %}
+
+{% macro pipe_system_scripts(system) %}
+<script>
+  window.PIPE_SYS_INITIAL = {{ {
+    "rows": system.rows,
+    "row_count": system.row_count,
+    "total_display": system.total_display,
+    "total_sym": system.total_sym,
+    "safety_margin": system.safety_margin,
+    "margin_amount_display": system.margin_amount_display,
+    "total_with_margin_display": system.total_with_margin_display,
+    "default_row_raw": system.default_row_raw,
+    "stage": system.stage,
+    "stage_raw": system.stage_raw,
+    "stage_error": system.stage_error,
+    "type_options": system.type_options,
+    "dn_options": system.dn_options,
+    "fitting_groups": system.fitting_groups,
+    "duty_flow_ls": system.duty_flow_ls,
+    "run_length_sym": system.run_length_sym,
+    "velocity_pressure_sym": system.velocity_pressure_sym,
+    "head": system.head,
+  } | tojson }};
+</script>
+<script src="{{ url_for('static', filename='vendor/tabulator/tabulator.min.js') }}?v=6.3.1"></script>
+<script src="{{ url_for('static', filename='js/pipesystem.js') }}?v=2"></script>
+{% endmacro %}
+
+{% macro pipe_system_styles() %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/tabulator/tabulator_simple.min.css') }}?v=6.3.1">
+{% endmacro %}
