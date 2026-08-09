@@ -1181,7 +1181,15 @@ a:hover { color: var(--v2-green-ink); }
   margin: 0 -4px;
   padding: 0 4px;
 }
-.v2-main .leg-rows-table { min-width: 1040px; }
+.v2-main .leg-rows-table { min-width: 980px; }
+.v2-main .leg-grid-wrap {
+  overflow-x: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.v2-main #leg-panel {
+  overflow: visible;
+}
 .v2-main .leg-table-scroll {
   overflow-x: scroll;
   scrollbar-gutter: stable;

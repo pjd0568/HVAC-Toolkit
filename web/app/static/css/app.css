@@ -1121,168 +1121,105 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 
 .col-subhead { font-size: 11px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
 
-/* Index Leg pressure-drop builder (Correction #9 / #10).
-   Stage entry and committed rows share one spreadsheet data grid
-   (header once with units, values centered in cells). Every row still
-   carries its own volume/shape/size. Totals + safety margin live in a
-   left-aligned bar below the scroll area. See blueprints/duct.py.
+/* Index Leg — Tabulator spreadsheet grid (Correction #11).
+   Real cell editors via Tabulator; calc still in blueprints/duct.py.
+   Pipe system continues to use .leg-rows-table / .leg-stage-row below. */
 
-   A field that doesn't apply to a row's current type/shape still gets its
-   table cell -- its candidate input(s) are just hidden (see
-   `updateFieldVisibility` in ductsizer.js), leaving a blank cell, exactly
-   like an empty cell in a real spreadsheet -- never a hidden/removed <td>. */
-
-/* ── Stage / preview metrics inside the PD cell ─────────────────────────── */
-.leg-preview-metrics {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1px 8px;
-  color: var(--muted);
-  font-size: 10.5px;
-  line-height: 1.35;
-  justify-content: center;
-  font-family: inherit;
+.leg-grid-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #111;
+  background: #fff;
 }
-.leg-preview-dp {
+.leg-grid-wrap::-webkit-scrollbar { height: 10px; -webkit-appearance: none; }
+.leg-grid-wrap::-webkit-scrollbar-track { background: #EEF1F5; }
+.leg-grid-wrap::-webkit-scrollbar-thumb {
+  background: #B8C0CC;
+  border: 2px solid #EEF1F5;
+  border-radius: 5px;
+}
+
+#leg-grid.tabulator,
+.leg-grid-wrap .tabulator {
+  border: none;
+  font-size: 12.5px;
+  background: #fff;
+  max-width: none;
+}
+#leg-grid .tabulator-header {
+  background: #f0f0f0;
+  border-bottom: 1px solid #111;
   font-weight: 700;
-  font-size: 13px;
-  color: var(--ink);
-  margin-top: 2px;
 }
-.leg-add-btn {
-  padding: 5px 10px;
-  font-size: 12px;
+#leg-grid .tabulator-col {
+  background: #f0f0f0;
+  border-right: 1px solid #111;
+}
+#leg-grid .tabulator-col-content { padding: 4px 2px; }
+#leg-grid .tabulator-col .tabulator-col-title {
+  text-align: center;
+  padding: 0;
   white-space: nowrap;
 }
-
-/* ── Data grid (stage + committed rows) ─────────────────────────────────── */
-.leg-table-scroll {
-  overflow-x: scroll; /* always show scrollbar as a scroll cue */
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin; /* Firefox: always-visible thin bar */
+#leg-grid .tabulator-row {
+  background: #fff;
+  min-height: 28px;
 }
-.leg-table-scroll::-webkit-scrollbar {
-  height: 10px;
-  -webkit-appearance: none;
+#leg-grid .tabulator-row .tabulator-cell {
+  border-right: 1px solid #111;
+  border-bottom: 1px solid #111;
+  padding: 3px 4px;
+  line-height: 1.25;
 }
-.leg-table-scroll::-webkit-scrollbar-track {
-  background: #EEF1F5;
-  border-radius: 5px;
+#leg-grid .tabulator-row.tabulator-row-even { background: #fff; }
+#leg-grid .tabulator-row:hover { background: #f7fafc; }
+#leg-grid .tabulator-cell.tabulator-editing {
+  padding: 0;
+  border: 2px solid var(--blue);
 }
-.leg-table-scroll::-webkit-scrollbar-thumb {
-  background: #B8C0CC;
-  border-radius: 5px;
-  border: 2px solid #EEF1F5;
-}
-.leg-table-scroll::-webkit-scrollbar-thumb:hover {
-  background: #8B95A5;
-}
-table.leg-rows-table {
-  table-layout: fixed;
+#leg-grid .leg-grid-editor,
+#leg-grid .tabulator-editing input,
+#leg-grid .tabulator-editing select {
   width: 100%;
-  min-width: 1040px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  border-collapse: separate;
-  border-spacing: 0;
-  overflow: hidden;
-}
-table.leg-rows-table th,
-table.leg-rows-table td {
-  padding: 5px 4px;
-  text-align: center;
-  vertical-align: middle;
-  border-bottom: 1px solid #EEF1F5;
-}
-table.leg-rows-table thead th {
-  background: #F7F9FB;
-  line-height: 1.3;
-  font-size: 11px;
-  border-bottom: 1px solid var(--line);
-}
-table.leg-rows-table td.leg-cell { overflow: hidden; }
-table.leg-rows-table .th-unit {
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--muted);
-  font-size: 10px;
-}
-
-/* Fixed-ish column widths; table min-width above allows horizontal scroll
-   instead of crushing Type/Fitting text. Two col-size cols share the rule. */
-table.leg-rows-table col.col-num { width: 36px; }
-table.leg-rows-table col.col-type { width: 96px; }
-table.leg-rows-table col.col-shape { width: 92px; }
-table.leg-rows-table col.col-volume { width: 72px; }
-table.leg-rows-table col.col-size { width: 64px; }
-table.leg-rows-table col.col-length { width: 64px; }
-table.leg-rows-table col.col-fitting { width: 140px; }
-table.leg-rows-table col.col-desc { width: 100px; }
-table.leg-rows-table col.col-manual-dp { width: 72px; }
-table.leg-rows-table col.col-dp { width: 120px; }
-table.leg-rows-table col.col-action { width: 64px; }
-
-/* Spreadsheet-style cell editors: centered, low chrome until focused. */
-.leg-cell input,
-.leg-cell select {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
+  height: 100%;
+  min-height: 26px;
   box-sizing: border-box;
-  padding: 4px 3px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  font-size: 12px;
+  border: none;
+  padding: 2px 4px;
+  font: inherit;
+  text-align: center;
+  background: #fff;
+}
+#leg-grid .leg-grid-row-error { background: #FCEEED !important; }
+#leg-grid .leg-grid-row-error-text {
+  color: #b3261e;
+  font-size: 10.5px;
   font-family: inherit;
-  background: transparent;
-  text-align: center;
+  margin-top: 2px;
+  white-space: normal;
 }
-.leg-cell select {
-  text-overflow: ellipsis;
+#leg-grid .leg-grid-remove {
+  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 1;
 }
-.leg-cell input:hover,
-.leg-cell select:hover { background: rgba(255, 255, 255, 0.9); border-color: var(--line); }
-.leg-cell input:focus,
-.leg-cell select:focus {
-  outline: 2px solid var(--blue-soft);
-  border-color: var(--blue);
-  background: white;
-}
-/* A cell can hold more than one candidate input (Size 1/2 -- diameter vs.
-   width vs. major, etc.) -- updateFieldVisibility() sets inline display:none
-   on every candidate but the current shape/type's. */
 
-table.leg-rows-table td.leg-row-num {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
+.leg-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
 }
-table.leg-rows-table td.leg-dp-cell,
-table.leg-rows-table th.num,
-table.leg-rows-table td.num {
-  text-align: center;
-  font-family: Consolas, monospace;
-}
-table.leg-rows-table td.leg-action-cell { text-align: center; padding: 4px; }
-table.leg-rows-table td.leg-action-cell .btn-ghost {
-  padding: 4px 8px;
-  font-size: 12px;
-}
-table.leg-rows-table tr.row-error { background: #FCEEED; }
-table.leg-rows-table tbody tr:hover { background: #FAFBFC; }
-.leg-row-error-text { color: #b3261e; margin-top: 4px; font-family: inherit; }
 
-/* Stage entry row sits in the grid like Excel's input line. */
-tr.leg-stage-row { background: var(--row-hl); }
-tr.leg-stage-row td { vertical-align: middle; padding-top: 6px; padding-bottom: 6px; }
-tr.leg-stage-row td.leg-dp-cell { text-align: center; }
-
-/* Totals bar — outside horizontal scroll, left-aligned, always visible */
+/* Totals bar — outside grid scroll, left-aligned, always visible */
 .leg-totals-bar {
-  margin-top: 10px;
+  margin-top: 12px;
   padding: 10px 12px;
   background: #F7F9FB;
   border: 1px solid var(--line);
@@ -1338,12 +1275,84 @@ tr.leg-stage-row td.leg-dp-cell { text-align: center; }
   font-weight: 700;
 }
 
-/* Legacy safety-margin strip (pipe system / older markup may still use it) */
+/* Legacy / pipe-system spreadsheet table styles */
+.leg-table-scroll {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.leg-table-scroll::-webkit-scrollbar { height: 10px; -webkit-appearance: none; }
+.leg-table-scroll::-webkit-scrollbar-track { background: #EEF1F5; border-radius: 5px; }
+.leg-table-scroll::-webkit-scrollbar-thumb {
+  background: #B8C0CC; border-radius: 5px; border: 2px solid #EEF1F5;
+}
+table.leg-rows-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 980px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+table.leg-rows-table th,
+table.leg-rows-table td {
+  padding: 5px 4px;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid #EEF1F5;
+}
+table.leg-rows-table thead th {
+  background: #F7F9FB;
+  line-height: 1.3;
+  font-size: 11px;
+  border-bottom: 1px solid var(--line);
+}
+table.leg-rows-table td.leg-cell { overflow: hidden; }
+.leg-cell input,
+.leg-cell select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 4px 3px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: inherit;
+  background: transparent;
+  text-align: center;
+}
+.leg-cell input:hover,
+.leg-cell select:hover { background: rgba(255, 255, 255, 0.9); border-color: var(--line); }
+.leg-cell input:focus,
+.leg-cell select:focus {
+  outline: 2px solid var(--blue-soft);
+  border-color: var(--blue);
+  background: white;
+}
+table.leg-rows-table td.leg-row-num { color: var(--muted); font-size: 12px; font-weight: 600; }
+table.leg-rows-table td.leg-dp-cell,
+table.leg-rows-table th.num,
+table.leg-rows-table td.num {
+  text-align: center;
+  font-family: Consolas, monospace;
+}
+table.leg-rows-table td.leg-action-cell { text-align: center; padding: 4px; }
+table.leg-rows-table tr.row-error { background: #FCEEED; }
+.leg-row-error-text { color: #b3261e; margin-top: 4px; font-family: inherit; }
+tr.leg-stage-row { background: var(--row-hl); }
+tr.leg-stage-row td { vertical-align: middle; padding-top: 6px; padding-bottom: 6px; }
+.leg-add-btn { padding: 5px 10px; font-size: 12px; white-space: nowrap; }
 .leg-safety-margin-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; }
 .leg-safety-margin-row label { font-weight: 600; min-height: 0; margin-bottom: 0; }
-.leg-safety-margin-row input[type=number] { width: 60px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-family: inherit; text-align: right; }
-
-/* Safety margin rows in tfoot (pipe system still uses these) */
+.leg-safety-margin-row input[type=number] {
+  width: 60px; padding: 5px 8px; border: 1px solid var(--line);
+  border-radius: 6px; font-size: 13px; font-family: inherit; text-align: right;
+}
 table.leg-rows-table tfoot td {
   border-top: 2px solid var(--line);
   border-bottom: none;

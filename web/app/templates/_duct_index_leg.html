@@ -1,58 +1,9 @@
-{# Index Leg pressure-drop builder (Correction #7 / #8 / #9 / #10).
-   Independent of the 3-column sizer — each row (and the staging entry form)
-   carries its own volume/shape/size. Used by classic and v2 index-leg pages.
-   Correction #10: composer is a spreadsheet stage row in the same grid as
-   committed rows (pipe-system pattern); totals + safety margin sit in a
-   left-aligned bar below the scroll area. Mirrors ductsizer.js's
-   buildRowCellsHtml() — keep both in sync. #}
+{# Index Leg pressure-drop builder — Tabulator spreadsheet grid.
+   Each row carries its own volume/shape/size. Calc stays in
+   blueprints/duct.py (/api/leg-state); this template only mounts the grid. #}
 {% from "_report_form.html" import report_form %}
 
-{% macro leg_row_cells(prefix, suffix, raw, fittings_by_shape, type_options, shape_options, current_type, current_shape, current_fitting) %}
-<td class="leg-cell">
-  <select data-row-field="type" name="{{ prefix }}type{{ suffix }}">
-    {% for opt in type_options %}<option value="{{ opt.key }}" {{ 'selected' if current_type == opt.key }}>{{ opt.label }}</option>{% endfor %}
-  </select>
-</td>
-<td class="leg-cell">
-  <select data-row-field="shape" data-shape-field name="{{ prefix }}shape{{ suffix }}">
-    {% for opt in shape_options %}<option value="{{ opt.key }}" {{ 'selected' if current_shape == opt.key }}>{{ opt.label }}</option>{% endfor %}
-  </select>
-</td>
-<td class="leg-cell">
-  <input data-row-field="volume" data-shape-field name="{{ prefix }}volume{{ suffix }}" value="{{ raw.volume }}" inputmode="decimal">
-</td>
-<td class="leg-cell">
-  <input data-row-field="diameter" data-size-for="circular" name="{{ prefix }}diameter{{ suffix }}" value="{{ raw.diameter }}" inputmode="decimal">
-  <input data-row-field="width" data-size-for="rectangular" name="{{ prefix }}width{{ suffix }}" value="{{ raw.width }}" inputmode="decimal">
-  <input data-row-field="major" data-size-for="flat_oval" name="{{ prefix }}major{{ suffix }}" value="{{ raw.major }}" inputmode="decimal">
-</td>
-<td class="leg-cell">
-  <input data-row-field="height" data-size-for="rectangular" name="{{ prefix }}height{{ suffix }}" value="{{ raw.height }}" inputmode="decimal">
-  <input data-row-field="minor" data-size-for="flat_oval" name="{{ prefix }}minor{{ suffix }}" value="{{ raw.minor }}" inputmode="decimal">
-</td>
-<td class="leg-cell">
-  <input data-row-field="length" data-type-for="straight flex" name="{{ prefix }}length{{ suffix }}" value="{{ raw.length }}" inputmode="decimal">
-</td>
-<td class="leg-cell">
-  <select data-row-field="fitting" data-fitting-select data-type-for="fitting" name="{{ prefix }}fitting{{ suffix }}">
-    {% for f in fittings_by_shape.get(current_shape, []) %}
-    <option value="{{ f.key }}" {{ 'selected' if current_fitting == f.key }}>{{ f.label }}</option>
-    {% endfor %}
-  </select>
-</td>
-<td class="leg-cell">
-  <input data-row-field="label" data-type-for="accessory" name="{{ prefix }}label{{ suffix }}" value="{{ raw.label }}">
-</td>
-<td class="leg-cell">
-  <input data-row-field="dp" data-type-for="accessory" name="{{ prefix }}dp{{ suffix }}" value="{{ raw.dp }}" inputmode="decimal">
-</td>
-{% endmacro %}
-
 {% macro index_leg_panel(leg, report_action=None, report_fields=None, panel_style='') %}
-{% set stage_type = (leg.stage.type if leg.stage else leg.stage_raw.type) or "straight" %}
-{% set stage_shape = (leg.stage.shape if leg.stage else leg.stage_raw.shape) or "circular" %}
-{% set stage_fitting = (leg.stage.fitting_key if leg.stage else None) or leg.stage_raw.fitting %}
-{% set stage = leg.stage_raw %}
 <div class="panel" style="max-width:1100px; {{ panel_style }}" id="leg-panel">
   <details class="panel-help">
     <summary class="panel-head" aria-label="Index Leg — Pressure Drop. How to use">
@@ -60,90 +11,31 @@
       <span class="help-inline-mark" aria-hidden="true">?</span>
     </summary>
     <div class="panel-help-body">
-      Each row is sized independently — its own volume, shape and size — so
-      a run that steps down, changes shape, or ends at a grille can be built
-      piece by piece. Fill the entry row (type, size, length or fitting),
-      check the live preview in the Pressure Drop cell, then press “Add”.
-      Straight / flex preview shows friction rate (ΔP/L, Pa/m); fittings show
-      the K-factor used for ΔP = K × VP. Fitting K-factors are indicative
-      single-point values for preliminary sizing — not the full
-      multi-parameter ASHRAE Ch.32 / CIBSE Guide C correlations. Flex-duct
-      rows apply a ×1.5 planning derate to rigid friction. Accessory items
-      take a manually entered pressure drop.
+      Click any editable cell to change it — the grid works like a spreadsheet.
+      <strong>Type</strong> chooses Straight / Flex / Fitting / Accessory.
+      Straight and flex use length in the <strong>m</strong> column and show
+      friction rate under <strong>Pa/m</strong>. Fittings pick from the
+      catalogue in the <strong>m</strong> column and show <strong>K</strong>
+      under Pa/m (ΔP = K × VP). Accessories use the m column for a description
+      and edit <strong>PD</strong> as a manual pressure drop.
+      Dia/AxB is one size for circular, or <code>W x H</code> for rectangular
+      and flat oval. Vel, VP, Pa/m and PD (except accessories) recalculate live.
     </div>
   </details>
   <div class="panel-body">
 
     <div id="leg-error"></div>
 
-    {# ── Spreadsheet grid: stage row + committed rows ───────────────────── #}
-    <div class="leg-table-scroll">
-    <table class="results leg-rows-table">
-      <colgroup>
-        <col class="col-num"><col class="col-type"><col class="col-shape">
-        <col class="col-volume"><col class="col-size"><col class="col-size">
-        <col class="col-length"><col class="col-fitting"><col class="col-desc">
-        <col class="col-manual-dp"><col class="col-dp"><col class="col-action">
-      </colgroup>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Type</th>
-          <th>Shape</th>
-          <th>Volume<br><span class="th-unit">({{ leg.duct_flow_sym }})</span></th>
-          <th>Size 1<br><span class="th-unit">({{ leg.duct_dimension_sym }})</span></th>
-          <th>Size 2<br><span class="th-unit">({{ leg.duct_dimension_sym }})</span></th>
-          <th>Length<br><span class="th-unit">({{ leg.duct_run_length_sym }})</span></th>
-          <th>Fitting</th>
-          <th>Description</th>
-          <th>Manual ΔP<br><span class="th-unit">({{ leg.velocity_pressure_sym }})</span></th>
-          <th>Pressure Drop<br><span class="th-unit">({{ leg.velocity_pressure_sym }})</span></th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr id="leg-stage" class="leg-stage-row">
-          <td class="leg-row-num">+</td>
-          {{ leg_row_cells("stage_", "", stage, leg.fittings_by_shape, leg.type_options, leg.shape_options,
-                             stage_type, stage_shape, stage_fitting) }}
-          <td class="num leg-dp-cell" id="leg-stage-result-cell">
-            {% if leg.stage_error %}
-            <div class="error" id="leg-stage-error" style="margin:0;">{{ leg.stage_error }}</div>
-            {% else %}
-            <div class="leg-preview-metrics suffix">
-              <span>V <span id="stage-velocity">{{ leg.stage.velocity_display if leg.stage }}</span></span>
-              <span>VP <span id="stage-vp">{{ leg.stage.velocity_pressure_display if leg.stage }}</span></span>
-              <span id="stage-fk-wrap"><span id="stage-fk-label">{% if leg.stage and leg.stage.type == 'fitting' %}K{% elif leg.stage and leg.stage.type in ('straight', 'flex') %}ΔP/L{% else %}—{% endif %}</span> <span id="stage-friction">{% if leg.stage and leg.stage.type == 'fitting' and leg.stage.k is not none %}{{ '%.2f'|format(leg.stage.k) }}{% elif leg.stage and leg.stage.type in ('straight', 'flex') %}{{ leg.stage.friction_rate_display }}{% else %}{% endif %}</span></span>
-            </div>
-            <div class="leg-preview-dp">
-              <span id="stage-dp">{{ leg.stage.dp_display if leg.stage }}</span>
-              <span class="u">{{ leg.velocity_pressure_sym }}</span>
-            </div>
-            {% endif %}
-          </td>
-          <td class="leg-action-cell">
-            <button type="button" class="btn-accent leg-add-btn" id="leg-add-row">+ Add</button>
-          </td>
-        </tr>
-      </tbody>
-      <tbody id="leg-rows-body">
-        {% for row in leg.rows %}
-        <tr data-row data-index="{{ row.index }}" class="{{ 'row-error' if row.error else '' }}">
-          <td class="leg-row-num">{{ row.index + 1 }}</td>
-          {{ leg_row_cells("leg_", "_" ~ row.index, row.raw, leg.fittings_by_shape, leg.type_options, leg.shape_options,
-                             row.type, row.shape or "circular", row.fitting_key or row.raw.fitting) }}
-          <td class="num leg-dp-cell">
-            {{ row.dp_display }} <span class="u">{{ leg.velocity_pressure_sym }}</span>
-            {% if row.error %}<div class="suffix leg-row-error-text">{{ row.error }}</div>{% endif %}
-          </td>
-          <td class="leg-action-cell"><button type="button" class="btn-ghost" data-leg-remove aria-label="Remove row">✕</button></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="leg-grid-wrap">
+      <div id="leg-grid"></div>
     </div>
 
-    {# Totals outside the scroll area — always visible, left-aligned #}
+    <div class="leg-toolbar">
+      <button type="button" class="btn-accent" id="leg-add-row">+ Add row</button>
+      <button type="button" class="btn-ghost" id="leg-clear-table">Clear Table</button>
+      <a class="btn-ghost" style="text-decoration:none;" id="leg-export-csv" href="{{ url_for('duct.export_leg_csv') }}">Export CSV</a>
+    </div>
+
     <div class="leg-totals-bar" id="leg-totals-bar">
       <div class="leg-total-line">
         <span class="leg-total-label">Total Pressure Drop</span>
@@ -173,11 +65,6 @@
       </div>
     </div>
 
-    <div style="margin-top:12px; display:flex; gap:10px;">
-      <button type="button" class="btn-ghost" id="leg-clear-table">Clear Table</button>
-      <a class="btn-ghost" style="text-decoration:none;" id="leg-export-csv" href="{{ url_for('duct.export_leg_csv') }}">Export CSV</a>
-    </div>
-
   </div>
 </div>
 
@@ -189,16 +76,30 @@
 {% macro index_leg_scripts(leg) %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
 <script>
-  window.DUCT_LEG_FITTINGS_BY_SHAPE = {{ leg.fittings_by_shape | tojson }};
-  window.DUCT_LEG_TYPE_OPTIONS = {{ leg.type_options | tojson }};
-  window.DUCT_LEG_SHAPE_OPTIONS = {{ leg.shape_options | tojson }};
-  window.DUCT_LEG_SYMS = {
-    duct_flow: {{ leg.duct_flow_sym | tojson }},
-    duct_dimension: {{ leg.duct_dimension_sym | tojson }},
-    duct_run_length: {{ leg.duct_run_length_sym | tojson }},
-    velocity_pressure: {{ leg.velocity_pressure_sym | tojson }},
-    friction_rate: {{ leg.friction_rate_sym | tojson }}
-  };
+  window.DUCT_LEG_INITIAL = {{ {
+    "rows": leg.rows,
+    "row_count": leg.row_count,
+    "total_display": leg.total_display,
+    "total_sym": leg.total_sym,
+    "safety_margin": leg.safety_margin,
+    "margin_amount_display": leg.margin_amount_display,
+    "total_with_margin_display": leg.total_with_margin_display,
+    "default_row_raw": leg.default_row_raw,
+    "type_options": leg.type_options,
+    "shape_options": leg.shape_options,
+    "fittings_by_shape": leg.fittings_by_shape,
+    "duct_flow_sym": leg.duct_flow_sym,
+    "duct_dimension_sym": leg.duct_dimension_sym,
+    "duct_run_length_sym": leg.duct_run_length_sym,
+    "velocity_pressure_sym": leg.velocity_pressure_sym,
+    "friction_rate_sym": leg.friction_rate_sym,
+  } | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/ductsizer.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/tabulator/tabulator.min.js') }}?v=6.3.1"></script>
+<script src="{{ url_for('static', filename='js/leggrid.js') }}?v=2"></script>
 {% endmacro %}
+
+{% macro index_leg_styles() %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/tabulator/tabulator_simple.min.css') }}?v=6.3.1">
+{% endmacro %}
+

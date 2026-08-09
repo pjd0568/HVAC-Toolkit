@@ -461,6 +461,7 @@ def _compute_row(get, U):
             "label": label,
             "volume_display": "",
             "size_display": "",
+            "size_edit": "",
             "velocity_display": "—",
             "velocity_pressure_display": "—",
             "friction_rate_display": "—",
@@ -481,17 +482,20 @@ def _compute_row(get, U):
     if shape == "circular":
         diameter_si = _to_si_or_default(get, "diameter", "duct_dimension", U, DEFAULT_ROW_DIAMETER_SI)
         result = eng.size_circular(volume=volume_si, diameter=diameter_si)
-        size_display = f'{U.fmt("duct_dimension", result.diameter)} {U.sym("duct_dimension")} dia'
+        size_edit = U.fmt("duct_dimension", result.diameter)
+        size_display = f'{size_edit} {U.sym("duct_dimension")} dia'
     elif shape == "rectangular":
         width_si = _to_si_or_default(get, "width", "duct_dimension", U, DEFAULT_ROW_WIDTH_SI)
         height_si = _to_si_or_default(get, "height", "duct_dimension", U, DEFAULT_ROW_HEIGHT_SI)
         result = eng.size_rectangular(volume_si, width_si, height_si)
-        size_display = f'{U.fmt("duct_dimension", result.width)} x {U.fmt("duct_dimension", result.height)} {U.sym("duct_dimension")}'
+        size_edit = f'{U.fmt("duct_dimension", result.width)} x {U.fmt("duct_dimension", result.height)}'
+        size_display = f'{size_edit} {U.sym("duct_dimension")}'
     else:  # flat_oval
         major_si = _to_si_or_default(get, "major", "duct_dimension", U, DEFAULT_ROW_MAJOR_SI)
         minor_si = _to_si_or_default(get, "minor", "duct_dimension", U, DEFAULT_ROW_MINOR_SI)
         result = eng.size_flat_oval(volume_si, major_si, minor_si)
-        size_display = f'{U.fmt("duct_dimension", result.major)} x {U.fmt("duct_dimension", result.minor)} {U.sym("duct_dimension")}'
+        size_edit = f'{U.fmt("duct_dimension", result.major)} x {U.fmt("duct_dimension", result.minor)}'
+        size_display = f'{size_edit} {U.sym("duct_dimension")}'
 
     velocity_pressure_pa = eng.velocity_pressure(result.velocity)
     friction_rate_si = result.friction_rate
@@ -530,6 +534,7 @@ def _compute_row(get, U):
         "label": label,
         "volume_display": U.fmt("duct_flow", volume_si),
         "size_display": size_display,
+        "size_edit": size_edit,
         "velocity_display": U.fmt("velocity", result.velocity),
         "velocity_pressure_display": U.fmt("velocity_pressure", velocity_pressure_pa),
         "friction_rate_display": friction_rate_display,
@@ -553,6 +558,7 @@ def _blank_row(row_type: str, shape: str, fitting_key: str) -> dict:
         "label": "—",
         "volume_display": "",
         "size_display": "",
+        "size_edit": "",
         "velocity_display": "—",
         "velocity_pressure_display": "—",
         "friction_rate_display": "—",
@@ -562,6 +568,24 @@ def _blank_row(row_type: str, shape: str, fitting_key: str) -> dict:
         "length_display": "",
         "dp_display": "—",
         "dp_pa": 0.0,
+    }
+
+
+def _default_row_raw(U) -> dict:
+    """Display-unit defaults for a newly added Tabulator row."""
+    return {
+        "type": "straight",
+        "shape": "circular",
+        "volume": U.fmt("duct_flow", DEFAULT_ROW_VOLUME_SI),
+        "diameter": U.fmt("duct_dimension", DEFAULT_ROW_DIAMETER_SI),
+        "width": U.fmt("duct_dimension", DEFAULT_ROW_WIDTH_SI),
+        "height": U.fmt("duct_dimension", DEFAULT_ROW_HEIGHT_SI),
+        "major": U.fmt("duct_dimension", DEFAULT_ROW_MAJOR_SI),
+        "minor": U.fmt("duct_dimension", DEFAULT_ROW_MINOR_SI),
+        "length": U.fmt("duct_run_length", DEFAULT_ROW_LENGTH_SI),
+        "fitting": "",
+        "label": DEFAULT_ROW_LABEL,
+        "dp": U.fmt("velocity_pressure", DEFAULT_ROW_DP_SI),
     }
 
 
@@ -638,6 +662,7 @@ def _compute_leg_state(args, U):
         "duct_run_length_sym": U.sym("duct_run_length"),
         "velocity_pressure_sym": U.sym("velocity_pressure"),
         "friction_rate_sym": U.sym("friction_rate"),
+        "default_row_raw": _default_row_raw(U),
     }
 
 

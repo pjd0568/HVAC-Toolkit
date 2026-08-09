@@ -1,11 +1,12 @@
 {% extends "v2/base.html" %}
-{% from "_duct_index_leg.html" import index_leg_panel, index_leg_scripts %}
+{% from "_duct_index_leg.html" import index_leg_panel, index_leg_scripts, index_leg_styles %}
 {% block page_title %}Index Leg{% endblock %}
+{% block extra_head %}
+{{ index_leg_styles() }}
+{% endblock %}
 {% block content %}
 
-<div class="table-scroll">
 {{ index_leg_panel(leg, report_action=url_for('duct.report_leg'), report_fields=report_fields, panel_style='margin-top:0;') }}
-</div>
 
 {% endblock %}
 

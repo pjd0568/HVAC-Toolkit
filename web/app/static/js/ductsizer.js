@@ -653,6 +653,8 @@
   function initLeg() {
   var legPanel = document.getElementById("leg-panel");
   if (!legPanel) return;
+  // Tabulator Index Leg (leggrid.js) owns the page when #leg-grid is present.
+  if (document.getElementById("leg-grid")) return;
 
   var LEG_API_URL = (window.DUCT_API_BASE || window.location.pathname).replace(/\/$/, "") + "/api/leg-state";
   var ROW_FIELDS = ["type", "shape", "volume", "diameter", "width", "height",
