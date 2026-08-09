@@ -23,20 +23,36 @@
   </div>
 </div>
 
-<div class="status-legend">
-  <span class="dot green"></span> Ideal design band
-  <span class="dot amber"></span> Border of design limits
-  <span class="dot red"></span> Outside limits
-  <span class="legend-note">
-    Velocity: {{ limits.velocity_note }}. ΔP/L ideal {{ limits.friction_ideal }};
-    lower {{ limits.friction_lower }}; upper {{ limits.friction_upper }}.
-    <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Design limits reference →</a>
-  </span>
-</div>
-
 <div class="pipe-results-layout">
   <div class="panel pipe-table-panel tile-water-border">
-    <div class="panel-head">Pipe sizes — {{ materials[fields.material] }}</div>
+    <details class="panel-help">
+      <summary class="panel-head" aria-label="Pipe sizes. Design limits help">
+        <span>Pipe sizes — {{ materials[fields.material] }}</span>
+        <span class="help-inline-mark" aria-hidden="true">?</span>
+      </summary>
+      <div class="panel-help-body pipe-limits-help">
+        <ul class="pipe-limits-lights">
+          <li><span class="dot green"></span> Ideal design band</li>
+          <li><span class="dot amber"></span> Border of design limits</li>
+          <li><span class="dot red"></span> Outside limits</li>
+        </ul>
+        <p class="pipe-limits-lead">Velocity traffic lights use per-DN bands (not a flat 1.5&nbsp;m/s limit):</p>
+        <ul class="pipe-limits-list">
+          {% for band in limits.velocity_bands %}
+          <li>{{ band }}</li>
+          {% endfor %}
+        </ul>
+        <p class="pipe-limits-lead">ΔP/L (friction) bands — lifecycle-cost framing:</p>
+        <ul class="pipe-limits-list">
+          <li>Ideal {{ limits.friction_ideal }}</li>
+          <li>Lower {{ limits.friction_lower }}</li>
+          <li>Upper {{ limits.friction_upper }}</li>
+        </ul>
+        <p class="pipe-limits-ref">
+          <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Design limits reference →</a>
+        </p>
+      </div>
+    </details>
     <div class="panel-body pipe-table-body">
       <table class="results pipe-size-table">
         <colgroup>
@@ -79,7 +95,7 @@
     <div class="panel-head">Pipe — {{ pipe_spec.label }}</div>
     <div class="panel-body pipe-spec-body">
       <table class="results pipe-detail-table">
-        <tr><th>Material</th><td>{{ pipe_spec.material }}</td></tr>
+        <tr><th>Material</th><td class="num">{{ pipe_spec.material }}</td></tr>
         <tr><th>Internal diameter</th><td class="num">{{ pipe_spec.id }}</td></tr>
         <tr><th>Outside diameter</th><td class="num">{{ pipe_spec.od }}</td></tr>
         <tr><th>Wall thickness</th><td class="num">{{ pipe_spec.wall }}</td></tr>
@@ -99,11 +115,11 @@
         <tr><th>Velocity</th><td class="num">{{ detail.velocity }} <span class="dot {{ detail.status_velocity }}"></span></td></tr>
         <tr><th>Pressure gradient</th><td class="num">{{ detail.friction }} <span class="dot {{ detail.status_friction }}"></span></td></tr>
         <tr><th>Reynolds number</th><td class="num">{{ detail.reynolds }}</td></tr>
-        <tr><th>Flow regime</th><td>{{ detail.regime }}</td></tr>
+        <tr><th>Flow regime</th><td class="num">{{ detail.regime }}</td></tr>
         <tr><th>Friction factor</th><td class="num">{{ detail.friction_factor }}</td></tr>
         <tr><th colspan="2" class="pipe-detail-divider">Fluid at mean temperature</th></tr>
-        <tr><th>Fluid</th><td>{{ detail.fluid }}</td></tr>
-        <tr><th>Concentration</th><td>{{ detail.concentration }}</td></tr>
+        <tr><th>Fluid</th><td class="num">{{ detail.fluid }}</td></tr>
+        <tr><th>Concentration</th><td class="num">{{ detail.concentration }}</td></tr>
         <tr><th>Mean water temp</th><td class="num">{{ detail.mean_temp }}</td></tr>
         <tr><th>Density</th><td class="num">{{ detail.density }}</td></tr>
         <tr><th>Dynamic viscosity</th><td class="num">{{ detail.viscosity }}</td></tr>

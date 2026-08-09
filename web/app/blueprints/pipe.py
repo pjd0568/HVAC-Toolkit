@@ -268,6 +268,11 @@ def _compute_state(args, U):
         "detail": detail,
         "props": props,
         "limits": {
+            "velocity_bands": [
+                "DN 15–50: ideal 0.8–1.2 m/s (max 1.5)",
+                "DN 65–150: ideal 1.2–1.8 m/s (max 2.5)",
+                "DN 200+: ideal 1.8–2.5 m/s (max 3.0)",
+            ],
             "velocity_note": (
                 "Per DN: 15–50 ideal 0.8–1.2 m/s (max 1.5); "
                 "65–150 ideal 1.2–1.8 (max 2.5); 200+ ideal 1.8–2.5 (max 3.0)"
