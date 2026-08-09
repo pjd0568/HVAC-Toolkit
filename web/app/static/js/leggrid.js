@@ -1,9 +1,8 @@
-/* Index Leg — Tabulator spreadsheet grid.
+/* Index Leg — compact composer + Tabulator results grid.
  *
- * Presentation only: every calc/unit conversion stays in blueprints/duct.py
- * via GET /api/leg-state. Columns match the Excel-style schedule
- * (# | Type | Shape | Volume | Dia/AxB | Vel | VP | Pa/m | m | PD) with
- * Type driving which cells are editable and what the m / Pa/m columns mean.
+ * Primary entry is the 2-row #leg-stage form; Add commits into the spreadsheet
+ * table below. Committed rows remain editable in-place. All calc/unit work
+ * stays in blueprints/duct.py via GET /api/leg-state.
  */
 (function () {
   "use strict";
@@ -28,6 +27,7 @@
   function init() {
     var mount = document.getElementById("leg-grid");
     var panel = document.getElementById("leg-panel");
+    var stage = document.getElementById("leg-stage");
     if (!mount || !panel || typeof Tabulator === "undefined") return;
 
     var INITIAL = window.DUCT_LEG_INITIAL || {};
@@ -41,14 +41,11 @@
       fitting: "", label: "Accessory", dp: "10"
     };
     var SYMS = {
-      duct_flow: INITIAL.duct_flow_sym || "",
-      duct_dimension: INITIAL.duct_dimension_sym || "",
-      duct_run_length: INITIAL.duct_run_length_sym || "",
-      velocity_pressure: INITIAL.velocity_pressure_sym || "",
-      friction_rate: INITIAL.friction_rate_sym || ""
+      velocity_pressure: INITIAL.velocity_pressure_sym || ""
     };
 
     var errorBox = document.getElementById("leg-error");
+    var stageResultCell = document.getElementById("leg-stage-result-cell");
     var addBtn = document.getElementById("leg-add-row");
     var clearBtn = document.getElementById("leg-clear-table");
     var exportLink = document.getElementById("leg-export-csv");
@@ -84,6 +81,14 @@
         if (list[i].key === key) return list[i].label;
       }
       return key || "";
+    }
+
+    function fittingOptionsHtml(shape, selectedKey) {
+      var list = FITTINGS_BY_SHAPE[shape] || [];
+      return list.map(function (f) {
+        return '<option value="' + f.key + '"' + (f.key === selectedKey ? " selected" : "") +
+          ">" + f.label + "</option>";
+      }).join("");
     }
 
     function parseSizeEdit(text, shape) {
@@ -139,7 +144,7 @@
       var raw = Object.assign({}, DEFAULT_RAW, row.raw || {});
       var type = row.type || raw.type || "straight";
       var shape = row.shape || raw.shape || "circular";
-      if (type === "accessory") shape = raw.shape || "";
+      if (type === "accessory") shape = raw.shape || "circular";
       var size = row.size_edit || sizeEditFromRaw(raw, shape || "circular");
       return {
         type: type,
@@ -197,6 +202,40 @@
       return raw;
     }
 
+    function readFieldsFrom(container) {
+      var raw = {};
+      ROW_FIELDS.forEach(function (f) {
+        var input = container.querySelector('[data-row-field="' + f + '"]');
+        raw[f] = input ? input.value : "";
+      });
+      return raw;
+    }
+
+    function updateFieldVisibility(container) {
+      if (!container) return;
+      var typeSel = container.querySelector('[data-row-field="type"]');
+      var shapeSel = container.querySelector('[data-row-field="shape"]');
+      var type = typeSel ? typeSel.value : "straight";
+      var shape = shapeSel ? shapeSel.value : "circular";
+      var isAccessory = type === "accessory";
+      container.querySelectorAll("[data-shape-field]").forEach(function (el) {
+        el.style.display = isAccessory ? "none" : "";
+      });
+      container.querySelectorAll("[data-size-for]").forEach(function (el) {
+        var forShape = el.getAttribute("data-size-for");
+        el.style.display = (!isAccessory && forShape === shape) ? "" : "none";
+      });
+      container.querySelectorAll("[data-type-for]").forEach(function (el) {
+        var forTypes = el.getAttribute("data-type-for").split(" ");
+        el.style.display = forTypes.indexOf(type) !== -1 ? "" : "none";
+      });
+    }
+
+    function refreshFittingOptions(container, shape) {
+      var sel = container.querySelector('[data-row-field="fitting"]');
+      if (sel) sel.innerHTML = fittingOptionsHtml(shape, null);
+    }
+
     function showError(msg) {
       if (!errorBox) return;
       errorBox.innerHTML = "";
@@ -207,7 +246,74 @@
       errorBox.appendChild(div);
     }
 
-    function buildLegParams() {
+    function updateStagePreview(leg) {
+      if (!stageResultCell) return;
+      stageResultCell.innerHTML = "";
+      if (leg.stage_error) {
+        var errDiv = document.createElement("div");
+        errDiv.className = "error";
+        errDiv.id = "leg-stage-error";
+        errDiv.style.margin = "0";
+        errDiv.textContent = leg.stage_error;
+        stageResultCell.appendChild(errDiv);
+        return;
+      }
+      var s = leg.stage;
+      if (!s) return;
+
+      var metrics = document.createElement("div");
+      metrics.className = "leg-preview-metrics suffix";
+      function metric(id, label, text) {
+        var wrap = document.createElement("span");
+        wrap.appendChild(document.createTextNode(label + " "));
+        var span = document.createElement("span");
+        span.id = id;
+        span.textContent = text;
+        wrap.appendChild(span);
+        metrics.appendChild(wrap);
+      }
+      metric("stage-velocity", "V", s.velocity_display);
+      metric("stage-vp", "VP", s.velocity_pressure_display);
+
+      var fkWrap = document.createElement("span");
+      fkWrap.id = "stage-fk-wrap";
+      var fkLabel = document.createElement("span");
+      fkLabel.id = "stage-fk-label";
+      var fkVal = document.createElement("span");
+      fkVal.id = "stage-friction";
+      if (s.type === "fitting" && s.k != null) {
+        fkLabel.textContent = "K";
+        fkVal.textContent = Number(s.k).toFixed(2);
+      } else if (s.type === "straight" || s.type === "flex") {
+        fkLabel.textContent = "ΔP/L";
+        fkVal.textContent = s.friction_rate_display || "—";
+      } else {
+        fkLabel.textContent = "—";
+        fkVal.textContent = "";
+      }
+      fkWrap.appendChild(fkLabel);
+      fkWrap.appendChild(document.createTextNode(" "));
+      fkWrap.appendChild(fkVal);
+      metrics.appendChild(fkWrap);
+
+      var dpLine = document.createElement("div");
+      dpLine.className = "leg-preview-dp";
+      var dpSpan = document.createElement("span");
+      dpSpan.id = "stage-dp-preview";
+      dpSpan.textContent = s.dp_display;
+      dpLine.appendChild(dpSpan);
+      dpLine.appendChild(document.createTextNode(" "));
+      var symSpan = document.createElement("span");
+      symSpan.className = "u";
+      symSpan.textContent = SYMS.velocity_pressure || "";
+      dpLine.appendChild(symSpan);
+
+      stageResultCell.appendChild(metrics);
+      stageResultCell.appendChild(dpLine);
+    }
+
+    function buildLegParams(opts) {
+      opts = opts || {};
       var p = new URLSearchParams();
       var data = table ? table.getData() : [];
       p.set("leg_row_count", String(data.length));
@@ -218,6 +324,12 @@
           p.set("leg_" + f + "_" + i, raw[f] == null ? "" : String(raw[f]));
         });
       });
+      if (!opts.skipStaging && stage) {
+        var stageRaw = readFieldsFrom(stage);
+        ROW_FIELDS.forEach(function (f) {
+          p.set("stage_" + f, stageRaw[f] == null ? "" : String(stageRaw[f]));
+        });
+      }
       return p;
     }
 
@@ -264,11 +376,15 @@
       syncReportForm(leg);
     }
 
-    function applyLegState(leg) {
+    function applyLegState(leg, opts) {
+      opts = opts || {};
       applying = true;
       try {
-        var rows = (leg.rows || []).map(gridRowFromApi);
-        table.replaceData(rows);
+        if (!opts.previewOnly) {
+          var rows = (leg.rows || []).map(gridRowFromApi);
+          table.replaceData(rows);
+        }
+        updateStagePreview(leg);
         applyTotals(leg);
         showError(null);
       } finally {
@@ -276,13 +392,17 @@
       }
     }
 
-    function fetchLegState() {
-      return fetch(LEG_API_URL + "?" + buildLegParams().toString(), {
+    function fetchLegState(overrides, opts) {
+      var params = buildLegParams(opts);
+      if (overrides) {
+        Object.keys(overrides).forEach(function (k) { params.set(k, overrides[k]); });
+      }
+      return fetch(LEG_API_URL + "?" + params.toString(), {
         headers: { "Accept": "application/json" }
       })
         .then(function (resp) { return resp.json(); })
         .then(function (data) {
-          applyLegState(data);
+          applyLegState(data, opts);
           return data;
         })
         .catch(function () {
@@ -291,6 +411,9 @@
     }
 
     var debouncedFetch = debounce(function () { fetchLegState(); }, 280);
+    var debouncedPreview = debounce(function () {
+      fetchLegState(null, { previewOnly: true });
+    }, 280);
 
     function isEditable(cell) {
       var field = cell.getField();
@@ -358,115 +481,58 @@
       layout: "fitColumns",
       reactiveData: false,
       selectableRows: false,
-      placeholder: "No rows — click “+ Add row” to start the index leg.",
+      placeholder: "No rows yet — fill the form above and press Add.",
       columnHeaderVertAlign: "middle",
       rowFormatter: rowFormatter,
       columns: [
         {
-          title: "Item",
-          field: "item",
-          width: 54,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          formatter: function (cell) {
-            return String(cell.getRow().getPosition(true));
-          }
+          title: "Item", field: "item", width: 54,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          formatter: function (cell) { return String(cell.getRow().getPosition(true)); }
         },
         {
-          title: "Type",
-          field: "type",
-          width: 118,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editor: "list",
-          editorParams: { values: typeValues() },
-          formatter: "lookup",
-          formatterParams: typeValues(),
-          editable: isEditable
+          title: "Type", field: "type", width: 118,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          editor: "list", editorParams: { values: typeValues() },
+          formatter: "lookup", formatterParams: typeValues(), editable: isEditable
         },
         {
-          title: "Shape",
-          field: "shape",
-          width: 100,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editor: "list",
-          editorParams: { values: shapeValues() },
-          formatter: "lookup",
-          formatterParams: shapeValues(),
-          editable: isEditable
+          title: "Shape", field: "shape", width: 100,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          editor: "list", editorParams: { values: shapeValues() },
+          formatter: "lookup", formatterParams: shapeValues(), editable: isEditable
         },
         {
-          title: "Volume",
-          field: "volume",
-          width: 78,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editor: "input",
-          editable: isEditable
+          title: "Volume", field: "volume", width: 78,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          editor: "input", editable: isEditable
         },
         {
-          title: "Dia/AxB",
-          field: "size",
-          width: 100,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editor: "input",
-          editable: isEditable
+          title: "Dia/AxB", field: "size", width: 100,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          editor: "input", editable: isEditable
         },
         {
-          title: "Vel",
-          field: "velocity",
-          width: 70,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editable: false
+          title: "Vel", field: "velocity", width: 70,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "VP",
-          field: "vp",
-          width: 70,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editable: false
+          title: "VP", field: "vp", width: 70,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "Pa/m",
-          field: "pam",
-          width: 78,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editable: false
+          title: "Pa/m", field: "pam", width: 78,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "m",
-          field: "detail",
-          minWidth: 120,
-          widthGrow: 1,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editor: detailEditor,
-          formatter: detailFormatter,
-          editable: isEditable
+          title: "m", field: "detail", minWidth: 120, widthGrow: 1,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          editor: detailEditor, formatter: detailFormatter, editable: isEditable
         },
         {
-          title: "PD",
-          field: "pd",
-          width: 78,
-          hozAlign: "center",
-          headerHozAlign: "center",
-          headerSort: false,
-          editor: "input",
-          editable: isEditable,
+          title: "PD", field: "pd", width: 78,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          editor: "input", editable: isEditable,
           formatter: function (cell) {
             var d = cell.getRow().getData();
             var v = cell.getValue();
@@ -483,11 +549,7 @@
           }
         },
         {
-          title: "",
-          field: "_del",
-          width: 44,
-          hozAlign: "center",
-          headerSort: false,
+          title: "", field: "_del", width: 44, hozAlign: "center", headerSort: false,
           formatter: function () {
             return "<button type=\"button\" class=\"btn-ghost leg-grid-remove\" aria-label=\"Remove row\">✕</button>";
           },
@@ -507,8 +569,10 @@
 
       if (field === "type") {
         if (d.type === "accessory") {
-          row.update({ shape: "circular", velocity: "—", vp: "—", pam: "—",
-            detail: d.detail || DEFAULT_RAW.label, pd: d.pd || DEFAULT_RAW.dp });
+          row.update({
+            shape: "circular", velocity: "—", vp: "—", pam: "—",
+            detail: d.detail || DEFAULT_RAW.label, pd: d.pd || DEFAULT_RAW.dp
+          });
         } else if (d.type === "fitting") {
           var fits = FITTINGS_BY_SHAPE[d.shape || "circular"] || [];
           var fk = d.fitting || (fits[0] && fits[0].key) || "";
@@ -517,51 +581,71 @@
           row.update({ detail: DEFAULT_RAW.length });
         }
       }
-
       if (field === "shape" && d.type === "fitting") {
         var fits2 = FITTINGS_BY_SHAPE[d.shape || "circular"] || [];
         var fk2 = (fits2[0] && fits2[0].key) || "";
         row.update({ detail: fk2, fitting: fk2 });
       }
-
       if (field === "size" || field === "shape") {
-        var parts = parseSizeEdit(d.size, d.shape || "circular");
-        row.update(parts);
+        row.update(parseSizeEdit(d.size, d.shape || "circular"));
       }
-
       debouncedFetch();
     });
 
+    // -- Composer: live preview; Add commits into the grid -----------------
+    if (stage) {
+      updateFieldVisibility(stage);
+      stage.addEventListener("change", function (evt) {
+        var target = evt.target;
+        if (!target.hasAttribute("data-row-field")) return;
+        if (target.getAttribute("data-row-field") === "shape") {
+          refreshFittingOptions(stage, target.value);
+        }
+        if (target.getAttribute("data-row-field") === "type" ||
+            target.getAttribute("data-row-field") === "shape") {
+          updateFieldVisibility(stage);
+        }
+        fetchLegState(null, { previewOnly: true });
+      });
+      stage.addEventListener("input", function (evt) {
+        if (evt.target.hasAttribute("data-row-field")) debouncedPreview();
+      });
+    }
+
+    function clearStagingItemFields() {
+      if (!stage) return;
+      ["length", "fitting", "label", "dp"].forEach(function (f) {
+        var input = stage.querySelector('[data-row-field="' + f + '"]');
+        if (!input) return;
+        if (input.tagName === "SELECT") {
+          if (input.options.length) input.selectedIndex = 0;
+        } else if (f === "length") {
+          input.value = DEFAULT_RAW.length || "";
+        } else if (f === "label") {
+          input.value = DEFAULT_RAW.label || "";
+        } else if (f === "dp") {
+          input.value = DEFAULT_RAW.dp || "";
+        } else {
+          input.value = "";
+        }
+      });
+    }
+
     if (addBtn) {
       addBtn.addEventListener("click", function () {
-        var data = table.getData();
-        var last = data.length ? data[data.length - 1] : null;
-        var base = Object.assign({}, DEFAULT_RAW);
-        if (last) {
-          base.type = last.type || base.type;
-          base.shape = last.shape || base.shape;
-          base.volume = last.volume || base.volume;
-          base.diameter = last.diameter || base.diameter;
-          base.width = last.width || base.width;
-          base.height = last.height || base.height;
-          base.major = last.major || base.major;
-          base.minor = last.minor || base.minor;
-        }
-        var seed = gridRowFromApi({
-          type: base.type,
-          shape: base.shape,
-          size_edit: sizeEditFromRaw(base, base.shape),
-          velocity_display: "…",
-          velocity_pressure_display: "…",
-          friction_rate_display: "…",
-          dp_display: "…",
-          fitting_key: base.fitting,
-          raw: base,
-          k: null,
-          error: null
+        if (!stage) return;
+        var existingCount = table.getDataCount();
+        var stagingRaw = readFieldsFrom(stage);
+        var overrides = { leg_row_count: String(existingCount + 1) };
+        ROW_FIELDS.forEach(function (f) {
+          overrides["leg_" + f + "_" + existingCount] = stagingRaw[f];
         });
-        if (seed.type === "straight" || seed.type === "flex") seed.detail = base.length;
-        table.addRow(seed).then(function () { fetchLegState(); });
+        // Include existing rows in params; override count + new row fields
+        fetchLegState(overrides).then(function () {
+          clearStagingItemFields();
+          updateFieldVisibility(stage);
+          fetchLegState(null, { previewOnly: true });
+        });
       });
     }
 
@@ -581,13 +665,12 @@
       safetyMargin.addEventListener("change", function () { fetchLegState(); });
     }
 
-    // Initial totals + export URL from server-rendered state
     applyTotals(INITIAL);
+    updateStagePreview(INITIAL);
     if ((INITIAL.rows || []).length) {
-      // Recompute once so Dia/AxB / displays are consistent with current units
       fetchLegState();
-    } else if (exportLink && EXPORT_BASE_HREF) {
-      exportLink.href = EXPORT_BASE_HREF + "?" + buildLegParams().toString();
+    } else {
+      fetchLegState(null, { previewOnly: true });
     }
   }
 

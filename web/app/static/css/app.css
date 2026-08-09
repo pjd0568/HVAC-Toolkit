@@ -1122,8 +1122,110 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 .col-subhead { font-size: 11px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
 
 /* Index Leg — Tabulator spreadsheet grid (Correction #11).
-   Real cell editors via Tabulator; calc still in blueprints/duct.py.
+   Compact 2-row composer above the results grid; calc in blueprints/duct.py.
    Pipe system continues to use .leg-rows-table / .leg-stage-row below. */
+
+/* ── Compact 2-row composer (primary input) ─────────────────────────────── */
+.leg-composer {
+  background: var(--row-hl);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.leg-composer-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px 10px;
+  align-items: end;
+}
+.leg-field label {
+  min-height: 0;
+  margin-bottom: 3px;
+  font-size: 11px;
+}
+.leg-field label .th-unit {
+  font-weight: 500;
+  color: var(--muted);
+}
+.leg-field input,
+.leg-field select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  font-size: 12.5px;
+}
+.leg-composer-row + .leg-composer-row { margin-top: 8px; }
+.leg-composer-row-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: stretch;
+}
+.leg-composer-row-item .leg-field {
+  flex: 1 1 110px;
+  max-width: 220px;
+  align-self: end;
+}
+.leg-composer-row-item .leg-field-wide {
+  flex: 2 1 180px;
+  max-width: 360px;
+}
+.leg-composer-preview {
+  flex: 2 1 180px;
+  min-width: 150px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.leg-preview-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px 10px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.leg-preview-dp {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+  margin-top: 1px;
+}
+.leg-composer-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.leg-add-btn {
+  padding: 7px 14px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .leg-composer-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .leg-composer-row-item .leg-field,
+  .leg-composer-row-item .leg-field-wide,
+  .leg-composer-preview {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .leg-composer-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+  .leg-composer-actions .leg-add-btn { width: 100%; }
+}
 
 .leg-grid-wrap {
   width: 100%;

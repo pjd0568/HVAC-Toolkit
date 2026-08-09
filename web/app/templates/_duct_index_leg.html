@@ -1,9 +1,14 @@
-{# Index Leg pressure-drop builder — Tabulator spreadsheet grid.
-   Each row carries its own volume/shape/size. Calc stays in
-   blueprints/duct.py (/api/leg-state); this template only mounts the grid. #}
+{# Index Leg — compact 2-line composer above a Tabulator results grid.
+   Fill the form, check the live preview, Add commits a row to the spreadsheet
+   table below. Calc stays in blueprints/duct.py (/api/leg-state). #}
 {% from "_report_form.html" import report_form %}
 
 {% macro index_leg_panel(leg, report_action=None, report_fields=None, panel_style='') %}
+{% set stage_type = (leg.stage.type if leg.stage else leg.stage_raw.type) or "straight" %}
+{% set stage_shape = (leg.stage.shape if leg.stage else leg.stage_raw.shape) or "circular" %}
+{% set stage_fitting = (leg.stage.fitting_key if leg.stage else None) or leg.stage_raw.fitting %}
+{% set defaults = leg.default_row_raw %}
+{% set stage = leg.stage_raw %}
 <div class="panel" style="max-width:1100px; {{ panel_style }}" id="leg-panel">
   <details class="panel-help">
     <summary class="panel-head" aria-label="Index Leg — Pressure Drop. How to use">
@@ -11,27 +16,125 @@
       <span class="help-inline-mark" aria-hidden="true">?</span>
     </summary>
     <div class="panel-help-body">
-      Click any editable cell to change it — the grid works like a spreadsheet.
-      <strong>Type</strong> chooses Straight / Flex / Fitting / Accessory.
-      Straight and flex use length in the <strong>m</strong> column and show
-      friction rate under <strong>Pa/m</strong>. Fittings pick from the
-      catalogue in the <strong>m</strong> column and show <strong>K</strong>
-      under Pa/m (ΔP = K × VP). Accessories use the m column for a description
-      and edit <strong>PD</strong> as a manual pressure drop.
-      Dia/AxB is one size for circular, or <code>W x H</code> for rectangular
-      and flat oval. Vel, VP, Pa/m and PD (except accessories) recalculate live.
+      Fill the compact form above (type, size, length or fitting), check the
+      live preview, then press <strong>Add</strong> to commit a row into the
+      spreadsheet table. Committed rows can still be edited in-place.
+      Straight / flex show friction rate (Pa/m); fittings show K
+      (ΔP = K × VP). Accessories take a manual pressure drop.
+      Dia/AxB is one size for circular, or enter both dimensions for
+      rectangular / flat oval.
     </div>
   </details>
   <div class="panel-body">
 
     <div id="leg-error"></div>
 
+    {# ── Compact 2-row entry form (kept — primary input path) ───────────── #}
+    <div id="leg-stage" class="leg-composer">
+      <div class="leg-composer-row">
+        <div class="leg-field">
+          <label for="stage_type">Type</label>
+          <select id="stage_type" data-row-field="type" name="stage_type">
+            {% for opt in leg.type_options %}
+            <option value="{{ opt.key }}" {{ 'selected' if stage_type == opt.key }}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="leg-field" data-shape-field>
+          <label for="stage_shape">Shape</label>
+          <select id="stage_shape" data-row-field="shape" data-shape-field name="stage_shape">
+            {% for opt in leg.shape_options %}
+            <option value="{{ opt.key }}" {{ 'selected' if stage_shape == opt.key }}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="leg-field" data-shape-field>
+          <label for="stage_volume">Volume <span class="th-unit">({{ leg.duct_flow_sym }})</span></label>
+          <input id="stage_volume" data-row-field="volume" data-shape-field name="stage_volume"
+                 value="{{ stage.volume or defaults.volume }}" inputmode="decimal">
+        </div>
+        <div class="leg-field" data-size-for="circular">
+          <label for="stage_diameter">Dia <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
+          <input id="stage_diameter" data-row-field="diameter" data-size-for="circular" name="stage_diameter"
+                 value="{{ stage.diameter or defaults.diameter }}" inputmode="decimal">
+        </div>
+        <div class="leg-field" data-size-for="rectangular">
+          <label for="stage_width">A <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
+          <input id="stage_width" data-row-field="width" data-size-for="rectangular" name="stage_width"
+                 value="{{ stage.width or defaults.width }}" inputmode="decimal">
+        </div>
+        <div class="leg-field" data-size-for="rectangular">
+          <label for="stage_height">B <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
+          <input id="stage_height" data-row-field="height" data-size-for="rectangular" name="stage_height"
+                 value="{{ stage.height or defaults.height }}" inputmode="decimal">
+        </div>
+        <div class="leg-field" data-size-for="flat_oval">
+          <label for="stage_major">Major <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
+          <input id="stage_major" data-row-field="major" data-size-for="flat_oval" name="stage_major"
+                 value="{{ stage.major or defaults.major }}" inputmode="decimal">
+        </div>
+        <div class="leg-field" data-size-for="flat_oval">
+          <label for="stage_minor">Minor <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
+          <input id="stage_minor" data-row-field="minor" data-size-for="flat_oval" name="stage_minor"
+                 value="{{ stage.minor or defaults.minor }}" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="leg-composer-row leg-composer-row-item">
+        <div class="leg-field" data-type-for="straight flex">
+          <label for="stage_length">Length <span class="th-unit">({{ leg.duct_run_length_sym }})</span></label>
+          <input id="stage_length" data-row-field="length" data-type-for="straight flex" name="stage_length"
+                 value="{{ stage.length or defaults.length }}" inputmode="decimal">
+        </div>
+        <div class="leg-field leg-field-wide" data-type-for="fitting">
+          <label for="stage_fitting">Fitting</label>
+          <select id="stage_fitting" data-row-field="fitting" data-fitting-select data-type-for="fitting" name="stage_fitting">
+            {% for f in leg.fittings_by_shape.get(stage_shape, []) %}
+            <option value="{{ f.key }}" {{ 'selected' if stage_fitting == f.key }}>{{ f.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="leg-field leg-field-wide" data-type-for="accessory">
+          <label for="stage_label">Description</label>
+          <input id="stage_label" data-row-field="label" data-type-for="accessory" name="stage_label"
+                 value="{{ stage.label or defaults.label }}">
+        </div>
+        <div class="leg-field" data-type-for="accessory">
+          <label for="stage_dp">Manual ΔP <span class="th-unit">({{ leg.velocity_pressure_sym }})</span></label>
+          <input id="stage_dp" data-row-field="dp" data-type-for="accessory" name="stage_dp"
+                 value="{{ stage.dp or defaults.dp }}" inputmode="decimal">
+        </div>
+
+        <div class="leg-composer-preview" id="leg-stage-result-cell">
+          {% if leg.stage_error %}
+          <div class="error" id="leg-stage-error" style="margin:0;">{{ leg.stage_error }}</div>
+          {% else %}
+          <div class="leg-preview-metrics suffix">
+            <span>V <span id="stage-velocity">{{ leg.stage.velocity_display if leg.stage }}</span></span>
+            <span>VP <span id="stage-vp">{{ leg.stage.velocity_pressure_display if leg.stage }}</span></span>
+            <span id="stage-fk-wrap">
+              <span id="stage-fk-label">{% if leg.stage and leg.stage.type == 'fitting' %}K{% elif leg.stage and leg.stage.type in ('straight', 'flex') %}ΔP/L{% else %}—{% endif %}</span>
+              <span id="stage-friction">{% if leg.stage and leg.stage.type == 'fitting' and leg.stage.k is not none %}{{ '%.2f'|format(leg.stage.k) }}{% elif leg.stage and leg.stage.type in ('straight', 'flex') %}{{ leg.stage.friction_rate_display }}{% endif %}</span>
+            </span>
+          </div>
+          <div class="leg-preview-dp">
+            <span id="stage-dp-preview">{{ leg.stage.dp_display if leg.stage }}</span>
+            <span class="u">{{ leg.velocity_pressure_sym }}</span>
+          </div>
+          {% endif %}
+        </div>
+        <div class="leg-composer-actions">
+          <button type="button" class="btn-accent leg-add-btn" id="leg-add-row">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    {# ── Spreadsheet results grid (committed rows) ──────────────────────── #}
     <div class="leg-grid-wrap">
       <div id="leg-grid"></div>
     </div>
 
     <div class="leg-toolbar">
-      <button type="button" class="btn-accent" id="leg-add-row">+ Add row</button>
       <button type="button" class="btn-ghost" id="leg-clear-table">Clear Table</button>
       <a class="btn-ghost" style="text-decoration:none;" id="leg-export-csv" href="{{ url_for('duct.export_leg_csv') }}">Export CSV</a>
     </div>
@@ -85,6 +188,9 @@
     "margin_amount_display": leg.margin_amount_display,
     "total_with_margin_display": leg.total_with_margin_display,
     "default_row_raw": leg.default_row_raw,
+    "stage": leg.stage,
+    "stage_raw": leg.stage_raw,
+    "stage_error": leg.stage_error,
     "type_options": leg.type_options,
     "shape_options": leg.shape_options,
     "fittings_by_shape": leg.fittings_by_shape,
@@ -96,10 +202,9 @@
   } | tojson }};
 </script>
 <script src="{{ url_for('static', filename='vendor/tabulator/tabulator.min.js') }}?v=6.3.1"></script>
-<script src="{{ url_for('static', filename='js/leggrid.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/leggrid.js') }}?v=3"></script>
 {% endmacro %}
 
 {% macro index_leg_styles() %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/tabulator/tabulator_simple.min.css') }}?v=6.3.1">
 {% endmacro %}
-
