@@ -1236,6 +1236,9 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   background: #fff;
 }
 
+#leg-grid {
+  width: 100%;
+}
 #leg-grid.tabulator,
 .leg-grid-wrap .tabulator {
   border: none;
@@ -1245,12 +1248,10 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   max-width: 100%;
   box-sizing: border-box;
 }
-#leg-grid .tabulator-header,
-#leg-grid .tabulator-tableholder,
-#leg-grid .tabulator-table {
-  width: 100% !important;
-}
+/* Do NOT force .tabulator-table to 100% — that leaves empty space beside
+   fixed-width columns. fitDataStretch must own column + table widths. */
 #leg-grid .tabulator-tableholder {
+  width: 100% !important;
   overflow-x: hidden !important;
 }
 #leg-grid .tabulator-header {

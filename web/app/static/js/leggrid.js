@@ -476,43 +476,10 @@
       else el.classList.remove("leg-grid-row-error");
     }
 
-    // Relative column shares (sum = 1). Used to fill the wrap width exactly.
-    var COL_SHARES = [
-      ["item", 0.045],
-      ["type", 0.115],
-      ["shape", 0.08],
-      ["volume", 0.10],
-      ["size", 0.12],
-      ["velocity", 0.085],
-      ["vp", 0.09],
-      ["pam", 0.09],
-      ["detail", 0.11],
-      ["pd", 0.10],
-      ["_del", 0.045]
-    ];
-
-    function relayoutGrid() {
-      if (!table) return;
-      var wrap = mount.parentElement || mount;
-      var total = wrap.clientWidth;
-      if (!total || total < 200) return;
-      // Leave 1px for borders so we don't overflow and spawn a scrollbar.
-      var usable = total - 2;
-      var used = 0;
-      COL_SHARES.forEach(function (pair, idx) {
-        var px = (idx === COL_SHARES.length - 1)
-          ? Math.max(28, usable - used)
-          : Math.max(28, Math.floor(usable * pair[1]));
-        used += px;
-        try {
-          table.setColumnWidth(pair[0], px);
-        } catch (e) { /* column may not exist yet */ }
-      });
-    }
-
     table = new Tabulator(mount, {
       data: (INITIAL.rows || []).map(gridRowFromApi),
-      layout: "fitData",
+      // Size to content, then stretch every column to fill the container width.
+      layout: "fitDataStretch",
       reactiveData: false,
       selectableRows: false,
       rowHeight: 22,
@@ -521,12 +488,12 @@
       rowFormatter: rowFormatter,
       columns: [
         {
-          title: "Item", field: "item",
+          title: "Item", field: "item", minWidth: 40,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           formatter: function (cell) { return String(cell.getRow().getPosition(true)); }
         },
         {
-          title: "Type", field: "type",
+          title: "Type", field: "type", minWidth: 70,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "list", editorParams: { values: typeValues() },
           formatter: function (cell) {
@@ -536,7 +503,7 @@
           editable: isEditable
         },
         {
-          title: "Shape", field: "shape",
+          title: "Shape", field: "shape", minWidth: 52,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "list", editorParams: { values: shapeValues() },
           formatter: function (cell) {
@@ -546,34 +513,34 @@
           editable: isEditable
         },
         {
-          title: "Volume", field: "volume",
+          title: "Volume", field: "volume", minWidth: 60,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "input", editable: isEditable
         },
         {
-          title: "Dia/AxB", field: "size",
+          title: "Dia/AxB", field: "size", minWidth: 70,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "input", editable: isEditable
         },
         {
-          title: "Vel", field: "velocity",
+          title: "Vel", field: "velocity", minWidth: 50,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
         },
         {
-          title: "VP", field: "vp",
+          title: "VP", field: "vp", minWidth: 55,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
         },
         {
-          title: "Pa/m", field: "pam",
+          title: "Pa/m", field: "pam", minWidth: 55,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
         },
         {
-          title: "m", field: "detail",
+          title: "m", field: "detail", minWidth: 90,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: detailEditor, formatter: detailFormatter, editable: isEditable, tooltip: true
         },
         {
-          title: "PD", field: "pd",
+          title: "PD", field: "pd", minWidth: 55,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "input", editable: isEditable,
           formatter: function (cell) {
@@ -592,7 +559,8 @@
           }
         },
         {
-          title: "", field: "_del",
+          title: "", field: "_del", minWidth: 36, width: 36,
+          widthGrow: 0, widthShrink: 0,
           hozAlign: "center", headerSort: false, resizable: false,
           formatter: function () {
             return "<button type=\"button\" class=\"btn-ghost leg-grid-remove\" aria-label=\"Remove row\">✕</button>";
@@ -605,19 +573,23 @@
       ]
     });
 
-    table.on("tableBuilt", function () { relayoutGrid(); });
-    table.on("dataProcessed", function () { relayoutGrid(); });
+    function redrawGrid() {
+      if (!table) return;
+      try { table.redraw(true); } catch (e) { /* ignore */ }
+    }
 
-    // Refit columns when the panel width changes.
+    table.on("tableBuilt", redrawGrid);
+    table.on("dataProcessed", redrawGrid);
+
     if (typeof ResizeObserver !== "undefined") {
       var roTimer = null;
       var ro = new ResizeObserver(function () {
         clearTimeout(roTimer);
-        roTimer = setTimeout(relayoutGrid, 50);
+        roTimer = setTimeout(redrawGrid, 40);
       });
       ro.observe(mount.parentElement || panel);
     }
-    window.addEventListener("resize", function () { relayoutGrid(); });
+    window.addEventListener("resize", redrawGrid);
 
     table.on("cellEdited", function (cell) {
       if (applying) return;
