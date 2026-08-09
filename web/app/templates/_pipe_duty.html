@@ -30,60 +30,64 @@
       </div>
 
       <div class="pipe-duty-grid">
-        <div class="pipe-duty-field">
-          <label for="application">Application</label>
-          <select id="application" name="application">
-            {% for key, label in applications.items() %}
-            <option value="{{ key }}" {{ 'selected' if fields.application == key }}>{{ label }}</option>
-            {% endfor %}
-          </select>
+        <div class="pipe-duty-row">
+          <div class="pipe-duty-field">
+            <label for="application">Application</label>
+            <select id="application" name="application">
+              {% for key, label in applications.items() %}
+              <option value="{{ key }}" {{ 'selected' if fields.application == key }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="pipe-duty-field">
+            <label for="fluid">Fluid</label>
+            <select id="fluid" name="fluid">
+              {% for key, label in fluids.items() %}
+              <option value="{{ key }}" {{ 'selected' if fields.fluid == key }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="pipe-duty-field" id="glycol-field" {% if fields.fluid == 'water' %}style="display:none"{% endif %}>
+            <label for="glycol_pct">Glycol % v/v</label>
+            <select id="glycol_pct" name="glycol_pct">
+              {% for opt in glycol_options_by_fluid.get(fields.fluid, []) %}
+              <option value="{{ opt.pct }}" {{ 'selected' if fields.glycol_pct == opt.pct|string }}>{{ opt.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="pipe-duty-field">
+            <label for="material">Material</label>
+            <select id="material" name="material">
+              {% for key, label in materials.items() %}
+              <option value="{{ key }}" {{ 'selected' if fields.material == key }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
 
-        <div class="pipe-duty-field">
-          <label for="fluid">Fluid</label>
-          <select id="fluid" name="fluid">
-            {% for key, label in fluids.items() %}
-            <option value="{{ key }}" {{ 'selected' if fields.fluid == key }}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+        <div class="pipe-duty-row">
+          <div class="pipe-duty-field" id="load-field" {% if fields.mode != 'from_load' %}style="display:none"{% endif %}>
+            <label for="load">Load ({{ U.sym('power') }})</label>
+            <input id="load" name="load" value="{{ fields.load }}" inputmode="decimal">
+          </div>
 
-        <div class="pipe-duty-field" id="glycol-field" {% if fields.fluid == 'water' %}style="display:none"{% endif %}>
-          <label for="glycol_pct">Glycol % v/v</label>
-          <select id="glycol_pct" name="glycol_pct">
-            {% for opt in glycol_options_by_fluid.get(fields.fluid, []) %}
-            <option value="{{ opt.pct }}" {{ 'selected' if fields.glycol_pct == opt.pct|string }}>{{ opt.label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+          <div class="pipe-duty-field" id="flow-field" {% if fields.mode != 'flow_known' %}style="display:none"{% endif %}>
+            <label for="flow_ls">Flow (l/s)</label>
+            <input id="flow_ls" name="flow_ls" value="{{ fields.flow_ls }}" inputmode="decimal">
+          </div>
 
-        <div class="pipe-duty-field">
-          <label for="material">Material</label>
-          <select id="material" name="material">
-            {% for key, label in materials.items() %}
-            <option value="{{ key }}" {{ 'selected' if fields.material == key }}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+          <div class="pipe-duty-field">
+            <label for="delta_t">ΔT ({% if U.system == 'IP' %}°F{% else %}K{% endif %})</label>
+            <input id="delta_t" name="delta_t" value="{{ fields.delta_t }}" inputmode="decimal">
+          </div>
 
-        <div class="pipe-duty-field" id="load-field" {% if fields.mode != 'from_load' %}style="display:none"{% endif %}>
-          <label for="load">Load ({{ U.sym('power') }})</label>
-          <input id="load" name="load" value="{{ fields.load }}" inputmode="decimal">
-        </div>
-
-        <div class="pipe-duty-field" id="flow-field" {% if fields.mode != 'flow_known' %}style="display:none"{% endif %}>
-          <label for="flow_ls">Flow (l/s)</label>
-          <input id="flow_ls" name="flow_ls" value="{{ fields.flow_ls }}" inputmode="decimal">
-        </div>
-
-        <div class="pipe-duty-field">
-          <label for="delta_t">ΔT ({% if U.system == 'IP' %}°F{% else %}K{% endif %})</label>
-          <input id="delta_t" name="delta_t" value="{{ fields.delta_t }}" inputmode="decimal">
-        </div>
-
-        <div class="pipe-duty-field">
-          <label for="lwt">LWT ({{ U.sym('temperature') }})</label>
-          <input id="lwt" name="lwt" value="{{ fields.lwt }}" inputmode="decimal">
+          <div class="pipe-duty-field">
+            <label for="lwt">LWT ({{ U.sym('temperature') }})</label>
+            <input id="lwt" name="lwt" value="{{ fields.lwt }}" inputmode="decimal">
+          </div>
         </div>
 
         <div class="pipe-duty-actions">

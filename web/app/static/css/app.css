@@ -1812,10 +1812,19 @@ table.leg-rows-table tfoot tr.leg-total-margin-tr td { border-top: 1px solid var
   font-size: 12.5px;
 }
 .pipe-duty-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pipe-duty-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px 10px;
   align-items: end;
+}
+/* When glycol is visible, keep row 1 as a tight 4-up strip */
+.pipe-duty-row:first-child:has(#glycol-field:not([style*="display: none"])) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .pipe-duty-field label {
   min-height: 0;
@@ -1832,19 +1841,20 @@ table.leg-rows-table tfoot tr.leg-total-margin-tr td { border-top: 1px solid var
 }
 .pipe-duty-actions {
   display: flex;
-  align-items: flex-end;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 2px;
 }
 .pipe-duty-actions .btn-accent {
   padding: 7px 14px;
   font-size: 12.5px;
   white-space: nowrap;
 }
-@media (max-width: 900px) {
-  .pipe-duty-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
 @media (max-width: 640px) {
-  .pipe-duty-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .pipe-duty-actions { grid-column: 1 / -1; }
+  .pipe-duty-row,
+  .pipe-duty-row:first-child:has(#glycol-field:not([style*="display: none"])) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .pipe-duty-actions .btn-accent { width: 100%; }
 }
 
