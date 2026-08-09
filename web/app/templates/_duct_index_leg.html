@@ -133,6 +133,7 @@
     <div class="leg-grid-wrap">
       <div id="leg-grid"></div>
     </div>
+    <p class="leg-mobile-hint">Rotate view on Mobile for better layout</p>
 
     <div class="leg-toolbar">
       <button type="button" class="btn-ghost" id="leg-clear-table">Clear Table</button>
@@ -202,7 +203,7 @@
   } | tojson }};
 </script>
 <script src="{{ url_for('static', filename='vendor/tabulator/tabulator.min.js') }}?v=6.3.1"></script>
-<script src="{{ url_for('static', filename='js/leggrid.js') }}?v=9"></script>
+<script src="{{ url_for('static', filename='js/leggrid.js') }}?v=10"></script>
 {% endmacro %}
 
 {% macro index_leg_styles() %}

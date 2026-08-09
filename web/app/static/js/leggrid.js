@@ -562,11 +562,11 @@
           }
         },
         {
-          title: "", field: "_del", minWidth: 36, width: 36,
+          title: "Del", field: "_del", minWidth: 36, width: 36,
           widthGrow: 0, widthShrink: 0,
-          hozAlign: "center", headerSort: false, resizable: false,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           formatter: function () {
-            return "<button type=\"button\" class=\"btn-ghost leg-grid-remove\" aria-label=\"Remove row\">✕</button>";
+            return "<button type=\"button\" class=\"leg-grid-remove\" aria-label=\"Remove row\" title=\"Delete\">×</button>";
           },
           cellClick: function (e, cell) {
             if (!e.target.closest(".leg-grid-remove")) return;

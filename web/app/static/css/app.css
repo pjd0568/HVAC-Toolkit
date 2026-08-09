@@ -1353,12 +1353,40 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-#leg-grid .tabulator-row.tabulator-row-even { background: #fff; }
-#leg-grid .tabulator-row:hover { background: #f7fafc; }
+/* Editable entry columns (change results) — white */
+#leg-grid .tabulator-cell[tabulator-field="type"],
+#leg-grid .tabulator-cell[tabulator-field="shape"],
+#leg-grid .tabulator-cell[tabulator-field="volume"],
+#leg-grid .tabulator-cell[tabulator-field="size"],
+#leg-grid .tabulator-cell[tabulator-field="detail"],
+#leg-grid .tabulator-cell[tabulator-field="pd"] {
+  background: #fff !important;
+}
+/* Calculated / read-only columns — grey */
+#leg-grid .tabulator-cell[tabulator-field="item"],
+#leg-grid .tabulator-cell[tabulator-field="velocity"],
+#leg-grid .tabulator-cell[tabulator-field="vp"],
+#leg-grid .tabulator-cell[tabulator-field="pam"] {
+  background: #eceff3 !important;
+  color: #334155;
+}
+#leg-grid .tabulator-cell[tabulator-field="_del"] {
+  background: #f7f8fa !important;
+}
+#leg-grid .tabulator-row.tabulator-row-even { background: transparent; }
+#leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="type"],
+#leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="shape"],
+#leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="volume"],
+#leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="size"],
+#leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="detail"],
+#leg-grid .tabulator-row:hover .tabulator-cell[tabulator-field="pd"] {
+  background: #f7fafc !important;
+}
 #leg-grid .tabulator-cell.tabulator-editing {
   padding: 0;
   border: 1px solid var(--blue);
   height: 22px;
+  background: #fff !important;
 }
 #leg-grid .leg-grid-editor,
 #leg-grid .tabulator-editing input,
@@ -1374,7 +1402,10 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   text-align: center;
   background: #fff;
 }
-#leg-grid .leg-grid-row-error { background: #FCEEED !important; }
+#leg-grid .leg-grid-row-error { background: transparent !important; }
+#leg-grid .leg-grid-row-error .tabulator-cell {
+  background: #FCEEED !important;
+}
 #leg-grid .leg-grid-row-error-text {
   color: #b3261e;
   font-size: 10px;
@@ -1384,9 +1415,37 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   line-height: 1.15;
 }
 #leg-grid .leg-grid-remove {
-  padding: 0 4px;
-  font-size: 10.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 600;
   line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+#leg-grid .leg-grid-remove:hover {
+  color: #b3261e;
+  background: transparent;
+}
+
+.leg-mobile-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+@media (min-width: 768px) {
+  .leg-mobile-hint { display: none; }
 }
 
 .leg-toolbar {
