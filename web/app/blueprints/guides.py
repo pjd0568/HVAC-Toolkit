@@ -13,6 +13,17 @@ bp = Blueprint("guides", __name__)
 
 GUIDES = [
     {
+        "slug": "add-to-mobile-homescreen",
+        "title": "Add to Mobile Homescreen",
+        "summary": (
+            "Install HVAC Toolkit like an app on iPhone, iPad, or Android — "
+            "Safari Share / Chrome Install, with step visuals for each platform."
+        ),
+        "disc": "app",
+        "read_mins": 2,
+        "template": "guides/add_to_mobile_homescreen.html",
+    },
+    {
         "slug": "cooling-coil-design",
         "title": "Cooling Coil Design: The Psychrometric Process and Selection Basics",
         "summary": (

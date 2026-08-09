@@ -11,8 +11,8 @@
 <link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-44">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-21">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-45">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-22">
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
 {% block extra_head %}{% endblock %}
 </head>
@@ -67,7 +67,10 @@
     <a href="{{ url_for('v2.more') }}" class="{{ 'active' if nav == 'more' }}">More</a>
   </nav>
   <div class="v2-topbar-title">{% block page_title %}{% endblock %}</div>
-  <a class="v2-topbar-install" href="{{ url_for('v2.dashboard') }}#install" title="Add this app to your Home Screen">Add to Home</a>
+  <a class="v2-topbar-install" href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}" title="Add to mobile homescreen">
+    <span class="v2-install-full">Add to mobile homescreen</span>
+    <span class="v2-install-short">Homescreen</span>
+  </a>
   {% set flow_unit_tools = ['psychro_mix', 'psychro_coil', 'psychro_desiccant', 'psychro_heat_humidify', 'psychro_adiabatic_cool', 'psychro_ahu'] %}
   <div class="v2-topbar-units" aria-label="Units">
     <form method="post" action="{{ url_for('main.set_units') }}" class="v2-unit-toggle" title="Unit system">
@@ -102,7 +105,7 @@
       <li><span class="v2-menu-status">Subscribed</span></li>
       {% endif %}
       <li><a href="{{ url_for('billing.subscribe') }}">Pricing</a></li>
-      <li><a href="{{ url_for('v2.dashboard') }}#install">Add to Home Screen</a></li>
+      <li><a href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">Add to mobile homescreen</a></li>
       {% set help_anchor = help_anchor_for.get(active) %}
       <li><a href="{{ url_for('help.index') }}{% if help_anchor %}#{{ help_anchor }}{% endif %}">Help</a></li>
       <li><a href="{{ url_for('guides.index') }}">Design Guides</a></li>

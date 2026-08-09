@@ -122,6 +122,7 @@ a:hover { color: var(--v2-green-ink); }
   text-decoration: none;
   color: var(--v2-green-ink);
 }
+.v2-install-short { display: none; }
 
 .v2-topbar-units {
   display: flex;
@@ -689,39 +690,6 @@ a:hover { color: var(--v2-green-ink); }
   font-size: 14px;
 }
 .v2-banner a { font-weight: 700; color: var(--v2-green-ink); }
-
-.v2-install {
-  border-color: #99e0d9;
-  background: linear-gradient(180deg, var(--v2-green-soft) 0%, var(--v2-panel) 42%);
-  scroll-margin-top: calc(var(--v2-top) + 12px);
-}
-.v2-install-h {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 12px 0 6px;
-  color: var(--v2-ink);
-}
-.v2-install-steps {
-  margin: 0 0 4px 1.15em;
-  padding: 0;
-  color: var(--v2-ink);
-}
-.v2-install-steps li {
-  font-size: 13px;
-  line-height: 1.5;
-  margin-bottom: 5px;
-  color: var(--v2-muted);
-}
-.v2-install-steps strong { color: var(--v2-ink); font-weight: 650; }
-.v2-install-note {
-  margin: 12px 0 0 !important;
-  font-size: 12.5px !important;
-}
-.v2-install-note a {
-  font-weight: 650;
-  color: var(--v2-green-ink);
-}
 
 /* ── Tool panels / forms ── */
 .v2-main .panel {
@@ -1344,6 +1312,8 @@ a:hover { color: var(--v2-green-ink); }
     font-size: 11.5px;
     padding: 5px 6px;
   }
+  .v2-install-full { display: none; }
+  .v2-install-short { display: inline; }
 }
 
 @media (min-width: 900px) {

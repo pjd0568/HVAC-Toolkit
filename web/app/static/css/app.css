@@ -247,6 +247,7 @@ body {
 .disc-chip.air { color: var(--air-ink); border-color: var(--air-accent); }
 .disc-chip.water { color: var(--water-ink); border-color: var(--water-accent); }
 .disc-chip.duct { color: var(--duct-ink); border-color: var(--duct-accent); }
+.disc-chip.app { color: var(--green-ink, #0b7a72); border-color: var(--green, #00A99D); }
 
 /* ── Tool cards (steel panels + accent rail, no pastel fills) ── */
 .tool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
@@ -274,6 +275,7 @@ body {
 .tile-water .tool-ico { background: var(--water-accent); color: #fff; }
 .tile-duct { border-left-color: var(--duct-accent); }
 .tile-duct .tool-ico { background: var(--duct-accent); color: #fff; }
+.tile-app { border-left-color: var(--green, #00A99D); }
 .tile-util { border-left-color: var(--util-accent); }
 .tile-util .tool-ico { background: var(--util-accent); color: #EDF1F4; }
 
@@ -632,6 +634,12 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 .article .fig { margin: 18px 0 22px; }
 .article .fig svg { width: 100%; height: auto; display: block; }
 .article .fig-caption { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+.article .install-fig {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 10px 10px;
+}
 .article .callout {
   background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--green); color: var(--ink);
   border-radius: 8px; padding: 14px 16px; font-size: 12.5px; line-height: 1.6; margin-top: 8px;

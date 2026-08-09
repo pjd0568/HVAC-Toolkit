@@ -5,29 +5,6 @@
 <div class="v2-greeting">Welcome</div>
 <div class="v2-greeting-sub">Bright, focused calculators for field and desktop.</div>
 
-<article class="v2-card v2-install" id="install">
-  <h2>Add to Home Screen</h2>
-  <p>Install this toolkit like an app on your phone — full screen, one tap from your Home Screen.</p>
-
-  <h3 class="v2-install-h">iPhone &amp; iPad (Safari)</h3>
-  <ol class="v2-install-steps">
-    <li>Open this site in <strong>Safari</strong> (not Chrome or an in-app browser).</li>
-    <li>Tap the <strong>Share</strong> button (square with an arrow).</li>
-    <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>
-    <li>Tap <strong>Add</strong>.</li>
-  </ol>
-
-  <h3 class="v2-install-h">Android (Chrome)</h3>
-  <ol class="v2-install-steps">
-    <li>Open this site in <strong>Chrome</strong>.</li>
-    <li>Tap the menu <strong>⋮</strong> (top right).</li>
-    <li>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
-    <li>Confirm with <strong>Install</strong> or <strong>Add</strong>.</li>
-  </ol>
-
-  <p class="v2-install-note">After installing, open from the Home Screen icon for the full-screen app experience. More detail is in <a href="{{ url_for('help.index') }}#install">Help</a>.</p>
-</article>
-
 <div class="v2-section-label">Design suites</div>
 
 <article class="v2-card">
@@ -65,7 +42,7 @@
 <div class="v2-section-label">Reference</div>
 <article class="v2-card">
   <ul class="v2-card-links">
-    <li><a href="#install">Add to Home Screen</a></li>
+    <li><a href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">Add to mobile homescreen</a></li>
     <li><a href="{{ url_for('guides.index') }}">Design guides</a></li>
     <li><a href="{{ url_for('methodology.index') }}">Methodology &amp; limitations</a></li>
     <li><a href="{{ url_for('help.index') }}">Help</a></li>
