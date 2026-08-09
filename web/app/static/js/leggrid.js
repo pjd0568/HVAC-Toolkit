@@ -476,9 +476,43 @@
       else el.classList.remove("leg-grid-row-error");
     }
 
+    // Relative column shares (sum = 1). Used to fill the wrap width exactly.
+    var COL_SHARES = [
+      ["item", 0.045],
+      ["type", 0.115],
+      ["shape", 0.08],
+      ["volume", 0.10],
+      ["size", 0.12],
+      ["velocity", 0.085],
+      ["vp", 0.09],
+      ["pam", 0.09],
+      ["detail", 0.11],
+      ["pd", 0.10],
+      ["_del", 0.045]
+    ];
+
+    function relayoutGrid() {
+      if (!table) return;
+      var wrap = mount.parentElement || mount;
+      var total = wrap.clientWidth;
+      if (!total || total < 200) return;
+      // Leave 1px for borders so we don't overflow and spawn a scrollbar.
+      var usable = total - 2;
+      var used = 0;
+      COL_SHARES.forEach(function (pair, idx) {
+        var px = (idx === COL_SHARES.length - 1)
+          ? Math.max(28, usable - used)
+          : Math.max(28, Math.floor(usable * pair[1]));
+        used += px;
+        try {
+          table.setColumnWidth(pair[0], px);
+        } catch (e) { /* column may not exist yet */ }
+      });
+    }
+
     table = new Tabulator(mount, {
       data: (INITIAL.rows || []).map(gridRowFromApi),
-      layout: "fitColumns",
+      layout: "fitData",
       reactiveData: false,
       selectableRows: false,
       rowHeight: 22,
@@ -487,15 +521,13 @@
       rowFormatter: rowFormatter,
       columns: [
         {
-          title: "Item", field: "item", width: 40, minWidth: 36,
-          widthGrow: 0, widthShrink: 0,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          title: "Item", field: "item",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           formatter: function (cell) { return String(cell.getRow().getPosition(true)); }
         },
         {
-          title: "Type", field: "type", width: 78, minWidth: 64,
-          widthGrow: 1.1, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          title: "Type", field: "type",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "list", editorParams: { values: typeValues() },
           formatter: function (cell) {
             var map = { straight: "Straight", flex: "Flex", fitting: "Fitting", accessory: "Accessory" };
@@ -504,9 +536,8 @@
           editable: isEditable
         },
         {
-          title: "Shape", field: "shape", width: 58, minWidth: 48,
-          widthGrow: 0.7, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          title: "Shape", field: "shape",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "list", editorParams: { values: shapeValues() },
           formatter: function (cell) {
             var map = { circular: "Circ", rectangular: "Rect", flat_oval: "FO" };
@@ -515,43 +546,35 @@
           editable: isEditable
         },
         {
-          title: "Volume", field: "volume", width: 68, minWidth: 56,
-          widthGrow: 1, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          title: "Volume", field: "volume",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "input", editable: isEditable
         },
         {
-          title: "Dia/AxB", field: "size", width: 80, minWidth: 64,
-          widthGrow: 1.2, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          title: "Dia/AxB", field: "size",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "input", editable: isEditable
         },
         {
-          title: "Vel", field: "velocity", width: 56, minWidth: 48,
-          widthGrow: 0.8, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
+          title: "Vel", field: "velocity",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
         },
         {
-          title: "VP", field: "vp", width: 62, minWidth: 52,
-          widthGrow: 0.9, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
+          title: "VP", field: "vp",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
         },
         {
-          title: "Pa/m", field: "pam", width: 62, minWidth: 52,
-          widthGrow: 0.9, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
+          title: "Pa/m", field: "pam",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false, editable: false
         },
         {
-          title: "m", field: "detail", width: 70, minWidth: 52,
-          widthGrow: 1.3, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false,
-          editor: detailEditor, formatter: detailFormatter, editable: isEditable,
-          tooltip: true
+          title: "m", field: "detail",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          editor: detailEditor, formatter: detailFormatter, editable: isEditable, tooltip: true
         },
         {
-          title: "PD", field: "pd", width: 64, minWidth: 52,
-          widthGrow: 1, widthShrink: 1,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false,
+          title: "PD", field: "pd",
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "input", editable: isEditable,
           formatter: function (cell) {
             var d = cell.getRow().getData();
@@ -569,9 +592,8 @@
           }
         },
         {
-          title: "", field: "_del", width: 36, minWidth: 32,
-          widthGrow: 0, widthShrink: 0,
-          hozAlign: "center", headerSort: false,
+          title: "", field: "_del",
+          hozAlign: "center", headerSort: false, resizable: false,
           formatter: function () {
             return "<button type=\"button\" class=\"btn-ghost leg-grid-remove\" aria-label=\"Remove row\">✕</button>";
           },
@@ -583,13 +605,19 @@
       ]
     });
 
-    // Refit columns when the panel width changes (composer / window resize).
+    table.on("tableBuilt", function () { relayoutGrid(); });
+    table.on("dataProcessed", function () { relayoutGrid(); });
+
+    // Refit columns when the panel width changes.
     if (typeof ResizeObserver !== "undefined") {
+      var roTimer = null;
       var ro = new ResizeObserver(function () {
-        if (table) table.redraw(true);
+        clearTimeout(roTimer);
+        roTimer = setTimeout(relayoutGrid, 50);
       });
-      ro.observe(panel);
+      ro.observe(mount.parentElement || panel);
     }
+    window.addEventListener("resize", function () { relayoutGrid(); });
 
     table.on("cellEdited", function (cell) {
       if (applying) return;

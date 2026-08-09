@@ -1230,20 +1230,10 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 .leg-grid-wrap {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid #111;
   background: #fff;
-}
-.leg-grid-wrap::-webkit-scrollbar { height: 10px; -webkit-appearance: none; }
-.leg-grid-wrap::-webkit-scrollbar-track { background: #EEF1F5; }
-.leg-grid-wrap::-webkit-scrollbar-thumb {
-  background: #B8C0CC;
-  border: 2px solid #EEF1F5;
-  border-radius: 5px;
 }
 
 #leg-grid.tabulator,
@@ -1253,6 +1243,15 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   background: #fff;
   width: 100% !important;
   max-width: 100%;
+  box-sizing: border-box;
+}
+#leg-grid .tabulator-header,
+#leg-grid .tabulator-tableholder,
+#leg-grid .tabulator-table {
+  width: 100% !important;
+}
+#leg-grid .tabulator-tableholder {
+  overflow-x: hidden !important;
 }
 #leg-grid .tabulator-header {
   background: #f0f0f0;
