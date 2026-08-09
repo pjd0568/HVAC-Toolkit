@@ -1,26 +1,36 @@
 {# Shared Design Inputs form for Pipe Sizer and Pipe System PD. #}
 
-{% macro pipe_duty_form(fields, fluids, materials, applications, glycol_options_by_fluid, U, system=None) %}
-<div class="panel tile-water-border">
-  <div class="panel-head">Design Inputs</div>
-  <div class="panel-body">
-    <form method="get" id="pipe-form">
-      <div class="form-grid four">
-        <div style="grid-column:1/-1;">
-          <label>Flow</label>
-          <div class="mode-tabs">
-            <label class="mode-tab">
-              <input type="radio" name="mode" value="from_load" {{ 'checked' if fields.mode == 'from_load' }}>
-              Calculate from load
-            </label>
-            <label class="mode-tab">
-              <input type="radio" name="mode" value="flow_known" {{ 'checked' if fields.mode == 'flow_known' }}>
-              Flow known
-            </label>
-          </div>
+{% macro pipe_duty_form(fields, fluids, materials, applications, glycol_options_by_fluid, U, system=None, title='Design Inputs', help_body=None) %}
+<div class="panel tile-water-border pipe-duty-panel">
+  {% if help_body %}
+  <details class="panel-help">
+    <summary class="panel-head" aria-label="{{ title }}. How to use">
+      <span>{{ title }}</span>
+      <span class="help-inline-mark" aria-hidden="true">?</span>
+    </summary>
+    <div class="panel-help-body">{{ help_body }}</div>
+  </details>
+  {% else %}
+  <div class="panel-head">{{ title }}</div>
+  {% endif %}
+  <div class="panel-body pipe-duty-body">
+    <form method="get" id="pipe-form" class="pipe-duty-form">
+      <div class="pipe-duty-mode">
+        <span class="pipe-duty-mode-label">Flow</span>
+        <div class="mode-tabs pipe-duty-mode-tabs">
+          <label class="mode-tab">
+            <input type="radio" name="mode" value="from_load" {{ 'checked' if fields.mode == 'from_load' }}>
+            From load
+          </label>
+          <label class="mode-tab">
+            <input type="radio" name="mode" value="flow_known" {{ 'checked' if fields.mode == 'flow_known' }}>
+            Flow known
+          </label>
         </div>
+      </div>
 
-        <div>
+      <div class="pipe-duty-grid">
+        <div class="pipe-duty-field">
           <label for="application">Application</label>
           <select id="application" name="application">
             {% for key, label in applications.items() %}
@@ -29,7 +39,7 @@
           </select>
         </div>
 
-        <div>
+        <div class="pipe-duty-field">
           <label for="fluid">Fluid</label>
           <select id="fluid" name="fluid">
             {% for key, label in fluids.items() %}
@@ -38,8 +48,8 @@
           </select>
         </div>
 
-        <div id="glycol-field" {% if fields.fluid == 'water' %}style="display:none"{% endif %}>
-          <label for="glycol_pct">Glycol concentration (% v/v)</label>
+        <div class="pipe-duty-field" id="glycol-field" {% if fields.fluid == 'water' %}style="display:none"{% endif %}>
+          <label for="glycol_pct">Glycol % v/v</label>
           <select id="glycol_pct" name="glycol_pct">
             {% for opt in glycol_options_by_fluid.get(fields.fluid, []) %}
             <option value="{{ opt.pct }}" {{ 'selected' if fields.glycol_pct == opt.pct|string }}>{{ opt.label }}</option>
@@ -47,8 +57,8 @@
           </select>
         </div>
 
-        <div>
-          <label for="material">Pipe material</label>
+        <div class="pipe-duty-field">
+          <label for="material">Material</label>
           <select id="material" name="material">
             {% for key, label in materials.items() %}
             <option value="{{ key }}" {{ 'selected' if fields.material == key }}>{{ label }}</option>
@@ -56,24 +66,28 @@
           </select>
         </div>
 
-        <div id="load-field" {% if fields.mode != 'from_load' %}style="display:none"{% endif %}>
+        <div class="pipe-duty-field" id="load-field" {% if fields.mode != 'from_load' %}style="display:none"{% endif %}>
           <label for="load">Load ({{ U.sym('power') }})</label>
           <input id="load" name="load" value="{{ fields.load }}" inputmode="decimal">
         </div>
 
-        <div id="flow-field" {% if fields.mode != 'flow_known' %}style="display:none"{% endif %}>
+        <div class="pipe-duty-field" id="flow-field" {% if fields.mode != 'flow_known' %}style="display:none"{% endif %}>
           <label for="flow_ls">Flow (l/s)</label>
           <input id="flow_ls" name="flow_ls" value="{{ fields.flow_ls }}" inputmode="decimal">
         </div>
 
-        <div>
-          <label for="delta_t">ΔT ({% if U.system == 'IP' %}°F{% else %}K{% endif %} difference)</label>
+        <div class="pipe-duty-field">
+          <label for="delta_t">ΔT ({% if U.system == 'IP' %}°F{% else %}K{% endif %})</label>
           <input id="delta_t" name="delta_t" value="{{ fields.delta_t }}" inputmode="decimal">
         </div>
 
-        <div>
-          <label for="lwt">LWT — leaving water temp ({{ U.sym('temperature') }})</label>
+        <div class="pipe-duty-field">
+          <label for="lwt">LWT ({{ U.sym('temperature') }})</label>
           <input id="lwt" name="lwt" value="{{ fields.lwt }}" inputmode="decimal">
+        </div>
+
+        <div class="pipe-duty-actions">
+          <button class="btn-accent" type="submit">Calculate</button>
         </div>
       </div>
 
@@ -84,13 +98,19 @@
       <input type="hidden" name="lift" id="lift-hidden"
              value="{{ system.head.fields.lift if system.head else '0' }}">
       {% endif %}
-
-      <div style="margin-top:14px;">
-        <button class="btn-accent" type="submit">Calculate</button>
-      </div>
     </form>
   </div>
 </div>
+{% endmacro %}
+
+{% macro pipe_sizer_help() %}
+Friction loss uses Darcy–Weisbach with Colebrook–White (CIBSE Guide C).
+Velocity traffic lights use <strong>per-DN bands</strong> (not a flat 1.5&nbsp;m/s
+limit): DN&nbsp;15–50 ideal 0.8–1.2&nbsp;m/s (max 1.5, matching CIBSE Guide C
+Table&nbsp;2.2 for small pipe); DN&nbsp;65–150 ideal 1.2–1.8 (max 2.5); DN&nbsp;200+
+ideal 1.8–2.5 (max 3.0). ΔP/L bands are a lifecycle-cost framing
+(ideal 200–300&nbsp;Pa/m) — see the design-limits guide.
+<strong>Green</strong> = ideal · <strong>amber</strong> = border · <strong>red</strong> = outside range.
 {% endmacro %}
 
 {% macro pipe_duty_scripts(glycol_options_by_fluid) %}

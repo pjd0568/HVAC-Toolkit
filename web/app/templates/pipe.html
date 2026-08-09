@@ -1,23 +1,17 @@
 {% extends "base.html" %}
 {% from "_report_form.html" import report_form %}
-{% from "_pipe_duty.html" import pipe_duty_form, pipe_duty_scripts %}
+{% from "_pipe_duty.html" import pipe_duty_form, pipe_duty_scripts, pipe_sizer_help %}
 {% block page_title %}Hydronics - Pipe Sizing{% endblock %}
 {% block content %}
-
-<div class="note-banner">
-  Friction loss uses Darcy–Weisbach with Colebrook–White (CIBSE Guide C).
-  Velocity traffic lights use <strong>per-DN bands</strong> (not a flat 1.5&nbsp;m/s
-  limit): DN&nbsp;15–50 ideal 0.8–1.2&nbsp;m/s (max 1.5, matching CIBSE Guide C
-  Table&nbsp;2.2 for small pipe); DN&nbsp;65–150 ideal 1.2–1.8 (max 2.5); DN&nbsp;200+
-  ideal 1.8–2.5 (max 3.0). ΔP/L bands are a lifecycle-cost framing
-  (ideal 200–300&nbsp;Pa/m) — see the design-limits guide.
-  <strong>Green</strong> = ideal · <strong>amber</strong> = border · <strong>red</strong> = outside range.
-</div>
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="pipe-page-stack">
-{{ pipe_duty_form(fields, fluids, materials, applications, glycol_options_by_fluid, U) }}
+{{ pipe_duty_form(
+     fields, fluids, materials, applications, glycol_options_by_fluid, U,
+     title='Pipe Sizing',
+     help_body=pipe_sizer_help()
+) }}
 
 {% if flow_display %}
 <div class="panel tile-water-border">
