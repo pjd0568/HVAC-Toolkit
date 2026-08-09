@@ -212,5 +212,6 @@
 
 {% block extra_scripts %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
+<script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
 <script src="{{ url_for('static', filename='js/ductsizer.js') }}"></script>
 {% endblock %}

@@ -49,7 +49,7 @@ def normalize_database_url(url: str | None) -> str | None:
 
 def database_url_from_env() -> str:
     return normalize_database_url(
-        os.environ.get("DATABASE_URL", "postgresql://app:app@db:5432/app")
+        os.environ.get("DATABASE_URL", "postgresql://app:app@127.0.0.1:5432/app")
     )  # type: ignore[return-value]
 
 

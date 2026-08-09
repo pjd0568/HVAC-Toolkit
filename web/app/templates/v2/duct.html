@@ -255,7 +255,8 @@
 
 {% block extra_scripts %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
-<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=rect-wh-5"></script>
+<script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=rect-wh-6"></script>
 <script>
 (function(){
   var tabs=document.getElementById('v2-shape-tabs');

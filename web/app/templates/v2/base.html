@@ -12,7 +12,8 @@
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-43">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-19">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-20">
+<script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
 {% block extra_head %}{% endblock %}
 </head>
 <body class="v2-body">
@@ -52,7 +53,7 @@
     </div>
 
     <div class="v2-nav-drop {{ 'active' if nav == 'pipe' }}">
-      <button type="button" class="v2-nav-drop-btn" aria-expanded="false" aria-haspopup="true">Water</button>
+      <button type="button" class="v2-nav-drop-btn" aria-expanded="false" aria-haspopup="true">Hydronics</button>
       <div class="v2-nav-drop-menu" role="menu">
         {% if access.can('pipe.sizer') %}
         <a href="{{ url_for('v2.pipe') }}" role="menuitem" class="{{ 'active' if active == 'pipe' }}">Pipe sizing</a>
@@ -180,7 +181,7 @@
   </a>
   <a href="{{ url_for('v2.water_picker') }}" class="v2-dock-item {{ 'active' if nav == 'pipe' }}">
     <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16M17 4v16M7 8h10M7 16h10"/></svg></span>
-    <span class="v2-dock-label">Water</span>
+    <span class="v2-dock-label">Hydronics</span>
   </a>
   <a href="{{ url_for('v2.more') }}" class="v2-dock-item {{ 'active' if nav == 'more' }}">
     <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></span>
@@ -188,7 +189,7 @@
   </a>
 </nav>
 
-<script src="{{ url_for('static', filename='js/v2_shell.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/v2_shell.js') }}?v=3"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {

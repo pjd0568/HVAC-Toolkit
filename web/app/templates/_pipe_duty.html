@@ -118,10 +118,26 @@ ideal 1.8–2.5 (max 3.0). ΔP/L bands are a lifecycle-cost framing
 {% endmacro %}
 
 {% macro pipe_duty_scripts(glycol_options_by_fluid) %}
+<script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
 <script>
 (function () {
   var form = document.getElementById('pipe-form');
   if (!form) return;
+
+  // Pipe sizer page only (system module owns its own restore/save).
+  var isSystemPage = !!document.getElementById('sys-panel');
+  if (!isSystemPage && window.HvacDraft) {
+    var dutyFallback = [HvacDraft.KEYS.pipeDuty];
+    // If coming from pipe system, reuse Design Inputs even without a sizer draft.
+    var sysDraft = HvacDraft.load(HvacDraft.KEYS.pipeSystem);
+    if (sysDraft) {
+      var fromSys = HvacDraft.pick(sysDraft, HvacDraft.PIPE_DUTY_KEYS);
+      if (Object.keys(fromSys).length) {
+        HvacDraft.save(HvacDraft.KEYS.pipeDuty, fromSys);
+      }
+    }
+    if (HvacDraft.restoreViaReload(HvacDraft.KEYS.pipeSizer, dutyFallback)) return;
+  }
 
   function syncMode() {
     var mode = (form.querySelector('input[name="mode"]:checked') || {}).value || 'from_load';
@@ -157,12 +173,44 @@ ideal 1.8–2.5 (max 3.0). ΔP/L bands are a lifecycle-cost framing
     }
   }
 
+  function savePipeDraft() {
+    if (!window.HvacDraft || isSystemPage) return;
+    var params = new URLSearchParams();
+    var fd = new FormData(form);
+    fd.forEach(function (value, key) {
+      if (value !== null && value !== undefined && String(value) !== '') {
+        params.set(key, String(value));
+      }
+    });
+    var mode = form.querySelector('input[name="mode"]:checked');
+    if (mode) params.set('mode', mode.value);
+    HvacDraft.save(HvacDraft.KEYS.pipeSizer, params);
+    var duty = {};
+    HvacDraft.PIPE_DUTY_KEYS.forEach(function (k) {
+      if (params.has(k)) duty[k] = params.get(k);
+    });
+    HvacDraft.save(HvacDraft.KEYS.pipeDuty, duty);
+  }
+
   form.querySelectorAll('input[name="mode"]').forEach(function (el) {
     el.addEventListener('change', syncMode);
   });
   var fluidSel = document.getElementById('fluid');
   if (fluidSel) fluidSel.addEventListener('change', syncFluid);
   syncFluid();
+
+  form.addEventListener('submit', function () { savePipeDraft(); });
+  window.addEventListener('pagehide', function () { savePipeDraft(); });
+  // Capture current URL state after Calculate (server rendered with query).
+  if (!isSystemPage && window.HvacDraft && !HvacDraft.urlIsBare()) {
+    HvacDraft.saveFromUrl(HvacDraft.KEYS.pipeSizer);
+    var urlParams = new URLSearchParams(window.location.search);
+    var dutyFromUrl = {};
+    HvacDraft.PIPE_DUTY_KEYS.forEach(function (k) {
+      if (urlParams.has(k)) dutyFromUrl[k] = urlParams.get(k);
+    });
+    HvacDraft.save(HvacDraft.KEYS.pipeDuty, dutyFromUrl);
+  }
 
   document.addEventListener('focus', function (e) {
     var el = e.target;

@@ -30,6 +30,19 @@
     var stage = document.getElementById("sys-stage");
     if (!form || !mount || !panel || typeof Tabulator === "undefined") return;
 
+    var restoreParams = null;
+    if (window.HvacDraft && HvacDraft.urlIsBare()) {
+      var sysDraft = HvacDraft.load(HvacDraft.KEYS.pipeSystem);
+      if (sysDraft && HvacDraft.rowCount(sysDraft, "sys") > 0) {
+        restoreParams = HvacDraft.toParams(sysDraft);
+      } else {
+        var dutyDraft = HvacDraft.load(HvacDraft.KEYS.pipeDuty) || HvacDraft.load(HvacDraft.KEYS.pipeSizer);
+        if (dutyDraft && Object.keys(dutyDraft).length) {
+          restoreParams = HvacDraft.toParams(dutyDraft);
+        }
+      }
+    }
+
     var PIPE_BASE = (window.PIPE_API_BASE || window.location.pathname).replace(/\/$/, "");
     var API_URL = PIPE_BASE + "/api/system-state";
     var CSV_URL = PIPE_BASE + "/system/export.csv";
@@ -54,6 +67,7 @@
 
     var applying = false;
     var table = null;
+    var lastGoodParams = null;
 
     function typeValues() {
       var o = {};
@@ -368,11 +382,57 @@
       syncReportForm(system);
     }
 
-    function replaceUrl() {
-      var params = buildParams();
-      var qs = params.toString();
+    function paramsFromSystemApi(system) {
+      var params = readDesignParams();
+      var head = system.head || {};
+      var hf = head.fields || {};
+      var circuit = hf.circuit || "pressurised";
+      var circuitEl = panel.querySelector('input[name="circuit_ui"]:checked');
+      if (circuitEl) circuit = circuitEl.value;
+      params.set("circuit", circuit);
+      var liftEl = document.getElementById("lift");
+      params.set("lift", (liftEl && liftEl.value) || hf.lift || "0");
+
+      var rows = system.rows || [];
+      params.set("sys_row_count", String(system.row_count != null ? system.row_count : rows.length));
+      params.set("sys_safety_margin", String(Math.round(system.safety_margin || 0)));
+      rows.forEach(function (row, i) {
+        var raw = row.raw || {};
+        var idx = row.index != null ? row.index : i;
+        ROW_FIELDS.forEach(function (f) {
+          params.set("sys_" + f + "_" + idx, raw[f] == null ? "" : String(raw[f]));
+        });
+      });
+      var stageRaw = system.stage_raw || {};
+      ROW_FIELDS.forEach(function (f) {
+        params.set("stage_" + f, stageRaw[f] == null ? "" : String(stageRaw[f]));
+      });
+      return params;
+    }
+
+    function persistDraft(params, opts) {
+      opts = opts || {};
+      var p = params || lastGoodParams;
+      if (!p) return;
+      var qs = p.toString();
       var url = window.location.pathname + (qs ? "?" + qs : "");
       history.replaceState(null, "", url);
+      if (window.HvacDraft) {
+        if (HvacDraft.saveProtectRows(HvacDraft.KEYS.pipeSystem, p, "sys", opts)) {
+          lastGoodParams = p;
+        }
+        var duty = {};
+        HvacDraft.PIPE_DUTY_KEYS.forEach(function (k) {
+          if (p.has(k)) duty[k] = p.get(k);
+        });
+        HvacDraft.save(HvacDraft.KEYS.pipeDuty, duty);
+      } else {
+        lastGoodParams = p;
+      }
+    }
+
+    function replaceUrl() {
+      persistDraft(lastGoodParams);
     }
 
     function refreshDnSelect(selected) {
@@ -395,34 +455,43 @@
     function applySystemState(system, opts) {
       opts = opts || {};
       applying = true;
-      try {
-        TYPE_OPTIONS = system.type_options || TYPE_OPTIONS;
-        DN_OPTIONS = system.dn_options || DN_OPTIONS;
-        FITTING_GROUPS = system.fitting_groups || FITTING_GROUPS;
-        dutyFlowLs = system.duty_flow_ls || dutyFlowLs;
-        pressureSym = system.velocity_pressure_sym || pressureSym;
-        if (system.default_row_raw) DEFAULT_RAW = system.default_row_raw;
 
-        refreshDnSelect(system.stage_raw && system.stage_raw.dn);
-        var flowIn = document.getElementById("stage_flow_ls");
-        if (flowIn) flowIn.placeholder = dutyFlowLs || "";
+      function finish() {
+        try {
+          TYPE_OPTIONS = system.type_options || TYPE_OPTIONS;
+          DN_OPTIONS = system.dn_options || DN_OPTIONS;
+          FITTING_GROUPS = system.fitting_groups || FITTING_GROUPS;
+          dutyFlowLs = system.duty_flow_ls || dutyFlowLs;
+          pressureSym = system.velocity_pressure_sym || pressureSym;
+          if (system.default_row_raw) DEFAULT_RAW = system.default_row_raw;
 
-        if (!opts.previewOnly) {
-          table.replaceData((system.rows || []).map(gridRowFromApi));
+          refreshDnSelect(system.stage_raw && system.stage_raw.dn);
+          var flowIn = document.getElementById("stage_flow_ls");
+          if (flowIn) flowIn.placeholder = dutyFlowLs || "";
+
+          updateStagePreview(system);
+          applyTotals(system);
+          applyHeadState(system.head);
+          persistDraft(paramsFromSystemApi(system), opts);
+          rewriteSizeLinks();
+          showError(null);
+        } finally {
+          applying = false;
         }
-        updateStagePreview(system);
-        applyTotals(system);
-        applyHeadState(system.head);
-        replaceUrl();
-        rewriteSizeLinks();
-        showError(null);
-      } finally {
-        applying = false;
       }
+
+      if (!opts.previewOnly) {
+        return Promise.resolve(table.replaceData((system.rows || []).map(gridRowFromApi)))
+          .then(finish)
+          .catch(finish);
+      }
+      finish();
+      return Promise.resolve(system);
     }
 
     function fetchSystem(overrides, opts) {
-      var params = buildParams(opts);
+      opts = opts || {};
+      var params = opts.params ? new URLSearchParams(opts.params.toString()) : buildParams(opts);
       if (overrides) {
         Object.keys(overrides).forEach(function (k) { params.set(k, overrides[k]); });
       }
@@ -431,8 +500,7 @@
       })
         .then(function (resp) { return resp.json(); })
         .then(function (data) {
-          applySystemState(data, opts);
-          return data;
+          return applySystemState(data, opts).then(function () { return data; });
         })
         .catch(function () {
           showError("Could not reach the server — check your connection and try again.");
@@ -699,7 +767,7 @@
         table.replaceData([]).then(function () {
           applying = false;
           if (safetyMargin) safetyMargin.value = "0";
-          fetchSystem();
+          fetchSystem(null, { allowEmpty: true });
         });
       });
     }
@@ -747,11 +815,19 @@
     updateStagePreview(INITIAL);
     applyHeadState(INITIAL.head);
     rewriteSizeLinks();
-    if ((INITIAL.rows || []).length) {
+    if (restoreParams) {
+      lastGoodParams = restoreParams;
+      fetchSystem(null, { params: restoreParams });
+    } else if ((INITIAL.rows || []).length) {
+      persistDraft(paramsFromSystemApi(INITIAL));
       fetchSystem();
     } else {
       fetchSystem(null, { previewOnly: true });
     }
+
+    window.addEventListener("pagehide", function () {
+      try { persistDraft(lastGoodParams); } catch (e) { /* ignore */ }
+    });
   }
 
   if (document.readyState === "loading") {

@@ -82,10 +82,16 @@
   var form = document.getElementById("duct-form");
   if (!form) return;
 
+  if (window.HvacDraft && HvacDraft.restoreViaReload(HvacDraft.KEYS.ductSizer)) return;
+
   var API_BASE = (window.DUCT_API_BASE || window.location.pathname).replace(/\/$/, "");
   var API_STATE_URL = API_BASE + "/api/state";
   var NUDGE_STEP = parseFloat(form.dataset.nudgeStep || "10");
   var ROUND25_STEP = parseFloat(form.dataset.round25Step || "25");
+
+  if (window.HvacDraft && !HvacDraft.urlIsBare()) {
+    HvacDraft.saveFromUrl(HvacDraft.KEYS.ductSizer);
+  }
 
   var els = {
     volume: document.getElementById("f-volume"),
@@ -358,6 +364,7 @@
     });
     var newUrl = window.location.pathname + "?" + p.toString();
     window.history.replaceState(null, "", newUrl);
+    if (window.HvacDraft) HvacDraft.save(HvacDraft.KEYS.ductSizer, p);
   }
 
   function fetchState(overrides, opts) {

@@ -30,6 +30,18 @@
     var stage = document.getElementById("leg-stage");
     if (!mount || !panel || typeof Tabulator === "undefined") return;
 
+    var restoreParams = null;
+    if (window.HvacDraft) {
+      if (HvacDraft.urlIsBare()) {
+        var draft = HvacDraft.load(HvacDraft.KEYS.ductIndexLeg);
+        if (draft && HvacDraft.rowCount(draft, "leg") > 0) {
+          restoreParams = HvacDraft.toParams(draft);
+        }
+      } else {
+        HvacDraft.saveFromUrl(HvacDraft.KEYS.ductIndexLeg);
+      }
+    }
+
     var INITIAL = window.DUCT_LEG_INITIAL || {};
     var LEG_API_URL = (window.DUCT_API_BASE || window.location.pathname).replace(/\/$/, "") + "/api/leg-state";
     var TYPE_OPTIONS = INITIAL.type_options || [];
@@ -54,6 +66,7 @@
 
     var applying = false;
     var table = null;
+    var lastGoodParams = null;
 
     function typeValues() {
       var o = {};
@@ -376,24 +389,75 @@
       syncReportForm(leg);
     }
 
-    function applyLegState(leg, opts) {
+    function paramsFromLegApi(leg) {
+      var p = new URLSearchParams();
+      var rows = leg.rows || [];
+      p.set("leg_row_count", String(leg.row_count != null ? leg.row_count : rows.length));
+      p.set("leg_safety_margin", String(Math.round(leg.safety_margin || 0)));
+      rows.forEach(function (row, i) {
+        var raw = row.raw || {};
+        var idx = row.index != null ? row.index : i;
+        ROW_FIELDS.forEach(function (f) {
+          var v = raw[f];
+          if (f === "type") v = row.type || raw.type || "";
+          if (f === "shape") v = row.shape || raw.shape || "";
+          if (f === "fitting") v = row.fitting_key || raw.fitting || "";
+          p.set("leg_" + f + "_" + idx, v == null ? "" : String(v));
+        });
+      });
+      var stageRaw = leg.stage_raw || {};
+      ROW_FIELDS.forEach(function (f) {
+        p.set("stage_" + f, stageRaw[f] == null ? "" : String(stageRaw[f]));
+      });
+      return p;
+    }
+
+    function persistDraft(params, opts) {
       opts = opts || {};
-      applying = true;
-      try {
-        if (!opts.previewOnly) {
-          var rows = (leg.rows || []).map(gridRowFromApi);
-          table.replaceData(rows);
+      // Never rebuild from a live/tearing-down grid on unload — only persist
+      // an explicit snapshot (API payload) or the last known-good params.
+      var p = params || lastGoodParams;
+      if (!p) return;
+      var qs = p.toString();
+      var url = window.location.pathname + (qs ? "?" + qs : "");
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, "", url);
+      }
+      if (window.HvacDraft) {
+        if (HvacDraft.saveProtectRows(HvacDraft.KEYS.ductIndexLeg, p, "leg", opts)) {
+          lastGoodParams = p;
         }
-        updateStagePreview(leg);
-        applyTotals(leg);
-        showError(null);
-      } finally {
-        applying = false;
+      } else {
+        lastGoodParams = p;
       }
     }
 
+    function applyLegState(leg, opts) {
+      opts = opts || {};
+      applying = true;
+
+      function finish() {
+        try {
+          updateStagePreview(leg);
+          applyTotals(leg);
+          persistDraft(paramsFromLegApi(leg), opts);
+          showError(null);
+        } finally {
+          applying = false;
+        }
+      }
+
+      if (!opts.previewOnly) {
+        var rows = (leg.rows || []).map(gridRowFromApi);
+        return Promise.resolve(table.replaceData(rows)).then(finish).catch(finish);
+      }
+      finish();
+      return Promise.resolve(leg);
+    }
+
     function fetchLegState(overrides, opts) {
-      var params = buildLegParams(opts);
+      opts = opts || {};
+      var params = opts.params ? new URLSearchParams(opts.params.toString()) : buildLegParams(opts);
       if (overrides) {
         Object.keys(overrides).forEach(function (k) { params.set(k, overrides[k]); });
       }
@@ -402,8 +466,7 @@
       })
         .then(function (resp) { return resp.json(); })
         .then(function (data) {
-          applyLegState(data, opts);
-          return data;
+          return applyLegState(data, opts).then(function () { return data; });
         })
         .catch(function () {
           showError("Could not reach the server — check your connection and try again.");
@@ -688,7 +751,7 @@
         table.replaceData([]).then(function () {
           applying = false;
           if (safetyMargin) safetyMargin.value = "0";
-          fetchLegState();
+          fetchLegState(null, { allowEmpty: true });
         });
       });
     }
@@ -700,11 +763,22 @@
 
     applyTotals(INITIAL);
     updateStagePreview(INITIAL);
-    if ((INITIAL.rows || []).length) {
+
+    if (restoreParams) {
+      lastGoodParams = restoreParams;
+      fetchLegState(null, { params: restoreParams });
+    } else if ((INITIAL.rows || []).length) {
+      persistDraft(paramsFromLegApi(INITIAL));
       fetchLegState();
     } else {
+      // Staging preview only — must not clobber a saved row draft.
       fetchLegState(null, { previewOnly: true });
     }
+
+    window.addEventListener("pagehide", function () {
+      // Use last known-good snapshot only (never rebuild from a dying grid).
+      try { persistDraft(lastGoodParams); } catch (e) { /* ignore */ }
+    });
   }
 
   if (document.readyState === "loading") {
