@@ -30,7 +30,7 @@
       </div>
 
       <div class="pipe-duty-grid">
-        <div class="pipe-duty-row">
+        <div class="pipe-duty-row{% if fields.fluid != 'water' %} pipe-duty-row-glycol{% endif %}" id="pipe-duty-row-meta">
           <div class="pipe-duty-field">
             <label for="application">Application</label>
             <select id="application" name="application">
@@ -49,7 +49,7 @@
             </select>
           </div>
 
-          <div class="pipe-duty-field" id="glycol-field" {% if fields.fluid == 'water' %}style="display:none"{% endif %}>
+          <div class="pipe-duty-field" id="glycol-field" {% if fields.fluid == 'water' %}hidden{% endif %}>
             <label for="glycol_pct">Glycol % v/v</label>
             <select id="glycol_pct" name="glycol_pct">
               {% for opt in glycol_options_by_fluid.get(fields.fluid, []) %}
@@ -69,12 +69,12 @@
         </div>
 
         <div class="pipe-duty-row">
-          <div class="pipe-duty-field" id="load-field" {% if fields.mode != 'from_load' %}style="display:none"{% endif %}>
+          <div class="pipe-duty-field" id="load-field" {% if fields.mode != 'from_load' %}hidden{% endif %}>
             <label for="load">Load ({{ U.sym('power') }})</label>
             <input id="load" name="load" value="{{ fields.load }}" inputmode="decimal">
           </div>
 
-          <div class="pipe-duty-field" id="flow-field" {% if fields.mode != 'flow_known' %}style="display:none"{% endif %}>
+          <div class="pipe-duty-field" id="flow-field" {% if fields.mode != 'flow_known' %}hidden{% endif %}>
             <label for="flow_ls">Flow (l/s)</label>
             <input id="flow_ls" name="flow_ls" value="{{ fields.flow_ls }}" inputmode="decimal">
           </div>
@@ -127,17 +127,19 @@ ideal 1.8–2.5 (max 3.0). ΔP/L bands are a lifecycle-cost framing
     var mode = (form.querySelector('input[name="mode"]:checked') || {}).value || 'from_load';
     var loadField = document.getElementById('load-field');
     var flowField = document.getElementById('flow-field');
-    if (loadField) loadField.style.display = mode === 'from_load' ? '' : 'none';
-    if (flowField) flowField.style.display = mode === 'flow_known' ? '' : 'none';
+    if (loadField) loadField.hidden = mode !== 'from_load';
+    if (flowField) flowField.hidden = mode !== 'flow_known';
   }
 
   function syncFluid() {
     var fluid = document.getElementById('fluid');
     var glycol = document.getElementById('glycol-field');
     var glycolSel = document.getElementById('glycol_pct');
+    var metaRow = document.getElementById('pipe-duty-row-meta');
     if (!fluid || !glycol || !glycolSel) return;
     var isWater = fluid.value === 'water';
-    glycol.style.display = isWater ? 'none' : '';
+    glycol.hidden = isWater;
+    if (metaRow) metaRow.classList.toggle('pipe-duty-row-glycol', !isWater);
     if (isWater) return;
     var byFluid = {{ glycol_options_by_fluid | tojson }};
     var opts = byFluid[fluid.value] || [];
