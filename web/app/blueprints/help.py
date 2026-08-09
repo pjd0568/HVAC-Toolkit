@@ -19,6 +19,7 @@ HELP_NAV = [
         "group": "Getting Started",
         "sections": [
             {"id": "overview", "title": "How the app works"},
+            {"id": "install", "title": "Add to Home Screen"},
             {"id": "account-billing", "title": "Account, billing & cancel"},
         ],
     },
