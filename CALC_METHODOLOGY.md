@@ -338,8 +338,28 @@ p = 101.325 · (1 − 2.25577×10⁻⁵ · z)^5.2559
 
 **Files:** `engine/src/hvac_engine/processes.py`, `ahu_design.py`  
 **Web glue:** `web/app/blueprints/psychro.py`  
-**Spec:** `specs/SPEC-ahu-processes.md`  
+**Spec:** `specs/SPEC-ahu-processes.md`, `specs/SPEC-interactive-psych-chart.md` (POC process map)  
 **Stated references:** ASHRAE HOF 2017 Ch.1 process relations; ADP/bypass-factor coil model; constant-wet-bulb evaporative cooling; CIBSE Guide B mentioned in spec.
+
+### 2.0 Interactive chart — map any two states (POC)
+
+**What it does:** Describes heat/cool and humidify/dehumidify needed to go from state 1 → 2; with airflow, reports kW and kg/h.
+
+**Formulas:**
+
+```
+ΔT = T2 − T1
+ΔW = W2 − W1
+Δh = h2 − h1
+Q_total = m_da · Δh
+Q_sensible = m_da · (h(T2, W1) − h1)   # constant-moisture leg
+Q_latent = Q_total − Q_sensible
+ṁ_w (kg/h) = m_da · ΔW · 3600
+```
+
+**Source:** `processes.map_state_process`
+
+**Assumptions:** Straight chord on the chart (not a coil ADP model). Mass flow from entering-state specific volume when volumetric flow is given.
 
 ### 2.1 Dry-air mass flow from volume flow (web)
 

@@ -449,3 +449,39 @@ def test_ahu_fan_position_validation():
         proc.simulate_ahu(
             m_da=1.0, outdoor=psy.state(20.0, rh=0.5), fan_position="sideways"
         )
+
+
+# -- Interactive chart process map (SPEC-interactive-psych-chart) ---------------
+
+def test_map_state_process_heat_humidify():
+    a = psy.state(5.0, rh=0.8)
+    b = psy.state(21.0, rh=0.5)
+    r = proc.map_state_process(a, b)
+    assert r.heat_cool == "heat"
+    assert r.moisture_action == "humidify"
+    assert r.delta_t == pytest.approx(16.0, abs=1e-9)
+    assert r.delta_w > 0
+    assert r.q_total is None
+
+
+def test_map_state_process_cool_dehumidify_with_flow():
+    a = psy.state(28.0, rh=0.6)
+    b = psy.state(14.0, rh=0.9)
+    m_da = 1.0  # kg/s
+    r = proc.map_state_process(a, b, m_da=m_da)
+    assert r.heat_cool == "cool"
+    assert r.moisture_action == "dehumidify"
+    assert r.q_total == pytest.approx(m_da * (b.h - a.h), abs=1e-9)
+    assert r.moisture_kg_h == pytest.approx(m_da * (b.w - a.w) * 3600.0, abs=1e-6)
+    h_sens = psy.enthalpy(b.t_db, a.w)
+    assert r.q_sensible == pytest.approx(m_da * (h_sens - a.h), abs=1e-9)
+    assert r.q_latent == pytest.approx(r.q_total - r.q_sensible, abs=1e-9)
+
+
+def test_map_state_process_none_when_identical():
+    a = psy.state(20.0, rh=0.5)
+    r = proc.map_state_process(a, a)
+    assert r.heat_cool == "none"
+    assert r.moisture_action == "none"
+    assert r.delta_t == pytest.approx(0.0, abs=1e-12)
+    assert r.delta_w == pytest.approx(0.0, abs=1e-12)

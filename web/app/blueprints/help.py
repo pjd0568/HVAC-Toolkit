@@ -32,7 +32,7 @@ HELP_NAV = [
     {
         "group": "Psychrometrics",
         "sections": [
-            {"id": "single-point", "title": "Single Point"},
+            {"id": "single-point", "title": "Multi-Point Interactive Chart"},
             {"id": "mixed-air", "title": "Mixed Air"},
             {"id": "cooling-coil", "title": "Cooling Coil"},
             {"id": "desiccant", "title": "Desiccant Dehumidification"},

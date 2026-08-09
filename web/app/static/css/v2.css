@@ -468,6 +468,10 @@ a:hover { color: var(--v2-green-ink); }
   margin: 0 auto;
   padding: 18px 16px 32px;
 }
+/* Interactive psych chart needs full chart width — escape the narrow shell */
+.v2-main:has(.ix-layout) {
+  max-width: min(1180px, 100%);
+}
 
 .v2-flash-stack { margin-bottom: 12px; }
 .v2-flash {
@@ -1351,6 +1355,9 @@ a:hover { color: var(--v2-green-ink); }
     max-width: 920px;
     padding: 24px 28px 48px;
   }
+  .v2-main:has(.ix-layout) {
+    max-width: min(1180px, 100%);
+  }
   .v2-suite-nav { display: inline-flex; }
   .v2-topbar-title {
     margin-left: 8px;
@@ -1373,4 +1380,191 @@ a:hover { color: var(--v2-green-ink); }
   .v2-main .form-grid.psychro-stack {
     grid-template-columns: 1fr 1fr !important;
   }
+}
+
+/* Interactive psych chart POC */
+.ix-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: none;
+}
+.ix-site-panel { margin-bottom: 0; }
+.ix-site-panel .panel-body {
+  padding: 12px 16px;
+}
+.ix-site-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-end;
+}
+.ix-altitude-field {
+  flex: 0 0 auto;
+  min-width: 140px;
+  max-width: 200px;
+}
+.ix-site-row .ix-hint {
+  flex: 1 1 200px;
+  margin: 0;
+  align-self: center;
+}
+.ix-site-row #ix-reset {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.ix-hint {
+  font-size: 13px;
+  color: var(--v2-muted, #5a636e);
+  line-height: 1.4;
+}
+.ix-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v2-ink, #12151a);
+  min-width: 0;
+}
+.ix-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ix-input-wrap input,
+.ix-field select,
+.ix-field input[type="text"],
+.ix-field input[type="number"] {
+  min-height: var(--v2-tap, 44px);
+  padding: 0 10px;
+  border: 1px solid var(--v2-line, #d5dae0);
+  border-radius: var(--v2-radius-sm, 8px);
+  font: inherit;
+  font-weight: 500;
+  background: #fff;
+  min-width: 0;
+  width: 100%;
+}
+.ix-input-wrap .u,
+.ix-field .u {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--v2-muted, #5a636e);
+  white-space: nowrap;
+}
+.ix-chart-panel {
+  width: 100%;
+  max-width: none;
+}
+.ix-chart-body {
+  display: block !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 12px !important;
+  min-height: 0 !important;
+  width: 100%;
+}
+.ix-chart-wrap {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  width: 100%;
+  border-radius: var(--v2-radius-sm, 8px);
+  transition: box-shadow 0.15s ease;
+  background: #fff;
+}
+.ix-chart-wrap.ix-pressing {
+  box-shadow: 0 0 0 3px rgba(0, 169, 157, 0.35);
+}
+.ix-chart-svg {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  max-width: none;
+  min-height: 280px;
+  cursor: crosshair;
+}
+.ix-cursor {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--v2-muted, #5a636e);
+  font-variant-numeric: tabular-nums;
+}
+.ix-count {
+  font-weight: 500;
+  color: var(--v2-muted, #5a636e);
+  margin-left: 6px;
+}
+.ix-empty {
+  margin: 0;
+  color: var(--v2-muted, #5a636e);
+  font-size: 14px;
+}
+.ix-point-card {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--v2-line, #d5dae0);
+}
+.ix-point-card:last-child { border-bottom: 0; }
+.ix-point-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ix-edit-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 10px 0 12px;
+}
+.ix-props { margin-top: 4px; }
+.ix-process-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ix-process-out {
+  background: var(--v2-bg, #f4f6f8);
+  border-radius: var(--v2-radius-sm, 8px);
+  padding: 12px;
+}
+.ix-process-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.ix-process-out ul {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+  line-height: 1.45;
+}
+.ix-rates { margin-top: 12px; }
+.ix-toast {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  background: #12151a;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: var(--v2-radius-sm, 8px);
+  font-size: 13px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(18, 21, 26, 0.18);
+}
+@media (min-width: 720px) {
+  .ix-chart-svg { min-height: 420px; }
+  .ix-edit-row {
+    grid-template-columns: 1fr 1.2fr 1fr auto;
+    align-items: end;
+  }
+  .ix-process-row {
+    grid-template-columns: 1fr 1fr 1.2fr auto;
+    align-items: end;
+  }
+}
+@media (min-width: 1100px) {
+  .ix-chart-svg { min-height: 520px; }
 }

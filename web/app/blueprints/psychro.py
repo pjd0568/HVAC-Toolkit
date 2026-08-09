@@ -1101,3 +1101,250 @@ def adiabatic_cool_chart_png():
     if png is None:
         return Response(f"Could not generate chart image: {err}", status=500)
     return _png_response(png, "psychrometrics-adiabatic-cool-chart.png")
+
+
+# -- Interactive psychrometric chart (POC) -------------------------------------
+
+_INTERACTIVE_POINT_LABELS = ("A", "B", "C", "D")
+_INTERACTIVE_MAX_POINTS = 4
+
+
+def _serialize_state(state: psy.PsychroState, U, *, letter: str, name: str = "") -> dict:
+    """JSON-friendly point for the interactive chart UI (display + SI)."""
+    t_dp = None if state.t_dp < -273 else state.t_dp
+    return {
+        "letter": letter,
+        "name": (name or "").strip()[:48],
+        "label": f"{letter} — {name.strip()}" if (name or "").strip() else letter,
+        "si": {
+            "t_db": state.t_db,
+            "t_wb": state.t_wb,
+            "t_dp": t_dp,
+            "w": state.w,
+            "rh": state.rh,
+            "h": state.h,
+            "v": state.v,
+            "rho": state.rho,
+            "p_w": state.p_w,
+            "p": state.p,
+        },
+        "display": {
+            "t_db": U.fmt("temperature", state.t_db, 2),
+            "t_wb": U.fmt("temperature", state.t_wb, 2),
+            "t_dp": "—" if t_dp is None else U.fmt("temperature", t_dp, 2),
+            "w": U.fmt("humidity_ratio", state.w),
+            "rh": f"{state.rh * 100:.1f}",
+            "h": U.fmt("enthalpy", state.h, 2),
+            "v": U.fmt("specific_volume", state.v),
+            "rho": U.fmt("density", state.rho),
+            "p_w": U.fmt("pressure", state.p_w, 4),
+            "p": U.fmt("pressure", state.p, 3),
+        },
+        "symbols": {
+            "temperature": U.sym("temperature"),
+            "humidity_ratio": U.sym("humidity_ratio"),
+            "enthalpy": U.sym("enthalpy"),
+            "specific_volume": U.sym("specific_volume"),
+            "density": U.sym("density"),
+            "pressure": U.sym("pressure"),
+            "vol_flow": U.sym("vol_flow"),
+        },
+    }
+
+
+def _pressure_from_payload(data, U) -> float:
+    alt_raw = data.get("altitude", "0")
+    try:
+        alt = float(alt_raw) if alt_raw not in (None, "") else 0.0
+    except (TypeError, ValueError) as exc:
+        raise ValueError("altitude must be a number") from exc
+    return psy.pressure_from_altitude(U.to_si("altitude", alt))
+
+
+def _state_from_interactive_payload(data, U, p: float) -> tuple[psy.PsychroState, bool]:
+    """Resolve from chart click (t+w) or edited properties (t + prop/val).
+
+    Returns ``(state, clamped)`` where ``clamped`` is True when a chart click
+    above saturation was pulled down onto the saturation curve.
+    """
+    if "w" in data and data.get("w") not in (None, "") and data.get("prop") in (None, "", "w"):
+        # Chart click or W edit — display-system t and w.
+        t = U.to_si("temperature", float(data["t_db"]))
+        w = U.to_si("humidity_ratio", float(data["w"]))
+        w_sat = psy.saturation_humidity_ratio(t, p)
+        clamped = False
+        if w > w_sat:
+            w = w_sat
+            clamped = True
+        return psy.state(t, w=w, p=p), clamped
+
+    t = U.to_si("temperature", float(data["t_db"]))
+    prop = str(data.get("prop") or "rh").lower()
+    val = float(data["val"])
+    if prop == "rh":
+        return psy.state(t, rh=val / 100.0, p=p), False
+    if prop == "twb":
+        return psy.state(t, twb=U.to_si("temperature", val), p=p), False
+    if prop == "w":
+        return psy.state(t, w=U.to_si("humidity_ratio", val), p=p), False
+    if prop == "tdp":
+        return psy.state(t, tdp=U.to_si("temperature", val), p=p), False
+    raise ValueError(f"unknown second property '{prop}'")
+
+
+def _state_from_si_dict(si: dict) -> psy.PsychroState:
+    return psy.state(float(si["t_db"]), w=float(si["w"]), p=float(si.get("p", psy.P_ATM)))
+
+
+@bp.post("/interactive/resolve")
+@require_module("psychro.single_point")
+def interactive_resolve():
+    """Resolve one psychrometric state for the multi-point interactive chart."""
+    U = current_view()
+    data = request.get_json(silent=True) or {}
+    try:
+        p = _pressure_from_payload(data, U)
+        state, clamped = _state_from_interactive_payload(data, U, p)
+        letter = str(data.get("letter") or "A").upper()[:1]
+        if letter not in _INTERACTIVE_POINT_LABELS:
+            letter = "A"
+        name = str(data.get("name") or "")
+        payload = _serialize_state(state, U, letter=letter, name=name)
+        payload["ok"] = True
+        payload["clamped"] = clamped
+        return jsonify(payload)
+    except (TypeError, ValueError, KeyError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@bp.post("/interactive/chart")
+@require_module("psychro.single_point")
+def interactive_chart_payload():
+    """Rebuild chart geometry for the current set of points + optional segment."""
+    U = current_view()
+    data = request.get_json(silent=True) or {}
+    try:
+        p = _pressure_from_payload(data, U)
+        raw_points = data.get("points") or []
+        if not isinstance(raw_points, list) or len(raw_points) > _INTERACTIVE_MAX_POINTS:
+            raise ValueError(f"at most {_INTERACTIVE_MAX_POINTS} points allowed")
+        chart_pts = []
+        for i, pt in enumerate(raw_points):
+            si = pt.get("si") or pt
+            letter = str(pt.get("letter") or _INTERACTIVE_POINT_LABELS[i])
+            name = str(pt.get("name") or "")
+            label = f"{letter} — {name}" if name.strip() else letter
+            chart_pts.append({"label": label, "t": float(si["t_db"]), "w": float(si["w"])})
+        segs = []
+        seg = data.get("segment")
+        if seg and len(seg) == 2:
+            i0, i1 = int(seg[0]), int(seg[1])
+            if not (0 <= i0 < len(chart_pts) and 0 <= i1 < len(chart_pts) and i0 != i1):
+                raise ValueError("segment must reference two distinct point indices")
+            segs = [(i0, i1)]
+        chart = chart_payload(chart_pts, segs, p=p, system=U.system)
+        return jsonify({"ok": True, "chart": chart, "pressure": p})
+    except (TypeError, ValueError, KeyError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@bp.post("/interactive/process")
+@require_module("psychro.single_point")
+def interactive_process():
+    """Map heat/cool + humidify/dehumidify between two saved points."""
+    U = current_view()
+    data = request.get_json(silent=True) or {}
+    try:
+        p = _pressure_from_payload(data, U)
+        a_si = data.get("from_si") or {}
+        b_si = data.get("to_si") or {}
+        a_si = {**a_si, "p": a_si.get("p", p)}
+        b_si = {**b_si, "p": b_si.get("p", p)}
+        state_a = _state_from_si_dict(a_si)
+        state_b = _state_from_si_dict(b_si)
+        m_da = None
+        flow_raw = data.get("vol_flow")
+        if flow_raw not in (None, ""):
+            flow_m3h = U.to_si("vol_flow", float(flow_raw))
+            if flow_m3h <= 0:
+                raise ValueError("airflow must be positive")
+            m_da = _m_da(flow_m3h, state_a)
+        result = proc.map_state_process(state_a, state_b, m_da=m_da)
+
+        from_letter = str(data.get("from_letter") or "A")
+        to_letter = str(data.get("to_letter") or "B")
+        # Temperature *differences* must not go through absolute °C↔°F conversion.
+        if U.system == "IP":
+            dt_disp = result.delta_t * 9.0 / 5.0
+            dt_sym = "°F"
+            dt_abs = f"{abs(dt_disp):.2f}"
+            dt_signed = f"{dt_disp:+.2f}"
+        else:
+            dt_sym = "K"
+            dt_abs = f"{abs(result.delta_t):.2f}"
+            dt_signed = f"{result.delta_t:+.2f}"
+
+        actions = []
+        if result.heat_cool == "heat":
+            actions.append(
+                f"Heat by {dt_abs} {dt_sym} (ΔT = {dt_signed} {dt_sym})"
+            )
+        elif result.heat_cool == "cool":
+            actions.append(
+                f"Cool by {dt_abs} {dt_sym} (ΔT = {dt_signed} {dt_sym})"
+            )
+        else:
+            actions.append("No sensible heating or cooling required (ΔT ≈ 0)")
+
+        if result.moisture_action == "humidify":
+            actions.append(
+                f"Humidify by {U.fmt('humidity_ratio', abs(result.delta_w))} "
+                f"{U.sym('humidity_ratio')} dry air"
+            )
+        elif result.moisture_action == "dehumidify":
+            actions.append(
+                f"Dehumidify by {U.fmt('humidity_ratio', abs(result.delta_w))} "
+                f"{U.sym('humidity_ratio')} dry air"
+            )
+        else:
+            actions.append("No humidification or dehumidification required (ΔW ≈ 0)")
+
+        rates = None
+        if m_da is not None:
+            rates = {
+                "m_da": U.fmt("mass_flow", m_da),
+                "m_da_sym": U.sym("mass_flow"),
+                "q_total_kw": f"{result.q_total:.3f}",
+                "q_sensible_kw": f"{result.q_sensible:.3f}",
+                "q_latent_kw": f"{result.q_latent:.3f}",
+                "moisture_kg_h": f"{result.moisture_kg_h:.3f}",
+                "heat_cool_kw_label": (
+                    "Heating" if (result.q_total or 0) >= 0 else "Cooling"
+                ),
+                "heat_cool_kw": f"{abs(result.q_total):.3f}",
+                "moisture_label": (
+                    "Humidify" if (result.moisture_kg_h or 0) >= 0 else "Dehumidify"
+                ),
+                "moisture_abs_kg_h": f"{abs(result.moisture_kg_h):.3f}",
+            }
+
+        return jsonify({
+            "ok": True,
+            "from_letter": from_letter,
+            "to_letter": to_letter,
+            "actions": actions,
+            "delta": {
+                "t": dt_signed,
+                "t_sym": dt_sym,
+                "w": U.fmt("humidity_ratio", result.delta_w),
+                "w_sym": U.sym("humidity_ratio"),
+                "h": U.fmt("enthalpy", result.delta_h, 2),
+                "h_sym": U.sym("enthalpy"),
+                "rh_pp": f"{result.delta_rh * 100:.1f}",
+            },
+            "heat_cool": result.heat_cool,
+            "moisture_action": result.moisture_action,
+            "rates": rates,
+        })
+    except (TypeError, ValueError, KeyError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400

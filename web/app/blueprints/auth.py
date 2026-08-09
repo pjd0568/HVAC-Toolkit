@@ -140,7 +140,7 @@ def register_post():
     send_trial_started(user)
 
     flash("Account created. Your 14-day free trial has started.", "success")
-    # Land on Single Point so the homepage teaser can hydrate from localStorage.
+    # Land on Multi-Point Chart so the homepage teaser can hand off after signup.
     return redirect(url_for("v2.single_point", from_teaser=1))
 
 

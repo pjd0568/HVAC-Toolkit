@@ -49,7 +49,7 @@ MODULES: dict[str, dict[str, str]] = {
     "dashboard": {"label": "Dashboard"},
     "help": {"label": "Help"},
     "guides": {"label": "Design Guides"},
-    "psychro.single_point": {"label": "Psychrometrics — Single Point"},
+    "psychro.single_point": {"label": "Psychrometrics — Multi-Point Interactive Chart"},
     "psychro.mixed_air": {"label": "Psychrometrics — Mixed Air"},
     "psychro.cooling_coil": {"label": "Psychrometrics — Cooling Coil"},
     "psychro.desiccant": {"label": "Psychrometrics — Desiccant Dehumidification"},

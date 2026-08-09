@@ -1,0 +1,83 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Multi-Point Interactive Chart{% endblock %}
+{% block content %}
+
+<div class="v2-greeting">Multi-point interactive chart</div>
+<div class="v2-greeting-sub">Long-press the chart to place points A–D, edit properties below, map a process between any two.</div>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+<div id="ix-toast" class="ix-toast" hidden></div>
+
+<div class="ix-layout">
+  <div class="panel ix-site-panel">
+    <div class="panel-body ix-site-row">
+      <label class="ix-field ix-altitude-field">
+        <span>Altitude</span>
+        <span class="ix-input-wrap">
+          <input id="ix-altitude" type="number" step="any" value="{{ form.altitude }}">
+          <span class="u">{{ U.sym('altitude') }}</span>
+        </span>
+      </label>
+      <p class="ix-hint">Long-press (~0.5&nbsp;s) on the plot to add the next point. Points above saturation clamp to the wet-bulb curve.</p>
+      <button type="button" class="btn-ghost" id="ix-reset">Reset all</button>
+    </div>
+  </div>
+
+  <div class="panel ix-chart-panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body ix-chart-body">
+      <div class="ix-chart-wrap" id="ix-chart-wrap">
+        <svg id="psychart" class="psychro-chart-svg ix-chart-svg" viewBox="0 0 760 500" preserveAspectRatio="xMidYMid meet" aria-label="Interactive psychrometric chart"></svg>
+      </div>
+      <p class="ix-cursor" id="ix-cursor" aria-live="polite">Move over chart for readout</p>
+    </div>
+  </div>
+
+  <div class="panel ix-points-panel">
+    <div class="panel-head">Points <span class="ix-count" id="ix-count">0 / 4</span></div>
+    <div class="panel-body" id="ix-points">
+      <p class="ix-empty">No points yet — long-press the chart to place point A.</p>
+    </div>
+  </div>
+
+  <div class="panel ix-process-panel">
+    <div class="panel-head">Map process</div>
+    <div class="panel-body">
+      <div class="ix-process-row">
+        <label class="ix-field">
+          <span>From</span>
+          <select id="ix-from"></select>
+        </label>
+        <label class="ix-field">
+          <span>To</span>
+          <select id="ix-to"></select>
+        </label>
+        <label class="ix-field">
+          <span>Airflow (optional)</span>
+          <span class="ix-input-wrap">
+            <input id="ix-flow" type="number" step="any" min="0" placeholder="e.g. 5000">
+            <span class="u" id="ix-flow-sym">{{ U.sym('vol_flow') }}</span>
+          </span>
+        </label>
+        <button type="button" class="btn-accent" id="ix-map">Map process</button>
+      </div>
+      <div id="ix-process-out" class="ix-process-out" hidden></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const CHART = {{ chart|tojson }};
+  const IX_CONFIG = {
+    resolveUrl: {{ resolve_url|tojson }},
+    chartUrl: {{ chart_url|tojson }},
+    processUrl: {{ process_url|tojson }},
+    secondProperties: {{ second_properties|tojson }},
+    pressure: {{ pressure|tojson }},
+  };
+</script>
+<script src="{{ url_for('static', filename='js/psychart_interactive.js') }}?v=poc-2" defer></script>
+{% endblock %}

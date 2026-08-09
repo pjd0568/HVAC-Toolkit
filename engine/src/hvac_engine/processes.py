@@ -886,3 +886,84 @@ def simulate_ahu(
         frost_risk=frost,
         warnings=warnings,
     )
+
+
+# ── Interactive chart: map any two states ─────────────────────────────────────
+
+@dataclass(frozen=True)
+class ProcessMapResult:
+    """Required change from state_in → state_out on the psychrometric chart.
+
+    Duties are None until a dry-air mass flow is supplied. Sign convention
+    matches the rest of this module: positive Q = heat added to the airstream;
+    positive moisture_kg_h = water vapour added.
+    """
+
+    delta_t: float  # K (°C difference)
+    delta_w: float  # kg/kg dry air
+    delta_h: float  # kJ/kg dry air
+    delta_rh: float  # fraction (out − in)
+    heat_cool: str  # "heat" | "cool" | "none"
+    moisture_action: str  # "humidify" | "dehumidify" | "none"
+    m_da: float | None = None  # kg/s
+    q_total: float | None = None  # kW
+    q_sensible: float | None = None  # kW (constant-W leg)
+    q_latent: float | None = None  # kW
+    moisture_kg_h: float | None = None  # kg/h
+
+
+def map_state_process(
+    state_in: PsychroState,
+    state_out: PsychroState,
+    m_da: float | None = None,
+) -> ProcessMapResult:
+    """Describe the process needed to move from ``state_in`` to ``state_out``.
+
+    See specs/SPEC-interactive-psych-chart.md. Pressures must match.
+    """
+    if abs(state_in.p - state_out.p) > 1e-6:
+        raise ValueError("process map requires both states at the same pressure")
+    if m_da is not None and m_da <= 0:
+        raise ValueError("mass flow must be positive")
+
+    dt = state_out.t_db - state_in.t_db
+    dw = state_out.w - state_in.w
+    dh = state_out.h - state_in.h
+    drh = state_out.rh - state_in.rh
+
+    if abs(dt) < 1e-9:
+        heat_cool = "none"
+    elif dt > 0:
+        heat_cool = "heat"
+    else:
+        heat_cool = "cool"
+
+    if abs(dw) < 1e-12:
+        moisture_action = "none"
+    elif dw > 0:
+        moisture_action = "humidify"
+    else:
+        moisture_action = "dehumidify"
+
+    q_total = q_sensible = q_latent = moisture_kg_h = None
+    if m_da is not None:
+        # Sensible leg: change T at constant entering humidity ratio.
+        h_at_tout_win = psy.enthalpy(state_out.t_db, state_in.w)
+        q_sensible = m_da * (h_at_tout_win - state_in.h)
+        q_total = m_da * dh
+        q_latent = q_total - q_sensible
+        moisture_kg_h = m_da * dw * 3600.0
+
+    return ProcessMapResult(
+        delta_t=dt,
+        delta_w=dw,
+        delta_h=dh,
+        delta_rh=drh,
+        heat_cool=heat_cool,
+        moisture_action=moisture_action,
+        m_da=m_da,
+        q_total=q_total,
+        q_sensible=q_sensible,
+        q_latent=q_latent,
+        moisture_kg_h=moisture_kg_h,
+    )
