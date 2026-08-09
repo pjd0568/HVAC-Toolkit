@@ -34,12 +34,15 @@
 
     <!-- ═══════════════ OVERVIEW ═══════════════ -->
     <section class="help-section" id="overview" data-help-section
-             data-keywords="getting started units si ip imperial metric memory slots pdf report png export shareable url link save print">
+             data-keywords="getting started units si ip imperial metric memory slots pdf report png export shareable url link save print draft retain switch modules clear table session">
       <h2 class="help-h">How the app works</h2>
       <p class="help-lead">A toolkit of independent HVAC design calculators. Pick a tool from Home or the bottom dock, enter your design figures, and read the results. A few things work the same way across every tool — worth knowing once.</p>
 
       <h3 class="help-sub">Units — SI or Imperial, everywhere at once</h3>
       <p>The <strong>SI / IP</strong> unit toggle in the top bar sets the unit system for the whole app in one click. Every input label, every result and every chart axis switches with it. Imperial conventions used here: duty in Btu/h, humidity ratio in grains/lb, pressure in inHg, plus °F, CFM, lb/h and ft³/lb. On SI psychrometric airflow tools, a second top-bar toggle switches between <strong>m³/h</strong> and <strong>m³/s</strong>. Set units before you start typing so you enter values in the units you're thinking in.</p>
+
+      <h3 class="help-sub">Switching modules keeps your work</h3>
+      <p>Under <strong>Air</strong> and <strong>Hydronics</strong> you can move freely between the sizing tool and the pressure-drop schedule in the same browser tab. Each tool remembers its own inputs and table rows so you can size a duct or pipe, jump to the system module to add sections, then switch back without starting again. Work stays until you press <strong>Clear Table</strong> (on pressure-drop tools) or close the browser tab. Desktop menus jump straight to each module; on mobile, open Air or Hydronics from the dock to pick a tool.</p>
 
       <h3 class="help-sub">Memory Slots — carry a condition between tools</h3>
       <p>The three <strong>Memory Slots</strong> (climate button in the top bar) are available on every page. When the weather lookup ships, you will be able to copy a design condition into a slot from that tool. Until then, you can still paste a slot into any psychrometric tool’s airstream if a slot is filled — Clear a slot from the climate sheet.</p>
@@ -327,12 +330,12 @@
 
     <!-- ═══════════════ DUCT SIZING ═══════════════ -->
     <section class="help-section" id="duct" data-help-section
-             data-keywords="duct sizing circular rectangular flat oval velocity friction rate pressure drop lindab stock size equivalent diameter aspect ratio index leg fitting k-factor straight run accessory safety margin csv traffic light">
+             data-keywords="duct sizing circular rectangular flat oval velocity friction rate pressure drop lindab stock size equivalent diameter aspect ratio index leg fitting k-factor straight run accessory safety margin csv traffic light draft retain switch modules clear table">
       <h2 class="help-h">Duct Sizing</h2>
       <p class="help-lead"><span class="help-badge duct">Air Distribution</span> Size a duct in all three shapes — circular, rectangular and flat oval — from one air volume and velocity or friction target. The index-leg pressure-drop builder is a separate tool under Air Distribution.</p>
 
       <h3 class="help-sub">When to use it</h3>
-      <p>To pick a duct size for a given airflow to a velocity or friction-rate target and compare the three shapes. Use <strong>Index Leg</strong> separately to total pressure drop along a system run.</p>
+      <p>To pick a duct size for a given airflow to a velocity or friction-rate target and compare the three shapes. Use <strong>Index Leg</strong> separately to total pressure drop along a system run. You can switch between Duct Sizing and Index Leg in the same tab — each keeps its own work until you clear the pressure-drop table or close the tab.</p>
 
       <h3 class="help-sub">Design Inputs (top panel)</h3>
       <dl class="help-io">
@@ -358,8 +361,9 @@
         <li>Press <strong>+ Add</strong> to commit it as a numbered row in the data grid below. Repeat for each piece of the run.</li>
         <li>Edit any committed row's cells in place — the row's pressure drop and the running total update immediately.</li>
         <li>Optionally set a <strong>Safety Margin %</strong> to add a percentage to the total.</li>
-        <li><strong>Clear Table</strong> empties it; <strong>Export CSV</strong> downloads the run; the PDF report captures the leg table when rows exist.</li>
+        <li><strong>Clear Table</strong> empties the schedule and discards the saved draft for this tool; <strong>Export CSV</strong> downloads the run; the PDF report captures the leg table when rows exist.</li>
       </ol>
+      <div class="help-tip">Switch to <strong>Duct Sizing</strong> any time to check or adjust a size, then come back — Index Leg rows stay in this browser tab until you Clear Table or close the tab.</div>
       <dl class="help-io">
         <dt>Straight / Flex</dt><dd>Take a Length — pressure drop is length × friction rate (Flex adds a derating factor).</dd>
         <dt>Fitting</dt><dd>Takes a Fitting from the dropdown; pressure drop is its K-factor × velocity pressure.</dd>
@@ -412,12 +416,12 @@
 
     <!-- ═══════════════ PIPE SIZING ═══════════════ -->
     <section class="help-section" id="pipe" data-help-section
-             data-keywords="pipe sizing hydronics lthw chw load flow delta t lwt glycol dtx epg ppg velocity pressure gradient dn carbon steel copper stainless dairy cibse darcy weisbach">
+             data-keywords="pipe sizing hydronics lthw chw load flow delta t lwt glycol dtx epg ppg velocity pressure gradient dn carbon steel copper stainless dairy cibse darcy weisbach draft retain switch modules">
       <h2 class="help-h">Pipe Sizing</h2>
       <p class="help-lead"><span class="help-badge water">Hydronics</span> Flow from load or known flow; DN catalogue with traffic lights.</p>
 
       <div class="help-sub">When to use</div>
-      <p>Size LTHW or CHW pipework: derive flow from a heating or cooling duty, or check a known flow against standard DN sizes. For circuit pressure drop and pump head, use the separate <a href="#pipe-system">Pipe System</a> tool.</p>
+      <p>Size LTHW or CHW pipework: derive flow from a heating or cooling duty, or check a known flow against standard DN sizes. For circuit pressure drop and pump head, use the separate <a href="#pipe-system">Pipe System</a> tool. Design Inputs carry across when you switch — you can size a DN here, then open Pipe System to build the circuit without re-entering fluid and duty.</p>
 
       <div class="help-sub">Inputs — Design</div>
       <dl class="help-io">
@@ -440,12 +444,12 @@
 
     <!-- ═══════════════ PIPE SYSTEM ═══════════════ -->
     <section class="help-section" id="pipe-system" data-help-section
-             data-keywords="pipe system pressure drop hydronics fittings valves k-factor safety margin lift static head pump open pressurised bar kpa circuit index">
+             data-keywords="pipe system pressure drop hydronics fittings valves k-factor safety margin lift static head pump open pressurised bar kpa circuit index draft retain switch modules clear table">
       <h2 class="help-h">Pipe System</h2>
       <p class="help-lead"><span class="help-badge water">Hydronics</span> Circuit pressure-drop schedule with fittings, devices, and required pump head.</p>
 
       <div class="help-sub">When to use</div>
-      <p>Total the index-circuit pressure drop with straight runs, fittings/valves (K-factors), and manufacturer devices entered as direct Pa. Set Design Inputs on this page for fluid and duty flow; DN catalogue sizing stays in <a href="#pipe">Pipe Sizing</a>.</p>
+      <p>Total the index-circuit pressure drop with straight runs, fittings/valves (K-factors), and manufacturer devices entered as direct Pa. Set Design Inputs on this page for fluid and duty flow; DN catalogue sizing stays in <a href="#pipe">Pipe Sizing</a>. You can switch between the two tools in the same tab — Design Inputs and the pressure-drop table are kept until you Clear Table or close the tab.</p>
 
       <div class="help-sub">Inputs</div>
       <dl class="help-io">
@@ -463,6 +467,7 @@
         <li>Add components in the compact form and click <strong>+ Add</strong>; edit rows in place on the spreadsheet.</li>
         <li>Read required pump head at the bottom of the panel.</li>
       </ol>
+      <div class="help-tip">Jump to <strong>Pipe Sizing</strong> to check a DN, then return here — circuit rows stay in this browser tab until you Clear Table or close the tab.</div>
       <div class="help-note">Full system volume (all pipework including branches, client-side volume, chiller volume, minimum chiller volume — for glycol purchase, buffer tanks and expansion vessels) is planned as a later stage.</div>
     </section>
 
