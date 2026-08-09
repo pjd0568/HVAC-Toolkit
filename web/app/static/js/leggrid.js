@@ -478,8 +478,11 @@
 
     table = new Tabulator(mount, {
       data: (INITIAL.rows || []).map(gridRowFromApi),
-      // Size to content, then stretch every column to fill the container width.
-      layout: "fitDataStretch",
+      // Width is owned by CSS flex on #leg-grid (Tabulator layout modes
+      // left empty space in this shell). Keep a simple layout mode.
+      layout: "fitData",
+      renderVertical: "basic",
+      renderHorizontal: "basic",
       reactiveData: false,
       selectableRows: false,
       rowHeight: 22,

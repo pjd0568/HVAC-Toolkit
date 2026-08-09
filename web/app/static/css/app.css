@@ -1248,17 +1248,88 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   max-width: 100%;
   box-sizing: border-box;
 }
-/* Do NOT force .tabulator-table to 100% — that leaves empty space beside
-   fixed-width columns. fitDataStretch must own column + table widths. */
-#leg-grid .tabulator-tableholder {
-  width: 100% !important;
-  overflow-x: hidden !important;
-}
 #leg-grid .tabulator-header {
   background: #f0f0f0;
   border-bottom: 1px solid #111;
   font-weight: 700;
   min-height: 0;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+#leg-grid .tabulator-headers {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 100% !important;
+}
+#leg-grid .tabulator-header-contents {
+  width: 100% !important;
+}
+#leg-grid .tabulator-tableholder {
+  width: 100% !important;
+  overflow-x: hidden !important;
+}
+#leg-grid .tabulator-table {
+  width: 100% !important;
+  min-width: 100% !important;
+  display: block !important;
+}
+#leg-grid .tabulator-row {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  background: #fff;
+  min-height: 0;
+  position: relative !important;
+}
+/* Force every column/cell to share the full row width.
+   Inline Tabulator pixel widths are overridden on purpose. */
+#leg-grid .tabulator-col,
+#leg-grid .tabulator-cell {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+#leg-grid .tabulator-col[tabulator-field="item"],
+#leg-grid .tabulator-cell[tabulator-field="item"] {
+  flex: 0.55 1 0 !important;
+}
+#leg-grid .tabulator-col[tabulator-field="type"],
+#leg-grid .tabulator-cell[tabulator-field="type"] {
+  flex: 1.15 1 0 !important;
+}
+#leg-grid .tabulator-col[tabulator-field="shape"],
+#leg-grid .tabulator-cell[tabulator-field="shape"] {
+  flex: 0.8 1 0 !important;
+}
+#leg-grid .tabulator-col[tabulator-field="volume"],
+#leg-grid .tabulator-cell[tabulator-field="volume"] {
+  flex: 1 1 0 !important;
+}
+#leg-grid .tabulator-col[tabulator-field="size"],
+#leg-grid .tabulator-cell[tabulator-field="size"] {
+  flex: 1.2 1 0 !important;
+}
+#leg-grid .tabulator-col[tabulator-field="velocity"],
+#leg-grid .tabulator-cell[tabulator-field="velocity"],
+#leg-grid .tabulator-col[tabulator-field="vp"],
+#leg-grid .tabulator-cell[tabulator-field="vp"],
+#leg-grid .tabulator-col[tabulator-field="pam"],
+#leg-grid .tabulator-cell[tabulator-field="pam"],
+#leg-grid .tabulator-col[tabulator-field="pd"],
+#leg-grid .tabulator-cell[tabulator-field="pd"] {
+  flex: 0.95 1 0 !important;
+}
+#leg-grid .tabulator-col[tabulator-field="detail"],
+#leg-grid .tabulator-cell[tabulator-field="detail"] {
+  flex: 1.4 1 0 !important;
+}
+#leg-grid .tabulator-col[tabulator-field="_del"],
+#leg-grid .tabulator-cell[tabulator-field="_del"] {
+  flex: 0 0 36px !important;
+  width: 36px !important;
+  max-width: 36px !important;
 }
 #leg-grid .tabulator-col {
   background: #f0f0f0;
@@ -1271,10 +1342,6 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   white-space: nowrap;
   font-size: 11px;
   line-height: 1.2;
-}
-#leg-grid .tabulator-row {
-  background: #fff;
-  min-height: 0;
 }
 #leg-grid .tabulator-row .tabulator-cell {
   border-right: 1px solid #111;
