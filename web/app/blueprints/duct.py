@@ -464,6 +464,7 @@ def _compute_row(get, U):
             "velocity_display": "—",
             "velocity_pressure_display": "—",
             "friction_rate_display": "—",
+            "friction_or_k_display": "—",
             "k": None,
             "fitting_key": "",
             "length_display": "",
@@ -515,6 +516,13 @@ def _compute_row(get, U):
         k = fitting.k
         length_display = ""
 
+    friction_rate_display = U.fmt("friction_rate", friction_rate_si)
+    if row_type == "fitting" and k is not None:
+        friction_or_k_display = f"K={k:.2f}"
+    else:
+        # Straight / flex: friction rate (Pa/m or in.wg/100ft).
+        friction_or_k_display = f"{friction_rate_display} {U.sym('friction_rate')}"
+
     return {
         "type": row_type,
         "type_label": ROW_TYPE_LABELS[row_type],
@@ -524,7 +532,8 @@ def _compute_row(get, U):
         "size_display": size_display,
         "velocity_display": U.fmt("velocity", result.velocity),
         "velocity_pressure_display": U.fmt("velocity_pressure", velocity_pressure_pa),
-        "friction_rate_display": U.fmt("friction_rate", friction_rate_si),
+        "friction_rate_display": friction_rate_display,
+        "friction_or_k_display": friction_or_k_display,
         "k": k,
         "fitting_key": fitting_key,
         "length_display": length_display,
@@ -547,6 +556,7 @@ def _blank_row(row_type: str, shape: str, fitting_key: str) -> dict:
         "velocity_display": "—",
         "velocity_pressure_display": "—",
         "friction_rate_display": "—",
+        "friction_or_k_display": "—",
         "k": None,
         "fitting_key": fitting_key or "",
         "length_display": "",
@@ -614,7 +624,7 @@ def _compute_leg_state(args, U):
         "total_sym": U.sym("velocity_pressure"),
         "safety_margin": safety_margin,
         "margin_amount_display": U.fmt("velocity_pressure", margin_pa),
-        "total_with_margin_display": U.fmt("velocity_pressure", total_with_margin_pa) if safety_margin > 0 else "",
+        "total_with_margin_display": U.fmt("velocity_pressure", total_with_margin_pa),
         "shape_options": _row_shape_options(),
         "type_options": _row_type_options(),
         "fittings_by_shape": {
@@ -627,6 +637,7 @@ def _compute_leg_state(args, U):
         "duct_flow_sym": U.sym("duct_flow"),
         "duct_run_length_sym": U.sym("duct_run_length"),
         "velocity_pressure_sym": U.sym("velocity_pressure"),
+        "friction_rate_sym": U.sym("friction_rate"),
     }
 
 
@@ -644,9 +655,6 @@ def _leg_csv_rows(leg: dict):
     ]
     data_rows = []
     for row in leg["rows"]:
-        friction_or_k = row["friction_rate_display"]
-        if row["type"] == "fitting" and row["k"] is not None:
-            friction_or_k = f'K={row["k"]:.2f}'
         data_rows.append([
             row["index"] + 1,
             row["type_label"],
@@ -655,7 +663,7 @@ def _leg_csv_rows(leg: dict):
             row["size_display"],
             row["velocity_display"],
             row["velocity_pressure_display"],
-            friction_or_k,
+            row.get("friction_or_k_display") or row["friction_rate_display"],
             row["length_display"],
             row["dp_display"] + (f" ({row['error']})" if row.get("error") else ""),
         ])
@@ -755,9 +763,7 @@ def _leg_table_for_report(leg: dict):
     n_cols = len(headers)  # 11
     rows = []
     for row in leg["rows"]:
-        friction_or_k = row["friction_rate_display"]
-        if row["type"] == "fitting" and row["k"] is not None:
-            friction_or_k = f'K={row["k"]:.2f}'
+        friction_or_k = row.get("friction_or_k_display") or row["friction_rate_display"]
         dp_cell = row["dp_display"] + (" (error)" if row.get("error") else "")
         rows.append([
             str(row["index"] + 1),

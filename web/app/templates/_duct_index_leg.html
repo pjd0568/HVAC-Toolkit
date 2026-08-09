@@ -1,9 +1,10 @@
-{# Index Leg pressure-drop builder (Correction #7 / #8 / #9).
+{# Index Leg pressure-drop builder (Correction #7 / #8 / #9 / #10).
    Independent of the 3-column sizer — each row (and the staging entry form)
    carries its own volume/shape/size. Used by classic and v2 index-leg pages.
-   Correction #9: composer is a separate 2-row labeled form above the table;
-   committed rows are a centered spreadsheet data grid.
-   Mirrors ductsizer.js's buildRowCellsHtml() — keep both in sync. #}
+   Correction #10: composer is a spreadsheet stage row in the same grid as
+   committed rows (pipe-system pattern); totals + safety margin sit in a
+   left-aligned bar below the scroll area. Mirrors ductsizer.js's
+   buildRowCellsHtml() — keep both in sync. #}
 {% from "_report_form.html" import report_form %}
 
 {% macro leg_row_cells(prefix, suffix, raw, fittings_by_shape, type_options, shape_options, current_type, current_shape, current_fitting) %}
@@ -35,7 +36,7 @@
 <td class="leg-cell">
   <select data-row-field="fitting" data-fitting-select data-type-for="fitting" name="{{ prefix }}fitting{{ suffix }}">
     {% for f in fittings_by_shape.get(current_shape, []) %}
-    <option value="{{ f.key }}" {{ 'selected' if current_fitting == f.key }}>{{ f.label }} (K={{ '%.2f'|format(f.k) }})</option>
+    <option value="{{ f.key }}" {{ 'selected' if current_fitting == f.key }}>{{ f.label }}</option>
     {% endfor %}
   </select>
 </td>
@@ -53,107 +54,29 @@
 {% set stage_fitting = (leg.stage.fitting_key if leg.stage else None) or leg.stage_raw.fitting %}
 {% set stage = leg.stage_raw %}
 <div class="panel" style="max-width:1100px; {{ panel_style }}" id="leg-panel">
-  <div class="panel-head">Index Leg — Pressure Drop</div>
+  <details class="panel-help">
+    <summary class="panel-head" aria-label="Index Leg — Pressure Drop. How to use">
+      <span>Index Leg — Pressure Drop</span>
+      <span class="help-inline-mark" aria-hidden="true">?</span>
+    </summary>
+    <div class="panel-help-body">
+      Each row is sized independently — its own volume, shape and size — so
+      a run that steps down, changes shape, or ends at a grille can be built
+      piece by piece. Fill the entry row (type, size, length or fitting),
+      check the live preview in the Pressure Drop cell, then press “Add”.
+      Straight / flex preview shows friction rate (ΔP/L, Pa/m); fittings show
+      the K-factor used for ΔP = K × VP. Fitting K-factors are indicative
+      single-point values for preliminary sizing — not the full
+      multi-parameter ASHRAE Ch.32 / CIBSE Guide C correlations. Flex-duct
+      rows apply a ×1.5 planning derate to rigid friction. Accessory items
+      take a manually entered pressure drop.
+    </div>
+  </details>
   <div class="panel-body">
 
     <div id="leg-error"></div>
 
-    <div class="note-banner" style="margin-bottom:14px;">
-      Each row is sized independently — its own volume, shape and size — so
-      a run that steps down, changes shape, or ends at a grille can be built
-      piece by piece. Fill the form below (type, size, length or fitting),
-      check the live preview, then press “Add” to commit a row to the table.
-      Fitting K-factors are indicative single-point values for preliminary
-      sizing — not the full multi-parameter ASHRAE Ch.32 / CIBSE Guide C
-      correlations. Flex-duct rows apply a ×1.5 planning derate to rigid
-      friction. Accessory items take a manually entered pressure drop.
-    </div>
-
-    {# ── Composer: 2-row labeled form (Correction #9) ───────────────────── #}
-    <div id="leg-stage" class="leg-composer">
-      <div class="leg-composer-row">
-        <div class="leg-field">
-          <label for="stage_type">Type</label>
-          <select id="stage_type" data-row-field="type" name="stage_type">
-            {% for opt in leg.type_options %}<option value="{{ opt.key }}" {{ 'selected' if stage_type == opt.key }}>{{ opt.label }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="leg-field" data-shape-field>
-          <label for="stage_shape">Shape</label>
-          <select id="stage_shape" data-row-field="shape" data-shape-field name="stage_shape">
-            {% for opt in leg.shape_options %}<option value="{{ opt.key }}" {{ 'selected' if stage_shape == opt.key }}>{{ opt.label }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="leg-field" data-shape-field>
-          <label for="stage_volume">Volume <span class="th-unit">({{ leg.duct_flow_sym }})</span></label>
-          <input id="stage_volume" data-row-field="volume" data-shape-field name="stage_volume" value="{{ stage.volume }}" inputmode="decimal">
-        </div>
-        <div class="leg-field" data-size-for="circular">
-          <label for="stage_diameter">Size 1 <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
-          <input id="stage_diameter" data-row-field="diameter" data-size-for="circular" name="stage_diameter" value="{{ stage.diameter }}" inputmode="decimal">
-        </div>
-        <div class="leg-field" data-size-for="rectangular">
-          <label for="stage_width">Size 1 <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
-          <input id="stage_width" data-row-field="width" data-size-for="rectangular" name="stage_width" value="{{ stage.width }}" inputmode="decimal">
-        </div>
-        <div class="leg-field" data-size-for="flat_oval">
-          <label for="stage_major">Size 1 <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
-          <input id="stage_major" data-row-field="major" data-size-for="flat_oval" name="stage_major" value="{{ stage.major }}" inputmode="decimal">
-        </div>
-        <div class="leg-field" data-size-for="rectangular">
-          <label for="stage_height">Size 2 <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
-          <input id="stage_height" data-row-field="height" data-size-for="rectangular" name="stage_height" value="{{ stage.height }}" inputmode="decimal">
-        </div>
-        <div class="leg-field" data-size-for="flat_oval">
-          <label for="stage_minor">Size 2 <span class="th-unit">({{ leg.duct_dimension_sym }})</span></label>
-          <input id="stage_minor" data-row-field="minor" data-size-for="flat_oval" name="stage_minor" value="{{ stage.minor }}" inputmode="decimal">
-        </div>
-      </div>
-
-      <div class="leg-composer-row leg-composer-row-item">
-        <div class="leg-field" data-type-for="straight flex">
-          <label for="stage_length">Length <span class="th-unit">({{ leg.duct_run_length_sym }})</span></label>
-          <input id="stage_length" data-row-field="length" data-type-for="straight flex" name="stage_length" value="{{ stage.length }}" inputmode="decimal">
-        </div>
-        <div class="leg-field leg-field-wide" data-type-for="fitting">
-          <label for="stage_fitting">Fitting</label>
-          <select id="stage_fitting" data-row-field="fitting" data-fitting-select data-type-for="fitting" name="stage_fitting">
-            {% for f in leg.fittings_by_shape.get(stage_shape, []) %}
-            <option value="{{ f.key }}" {{ 'selected' if stage_fitting == f.key }}>{{ f.label }} (K={{ '%.2f'|format(f.k) }})</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="leg-field leg-field-wide" data-type-for="accessory">
-          <label for="stage_label">Description</label>
-          <input id="stage_label" data-row-field="label" data-type-for="accessory" name="stage_label" value="{{ stage.label }}">
-        </div>
-        <div class="leg-field" data-type-for="accessory">
-          <label for="stage_dp">Manual ΔP <span class="th-unit">({{ leg.velocity_pressure_sym }})</span></label>
-          <input id="stage_dp" data-row-field="dp" data-type-for="accessory" name="stage_dp" value="{{ stage.dp }}" inputmode="decimal">
-        </div>
-
-        <div class="leg-composer-preview" id="leg-stage-result-cell">
-          {% if leg.stage_error %}
-          <div class="error" id="leg-stage-error" style="margin:0;">{{ leg.stage_error }}</div>
-          {% else %}
-          <div class="leg-preview-metrics suffix">
-            <span>V: <span id="stage-velocity">{{ leg.stage.velocity_display if leg.stage }}</span></span>
-            <span>VP: <span id="stage-vp">{{ leg.stage.velocity_pressure_display if leg.stage }}</span></span>
-            <span>F/K: <span id="stage-friction">{{ leg.stage.friction_rate_display if leg.stage }}</span></span>
-          </div>
-          <div class="leg-preview-dp">
-            <span id="stage-dp">{{ leg.stage.dp_display if leg.stage }}</span>
-            <span class="u">{{ leg.velocity_pressure_sym }}</span>
-          </div>
-          {% endif %}
-        </div>
-        <div class="leg-composer-actions">
-          <button type="button" class="btn-accent leg-add-btn" id="leg-add-row">+ Add</button>
-        </div>
-      </div>
-    </div>
-
-    {# ── Data grid: committed rows only ─────────────────────────────────── #}
+    {# ── Spreadsheet grid: stage row + committed rows ───────────────────── #}
     <div class="leg-table-scroll">
     <table class="results leg-rows-table">
       <colgroup>
@@ -178,6 +101,31 @@
           <th></th>
         </tr>
       </thead>
+      <tbody>
+        <tr id="leg-stage" class="leg-stage-row">
+          <td class="leg-row-num">+</td>
+          {{ leg_row_cells("stage_", "", stage, leg.fittings_by_shape, leg.type_options, leg.shape_options,
+                             stage_type, stage_shape, stage_fitting) }}
+          <td class="num leg-dp-cell" id="leg-stage-result-cell">
+            {% if leg.stage_error %}
+            <div class="error" id="leg-stage-error" style="margin:0;">{{ leg.stage_error }}</div>
+            {% else %}
+            <div class="leg-preview-metrics suffix">
+              <span>V <span id="stage-velocity">{{ leg.stage.velocity_display if leg.stage }}</span></span>
+              <span>VP <span id="stage-vp">{{ leg.stage.velocity_pressure_display if leg.stage }}</span></span>
+              <span id="stage-fk-wrap"><span id="stage-fk-label">{% if leg.stage and leg.stage.type == 'fitting' %}K{% elif leg.stage and leg.stage.type in ('straight', 'flex') %}ΔP/L{% else %}—{% endif %}</span> <span id="stage-friction">{% if leg.stage and leg.stage.type == 'fitting' and leg.stage.k is not none %}{{ '%.2f'|format(leg.stage.k) }}{% elif leg.stage and leg.stage.type in ('straight', 'flex') %}{{ leg.stage.friction_rate_display }}{% else %}{% endif %}</span></span>
+            </div>
+            <div class="leg-preview-dp">
+              <span id="stage-dp">{{ leg.stage.dp_display if leg.stage }}</span>
+              <span class="u">{{ leg.velocity_pressure_sym }}</span>
+            </div>
+            {% endif %}
+          </td>
+          <td class="leg-action-cell">
+            <button type="button" class="btn-accent leg-add-btn" id="leg-add-row">+ Add</button>
+          </td>
+        </tr>
+      </tbody>
       <tbody id="leg-rows-body">
         {% for row in leg.rows %}
         <tr data-row data-index="{{ row.index }}" class="{{ 'row-error' if row.error else '' }}">
@@ -192,32 +140,37 @@
         </tr>
         {% endfor %}
       </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="10" class="leg-total-label">Total Pressure Drop</td>
-          <td class="num leg-dp-cell" style="font-weight:600;"><span id="leg-total">{{ leg.total_display }}</span> <span class="u" id="leg-total-sym">{{ leg.total_sym }}</span></td>
-          <td></td>
-        </tr>
-        <tr id="leg-margin-tr" class="leg-margin-tr" style="{{ '' if leg.safety_margin else 'display:none;' }}">
-          <td colspan="10" class="leg-total-label">Safety Margin (<span id="leg-margin-pct">{{ '%.0f'|format(leg.safety_margin) }}</span>%)</td>
-          <td class="num leg-dp-cell" style="font-weight:600;">+ <span id="leg-margin-amount">{{ leg.margin_amount_display }}</span> <span class="u" id="leg-margin-sym">{{ leg.total_sym }}</span></td>
-          <td></td>
-        </tr>
-        <tr id="leg-total-margin-tr" class="leg-total-margin-tr" style="{{ '' if leg.safety_margin else 'display:none;' }}">
-          <td colspan="10" class="leg-total-label" style="font-weight:700;">Total with Margin</td>
-          <td class="num leg-dp-cell" style="font-weight:700;"><span id="leg-total-margin">{{ leg.total_with_margin_display }}</span> <span class="u" id="leg-total-margin-sym">{{ leg.total_sym }}</span></td>
-          <td></td>
-        </tr>
-      </tfoot>
     </table>
     </div>
 
-    <div class="leg-safety-margin-row">
-      <label for="leg-safety-margin">Safety Margin</label>
-      <input type="number" id="leg-safety-margin" min="0" max="200" step="1"
-             value="{{ '%.0f'|format(leg.safety_margin) if leg.safety_margin else '0' }}">
-      <span class="u">%</span>
-      <span class="suffix">— added to total pressure drop</span>
+    {# Totals outside the scroll area — always visible, left-aligned #}
+    <div class="leg-totals-bar" id="leg-totals-bar">
+      <div class="leg-total-line">
+        <span class="leg-total-label">Total Pressure Drop</span>
+        <span class="leg-total-value num">
+          <span id="leg-total">{{ leg.total_display }}</span>
+          <span class="u" id="leg-total-sym">{{ leg.total_sym }}</span>
+        </span>
+      </div>
+      <div class="leg-total-line leg-margin-line">
+        <label class="leg-total-label" for="leg-safety-margin">Safety Margin</label>
+        <span class="leg-margin-controls">
+          <input type="number" id="leg-safety-margin" min="0" max="200" step="1"
+                 value="{{ '%.0f'|format(leg.safety_margin) if leg.safety_margin else '0' }}">
+          <span class="u">%</span>
+          <span class="leg-margin-amount num">
+            + <span id="leg-margin-amount">{{ leg.margin_amount_display }}</span>
+            <span class="u" id="leg-margin-sym">{{ leg.total_sym }}</span>
+          </span>
+        </span>
+      </div>
+      <div class="leg-total-line leg-final-line">
+        <span class="leg-total-label">Total with Margin</span>
+        <span class="leg-total-value num">
+          <span id="leg-total-margin">{{ leg.total_with_margin_display }}</span>
+          <span class="u" id="leg-total-margin-sym">{{ leg.total_sym }}</span>
+        </span>
+      </div>
     </div>
 
     <div style="margin-top:12px; display:flex; gap:10px;">
@@ -243,7 +196,8 @@
     duct_flow: {{ leg.duct_flow_sym | tojson }},
     duct_dimension: {{ leg.duct_dimension_sym | tojson }},
     duct_run_length: {{ leg.duct_run_length_sym | tojson }},
-    velocity_pressure: {{ leg.velocity_pressure_sym | tojson }}
+    velocity_pressure: {{ leg.velocity_pressure_sym | tojson }},
+    friction_rate: {{ leg.friction_rate_sym | tojson }}
   };
 </script>
 <script src="{{ url_for('static', filename='js/ductsizer.js') }}"></script>

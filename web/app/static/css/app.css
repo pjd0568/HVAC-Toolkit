@@ -364,6 +364,32 @@ body {
 .panel-head { padding: 14px 18px; border-bottom: 1px solid var(--line); font-weight: 650; font-size: 13px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .panel-body { padding: 18px; }
 
+/* Compact panel help — ? icon in the panel head; body expands in-flow when open */
+details.panel-help { margin: 0; }
+details.panel-help > summary.panel-head {
+  list-style: none;
+  cursor: pointer;
+}
+details.panel-help > summary.panel-head::-webkit-details-marker { display: none; }
+details.panel-help > summary.panel-head:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+details.panel-help > summary.panel-head:hover .help-inline-mark,
+details.panel-help[open] > summary.panel-head .help-inline-mark {
+  background: var(--green-ink);
+}
+.panel-help-body {
+  padding: 12px 18px 14px;
+  border-bottom: 1px solid var(--line);
+  border-left: 3px solid var(--blue);
+  background: var(--panel);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
 /* Compact shared report / export panel (see _report_form.html) */
 .report-panel { max-width: 920px; }
 .report-panel .panel-head { padding: 8px 12px; font-size: 12px; }
@@ -1095,125 +1121,68 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 
 .col-subhead { font-size: 11px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
 
-/* Index Leg pressure-drop builder (Correction #9).
-   Composer is a separate 2-row labeled form above the table so Type/Shape/
-   Size/Fitting are fully readable. Committed rows are a centered spreadsheet
-   data grid (header once with units, values centered in cells). Every row
-   still carries its own volume/shape/size. See blueprints/duct.py.
+/* Index Leg pressure-drop builder (Correction #9 / #10).
+   Stage entry and committed rows share one spreadsheet data grid
+   (header once with units, values centered in cells). Every row still
+   carries its own volume/shape/size. Totals + safety margin live in a
+   left-aligned bar below the scroll area. See blueprints/duct.py.
 
    A field that doesn't apply to a row's current type/shape still gets its
    table cell -- its candidate input(s) are just hidden (see
    `updateFieldVisibility` in ductsizer.js), leaving a blank cell, exactly
    like an empty cell in a real spreadsheet -- never a hidden/removed <td>. */
 
-/* ── Composer (2-row entry form) ─────────────────────────────────────────── */
-.leg-composer {
-  background: var(--row-hl);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-}
-.leg-composer-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px 14px;
-  align-items: end;
-}
-.leg-field label {
-  min-height: 0;
-  margin-bottom: 5px;
-  font-size: 11px;
-}
-.leg-field label .th-unit {
-  font-weight: 500;
-  color: var(--muted);
-}
-.leg-field input,
-.leg-field select {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 8px 10px;
-  font-size: 13px;
-}
-.leg-composer-row + .leg-composer-row { margin-top: 12px; }
-.leg-composer-row-item {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 14px;
-  align-items: stretch;
-}
-.leg-composer-row-item .leg-field {
-  flex: 1 1 140px;
-  max-width: 260px;
-  align-self: end;
-}
-.leg-composer-row-item .leg-field-wide {
-  flex: 2 1 220px;
-  max-width: 420px;
-}
-.leg-composer-preview {
-  flex: 2 1 220px;
-  min-width: 180px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.65);
-  border: 1px solid var(--line);
-  font-size: 12.5px;
-  line-height: 1.45;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
+/* ── Stage / preview metrics inside the PD cell ─────────────────────────── */
 .leg-preview-metrics {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 12px;
+  gap: 1px 8px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  justify-content: center;
+  font-family: inherit;
 }
 .leg-preview-dp {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink);
   margin-top: 2px;
 }
-.leg-composer-actions {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  flex: 0 0 auto;
-  margin-left: auto;
-}
 .leg-add-btn {
-  padding: 9px 16px;
-  font-size: 13px;
+  padding: 5px 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
-@media (max-width: 720px) {
-  .leg-composer-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .leg-composer-row-item .leg-field,
-  .leg-composer-row-item .leg-field-wide,
-  .leg-composer-preview {
-    flex: 1 1 100%;
-    max-width: none;
-  }
-  .leg-composer-actions {
-    margin-left: 0;
-    width: 100%;
-  }
-  .leg-composer-actions .leg-add-btn { width: 100%; }
-}
 
-/* ── Data grid (committed rows) ──────────────────────────────────────────── */
-.leg-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* ── Data grid (stage + committed rows) ─────────────────────────────────── */
+.leg-table-scroll {
+  overflow-x: scroll; /* always show scrollbar as a scroll cue */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin; /* Firefox: always-visible thin bar */
+}
+.leg-table-scroll::-webkit-scrollbar {
+  height: 10px;
+  -webkit-appearance: none;
+}
+.leg-table-scroll::-webkit-scrollbar-track {
+  background: #EEF1F5;
+  border-radius: 5px;
+}
+.leg-table-scroll::-webkit-scrollbar-thumb {
+  background: #B8C0CC;
+  border-radius: 5px;
+  border: 2px solid #EEF1F5;
+}
+.leg-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #8B95A5;
+}
 table.leg-rows-table {
   table-layout: fixed;
   width: 100%;
-  min-width: 980px;
+  min-width: 1040px;
   border: 1px solid var(--line);
   border-radius: 8px;
   border-collapse: separate;
@@ -1222,14 +1191,15 @@ table.leg-rows-table {
 }
 table.leg-rows-table th,
 table.leg-rows-table td {
-  padding: 8px 6px;
+  padding: 5px 4px;
   text-align: center;
   vertical-align: middle;
   border-bottom: 1px solid #EEF1F5;
 }
 table.leg-rows-table thead th {
   background: #F7F9FB;
-  line-height: 1.35;
+  line-height: 1.3;
+  font-size: 11px;
   border-bottom: 1px solid var(--line);
 }
 table.leg-rows-table td.leg-cell { overflow: hidden; }
@@ -1238,21 +1208,22 @@ table.leg-rows-table .th-unit {
   text-transform: none;
   letter-spacing: 0;
   color: var(--muted);
+  font-size: 10px;
 }
 
 /* Fixed-ish column widths; table min-width above allows horizontal scroll
    instead of crushing Type/Fitting text. Two col-size cols share the rule. */
-table.leg-rows-table col.col-num { width: 40px; }
-table.leg-rows-table col.col-type { width: 108px; }
-table.leg-rows-table col.col-shape { width: 100px; }
-table.leg-rows-table col.col-volume { width: 88px; }
-table.leg-rows-table col.col-size { width: 78px; }
-table.leg-rows-table col.col-length { width: 78px; }
-table.leg-rows-table col.col-fitting { width: 150px; }
-table.leg-rows-table col.col-desc { width: 110px; }
-table.leg-rows-table col.col-manual-dp { width: 88px; }
-table.leg-rows-table col.col-dp { width: 100px; }
-table.leg-rows-table col.col-action { width: 48px; }
+table.leg-rows-table col.col-num { width: 36px; }
+table.leg-rows-table col.col-type { width: 96px; }
+table.leg-rows-table col.col-shape { width: 92px; }
+table.leg-rows-table col.col-volume { width: 72px; }
+table.leg-rows-table col.col-size { width: 64px; }
+table.leg-rows-table col.col-length { width: 64px; }
+table.leg-rows-table col.col-fitting { width: 140px; }
+table.leg-rows-table col.col-desc { width: 100px; }
+table.leg-rows-table col.col-manual-dp { width: 72px; }
+table.leg-rows-table col.col-dp { width: 120px; }
+table.leg-rows-table col.col-action { width: 64px; }
 
 /* Spreadsheet-style cell editors: centered, low chrome until focused. */
 .leg-cell input,
@@ -1261,13 +1232,16 @@ table.leg-rows-table col.col-action { width: 48px; }
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 6px 4px;
+  padding: 4px 3px;
   border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 12.5px;
+  border-radius: 3px;
+  font-size: 12px;
   font-family: inherit;
   background: transparent;
   text-align: center;
+}
+.leg-cell select {
+  text-overflow: ellipsis;
 }
 .leg-cell input:hover,
 .leg-cell select:hover { background: rgba(255, 255, 255, 0.9); border-color: var(--line); }
@@ -1299,6 +1273,77 @@ table.leg-rows-table td.leg-action-cell .btn-ghost {
 }
 table.leg-rows-table tr.row-error { background: #FCEEED; }
 table.leg-rows-table tbody tr:hover { background: #FAFBFC; }
+.leg-row-error-text { color: #b3261e; margin-top: 4px; font-family: inherit; }
+
+/* Stage entry row sits in the grid like Excel's input line. */
+tr.leg-stage-row { background: var(--row-hl); }
+tr.leg-stage-row td { vertical-align: middle; padding-top: 6px; padding-bottom: 6px; }
+tr.leg-stage-row td.leg-dp-cell { text-align: center; }
+
+/* Totals bar — outside horizontal scroll, left-aligned, always visible */
+.leg-totals-bar {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #F7F9FB;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 420px;
+}
+.leg-total-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.leg-totals-bar .leg-total-label {
+  font-weight: 600;
+  text-align: left;
+  min-width: 140px;
+  margin: 0;
+  min-height: 0;
+}
+.leg-total-value {
+  font-family: Consolas, monospace;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.leg-margin-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.leg-margin-controls input[type=number] {
+  width: 56px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: right;
+}
+.leg-margin-amount {
+  font-family: Consolas, monospace;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.leg-final-line .leg-total-label,
+.leg-final-line .leg-total-value {
+  font-weight: 700;
+}
+
+/* Legacy safety-margin strip (pipe system / older markup may still use it) */
+.leg-safety-margin-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; }
+.leg-safety-margin-row label { font-weight: 600; min-height: 0; margin-bottom: 0; }
+.leg-safety-margin-row input[type=number] { width: 60px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-family: inherit; text-align: right; }
+
+/* Safety margin rows in tfoot (pipe system still uses these) */
 table.leg-rows-table tfoot td {
   border-top: 2px solid var(--line);
   border-bottom: none;
@@ -1310,13 +1355,6 @@ table.leg-rows-table tfoot td.leg-total-label {
   padding-right: 12px;
   font-family: inherit;
 }
-.leg-row-error-text { color: #b3261e; margin-top: 4px; font-family: inherit; }
-
-/* Pipe system stage row still uses this class when present in the table. */
-tr.leg-stage-row { background: var(--row-hl); }
-tr.leg-stage-row td { vertical-align: top; padding-top: 8px; }
-
-/* Safety margin rows in tfoot */
 table.leg-rows-table tfoot tr.leg-margin-tr td {
   border-top: none;
   font-size: 12px;
@@ -1324,6 +1362,7 @@ table.leg-rows-table tfoot tr.leg-margin-tr td {
   padding-top: 3px;
   padding-bottom: 3px;
 }
+table.leg-rows-table tfoot tr.leg-total-margin-tr td { border-top: 1px solid var(--line); }
 
 /* ── Help / User Guide (see blueprints/help.py, templates/help.html) ─────── */
 
@@ -1412,12 +1451,6 @@ table.leg-rows-table tfoot tr.leg-margin-tr td {
   .help-layout { grid-template-columns: 1fr; }
   .help-index { position: static; }
 }
-table.leg-rows-table tfoot tr.leg-total-margin-tr td { border-top: 1px solid var(--line); }
-
-/* Safety margin input strip below the table */
-.leg-safety-margin-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; }
-.leg-safety-margin-row label { font-weight: 600; min-height: 0; margin-bottom: 0; }
-.leg-safety-margin-row input[type=number] { width: 60px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-family: inherit; text-align: right; }
 
 /* ── Pipe sizing (Hydronics) ─────────────────────────────────────────────── */
 .tile-water-border { border-left: 3px solid var(--water-accent); }

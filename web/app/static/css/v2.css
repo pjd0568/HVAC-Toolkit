@@ -1181,7 +1181,22 @@ a:hover { color: var(--v2-green-ink); }
   margin: 0 -4px;
   padding: 0 4px;
 }
-.v2-main .leg-rows-table { min-width: 980px; }
+.v2-main .leg-rows-table { min-width: 1040px; }
+.v2-main .leg-table-scroll {
+  overflow-x: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.v2-main .leg-table-scroll::-webkit-scrollbar { height: 10px; }
+.v2-main .leg-table-scroll::-webkit-scrollbar-track {
+  background: #EEF1F5;
+  border-radius: 5px;
+}
+.v2-main .leg-table-scroll::-webkit-scrollbar-thumb {
+  background: #B8C0CC;
+  border-radius: 5px;
+  border: 2px solid #EEF1F5;
+}
 .v2-main .pipe-sys-table { min-width: 720px; }
 
 /* Soften V1 industrial bits when they leak through */

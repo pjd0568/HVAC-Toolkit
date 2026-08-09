@@ -4,8 +4,8 @@
  * (Correction #4), flat-oval major/minor stepped independently through real
  * catalogue sizes only (Correction #5), a fully independent per-row Index
  * Leg pressure-drop builder (Correction #6), spreadsheet-style data grid
- * (Correction #7), and a 2-row labeled composer above the grid
- * (Correction #9).
+ * (Correction #7), and a spreadsheet stage row in the same grid
+ * (Correction #10; replaces the Correction #9 2-row labeled composer).
  *
  * All calculation and unit-conversion happens server-side
  * (blueprints/duct.py); this file only reads/writes form fields, calls the
@@ -17,9 +17,10 @@
  * (/api/state, /api/leg-state), two separate fetch/apply cycles. They now
  * also live on separate pages/modules (Correction #8).
  *
- * Correction #7 / #9: Index Leg composer is `#leg-stage` (2-row labeled
- * form); committed rows are a centered spreadsheet grid. `buildRowCellsHtml()`
- * mirrors `_duct_index_leg.html`'s `leg_row_cells` macro -- keep both in sync.
+ * Correction #7 / #10: Index Leg composer is `#leg-stage` (spreadsheet
+ * entry row in the same table); committed rows are a centered spreadsheet
+ * grid. `buildRowCellsHtml()` mirrors `_duct_index_leg.html`'s
+ * `leg_row_cells` macro -- keep both in sync.
  *
  * Correction #8: Duct Sizing and Index Leg / pressure drop are separate
  * modules. This file initialises whichever panels are present on the page
@@ -694,7 +695,7 @@
     var list = LEG_FITTINGS_BY_SHAPE[shape] || [];
     return list.map(function (f) {
       return '<option value="' + f.key + '"' + (f.key === selectedKey ? " selected" : "") +
-        ">" + f.label + " (K=" + f.k.toFixed(2) + ")</option>";
+        ">" + f.label + "</option>";
     }).join("");
   }
 
@@ -802,10 +803,11 @@
     legEls.errorBox.appendChild(div);
   }
 
-  // The composer's preview panel shows live velocity / VP / F-or-K and the
-  // item's pressure drop, or the stage-level error -- built with the DOM API
-  // + textContent (not innerHTML) since `leg.stage_error` can embed a raw
-  // value the user just typed (see blueprints/duct.py's `_f()`).
+  // The stage row's Pressure Drop cell shows live velocity / VP / ΔP/L-or-K
+  // and the item's pressure drop, or the stage-level error -- built with the
+  // DOM API + textContent (not innerHTML) since `leg.stage_error` can embed
+  // a raw value the user just typed (see blueprints/duct.py's `_f()`).
+  // Straight/flex → ΔP/L (friction rate, Pa/m); fitting → K; accessory → —.
   function updateStageResultCell(leg) {
     if (!legEls.stageResultCell) return;
     legEls.stageResultCell.innerHTML = "";
@@ -825,7 +827,7 @@
     metrics.className = "leg-preview-metrics suffix";
     function metric(id, label, text) {
       var wrap = document.createElement("span");
-      wrap.appendChild(document.createTextNode(label + ": "));
+      wrap.appendChild(document.createTextNode(label + " "));
       var span = document.createElement("span");
       span.id = id;
       span.textContent = text;
@@ -834,7 +836,27 @@
     }
     metric("stage-velocity", "V", s.velocity_display);
     metric("stage-vp", "VP", s.velocity_pressure_display);
-    metric("stage-friction", "F/K", s.friction_rate_display);
+
+    var fkWrap = document.createElement("span");
+    fkWrap.id = "stage-fk-wrap";
+    var fkLabel = document.createElement("span");
+    fkLabel.id = "stage-fk-label";
+    var fkVal = document.createElement("span");
+    fkVal.id = "stage-friction";
+    if (s.type === "fitting" && s.k != null) {
+      fkLabel.textContent = "K";
+      fkVal.textContent = Number(s.k).toFixed(2);
+    } else if (s.type === "straight" || s.type === "flex") {
+      fkLabel.textContent = "ΔP/L";
+      fkVal.textContent = s.friction_rate_display || "—";
+    } else {
+      fkLabel.textContent = "—";
+      fkVal.textContent = "";
+    }
+    fkWrap.appendChild(fkLabel);
+    fkWrap.appendChild(document.createTextNode(" "));
+    fkWrap.appendChild(fkVal);
+    metrics.appendChild(fkWrap);
 
     var dpLine = document.createElement("div");
     dpLine.className = "leg-preview-dp";
@@ -951,19 +973,14 @@
     updateStageResultCell(leg);
     syncReportFormLegFields(leg);
 
-    // Safety margin rows in tfoot
+    // Safety margin + final PD — always visible in the totals bar
     var margin = leg.safety_margin || 0;
-    var showMargin = margin > 0 && leg.total_with_margin_display;
-    var marginTr = document.getElementById("leg-margin-tr");
-    var totalMarginTr = document.getElementById("leg-total-margin-tr");
-    if (marginTr) marginTr.style.display = showMargin ? "" : "none";
-    if (totalMarginTr) totalMarginTr.style.display = showMargin ? "" : "none";
-    if (showMargin) {
-      setText("leg-margin-pct", margin.toFixed(0));
-      setText("leg-margin-amount", leg.margin_amount_display || "—");
-      setText("leg-margin-sym", leg.total_sym);
-      setText("leg-total-margin", leg.total_with_margin_display);
-      setText("leg-total-margin-sym", leg.total_sym);
+    setText("leg-margin-amount", leg.margin_amount_display || "0");
+    setText("leg-margin-sym", leg.total_sym);
+    setText("leg-total-margin", leg.total_with_margin_display || leg.total_display);
+    setText("leg-total-margin-sym", leg.total_sym);
+    if (legEls.safetyMargin && document.activeElement !== legEls.safetyMargin) {
+      legEls.safetyMargin.value = String(Math.round(margin));
     }
 
     if (legEls.exportLink && EXPORT_BASE_HREF) {
