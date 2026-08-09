@@ -1,0 +1,151 @@
+{# Shared Design Inputs form for Pipe Sizer and Pipe System PD. #}
+
+{% macro pipe_duty_form(fields, fluids, materials, applications, glycol_options_by_fluid, U, system=None) %}
+<div class="panel tile-water-border">
+  <div class="panel-head">Design Inputs</div>
+  <div class="panel-body">
+    <form method="get" id="pipe-form">
+      <div class="form-grid four">
+        <div style="grid-column:1/-1;">
+          <label>Flow</label>
+          <div class="mode-tabs">
+            <label class="mode-tab">
+              <input type="radio" name="mode" value="from_load" {{ 'checked' if fields.mode == 'from_load' }}>
+              Calculate from load
+            </label>
+            <label class="mode-tab">
+              <input type="radio" name="mode" value="flow_known" {{ 'checked' if fields.mode == 'flow_known' }}>
+              Flow known
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label for="application">Application</label>
+          <select id="application" name="application">
+            {% for key, label in applications.items() %}
+            <option value="{{ key }}" {{ 'selected' if fields.application == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="fluid">Fluid</label>
+          <select id="fluid" name="fluid">
+            {% for key, label in fluids.items() %}
+            <option value="{{ key }}" {{ 'selected' if fields.fluid == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div id="glycol-field" {% if fields.fluid == 'water' %}style="display:none"{% endif %}>
+          <label for="glycol_pct">Glycol concentration (% v/v)</label>
+          <select id="glycol_pct" name="glycol_pct">
+            {% for opt in glycol_options_by_fluid.get(fields.fluid, []) %}
+            <option value="{{ opt.pct }}" {{ 'selected' if fields.glycol_pct == opt.pct|string }}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="material">Pipe material</label>
+          <select id="material" name="material">
+            {% for key, label in materials.items() %}
+            <option value="{{ key }}" {{ 'selected' if fields.material == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div id="load-field" {% if fields.mode != 'from_load' %}style="display:none"{% endif %}>
+          <label for="load">Load ({{ U.sym('power') }})</label>
+          <input id="load" name="load" value="{{ fields.load }}" inputmode="decimal">
+        </div>
+
+        <div id="flow-field" {% if fields.mode != 'flow_known' %}style="display:none"{% endif %}>
+          <label for="flow_ls">Flow (l/s)</label>
+          <input id="flow_ls" name="flow_ls" value="{{ fields.flow_ls }}" inputmode="decimal">
+        </div>
+
+        <div>
+          <label for="delta_t">ΔT ({% if U.system == 'IP' %}°F{% else %}K{% endif %} difference)</label>
+          <input id="delta_t" name="delta_t" value="{{ fields.delta_t }}" inputmode="decimal">
+        </div>
+
+        <div>
+          <label for="lwt">LWT — leaving water temp ({{ U.sym('temperature') }})</label>
+          <input id="lwt" name="lwt" value="{{ fields.lwt }}" inputmode="decimal">
+        </div>
+      </div>
+
+      {% if system is not none %}
+      {# Preserve circuit / lift across Calculate on the system page. #}
+      <input type="hidden" name="circuit" id="circuit-hidden"
+             value="{{ system.head.fields.circuit if system.head else 'pressurised' }}">
+      <input type="hidden" name="lift" id="lift-hidden"
+             value="{{ system.head.fields.lift if system.head else '0' }}">
+      {% endif %}
+
+      <div style="margin-top:14px;">
+        <button class="btn-accent" type="submit">Calculate</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro pipe_duty_scripts(glycol_options_by_fluid) %}
+<script>
+(function () {
+  var form = document.getElementById('pipe-form');
+  if (!form) return;
+
+  function syncMode() {
+    var mode = (form.querySelector('input[name="mode"]:checked') || {}).value || 'from_load';
+    var loadField = document.getElementById('load-field');
+    var flowField = document.getElementById('flow-field');
+    if (loadField) loadField.style.display = mode === 'from_load' ? '' : 'none';
+    if (flowField) flowField.style.display = mode === 'flow_known' ? '' : 'none';
+  }
+
+  function syncFluid() {
+    var fluid = document.getElementById('fluid');
+    var glycol = document.getElementById('glycol-field');
+    var glycolSel = document.getElementById('glycol_pct');
+    if (!fluid || !glycol || !glycolSel) return;
+    var isWater = fluid.value === 'water';
+    glycol.style.display = isWater ? 'none' : '';
+    if (isWater) return;
+    var byFluid = {{ glycol_options_by_fluid | tojson }};
+    var opts = byFluid[fluid.value] || [];
+    var current = glycolSel.value;
+    glycolSel.innerHTML = '';
+    opts.forEach(function (opt) {
+      var el = document.createElement('option');
+      el.value = String(opt.pct);
+      el.textContent = opt.label;
+      if (String(opt.pct) === current) el.selected = true;
+      glycolSel.appendChild(el);
+    });
+    if (!glycolSel.value && opts.length) {
+      glycolSel.value = String(opts[Math.floor(opts.length / 2)].pct);
+    }
+  }
+
+  form.querySelectorAll('input[name="mode"]').forEach(function (el) {
+    el.addEventListener('change', syncMode);
+  });
+  var fluidSel = document.getElementById('fluid');
+  if (fluidSel) fluidSel.addEventListener('change', syncFluid);
+  syncFluid();
+
+  document.addEventListener('focus', function (e) {
+    var el = e.target;
+    if (!el || el.tagName !== 'INPUT') return;
+    if (el.type === 'number' || el.inputMode === 'decimal' || el.hasAttribute('data-row-field') ||
+        el.name === 'load' || el.name === 'flow_ls') {
+      el.select();
+    }
+  }, true);
+})();
+</script>
+{% endmacro %}

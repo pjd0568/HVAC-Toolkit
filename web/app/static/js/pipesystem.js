@@ -296,7 +296,8 @@
     }
 
     function syncReportForm(system) {
-      var reportForm = document.querySelector('form[action$="/report"]');
+      var reportForm = document.querySelector('form[action*="system/report"]')
+        || document.querySelector('form[action$="/report"]');
       if (!reportForm) return;
       Array.prototype.slice.call(reportForm.querySelectorAll('input[type="hidden"]')).forEach(function (inp) {
         var n = inp.name || "";

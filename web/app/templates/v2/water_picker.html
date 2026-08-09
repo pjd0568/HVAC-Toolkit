@@ -1,0 +1,17 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Water{% endblock %}
+{% block content %}
+
+<div class="v2-greeting">Hydronics</div>
+<div class="v2-greeting-sub">Size a pipe, or build a circuit pressure-drop schedule.</div>
+
+<ul class="v2-picker-list">
+  {% if access.can('pipe.sizer') %}
+  <li><a href="{{ url_for('v2.pipe') }}">Pipe sizing</a></li>
+  {% endif %}
+  {% if access.can('pipe.system') %}
+  <li><a href="{{ url_for('v2.pipe_system') }}">System — pressure drop</a></li>
+  {% endif %}
+</ul>
+
+{% endblock %}

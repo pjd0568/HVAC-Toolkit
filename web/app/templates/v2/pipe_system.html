@@ -1,0 +1,41 @@
+{% extends "v2/base.html" %}
+{% from "_pipe_duty.html" import pipe_duty_form, pipe_duty_scripts %}
+{% from "_pipe_system.html" import pipe_system_panel, pipe_system_scripts, pipe_system_styles %}
+{% block page_title %}Pipe System{% endblock %}
+{% block extra_head %}
+{{ pipe_system_styles() }}
+{% endblock %}
+{% block content %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="pipe-page-stack">
+{{ pipe_duty_form(fields, fluids, materials, applications, glycol_options_by_fluid, U, system=system) }}
+
+{% if flow_display %}
+<div class="panel tile-water-border">
+  <div class="panel-head">Duty flow</div>
+  <div class="panel-body pipe-flow-strip">
+    <div class="pipe-flow-item"><span class="pipe-flow-val">{{ flow_display.ls }}</span> l/s</div>
+    <div class="pipe-flow-item"><span class="pipe-flow-val">{{ flow_display.m3h }}</span> m³/h</div>
+    <div class="pipe-flow-item muted">Mass flow {{ flow_display.mass_kg_s }} kg/s</div>
+  </div>
+</div>
+{% endif %}
+</div>
+
+{{ pipe_system_panel(
+     system, U,
+     report_action=url_for('pipe.report_system'),
+     report_fields=report_fields,
+     panel_style='margin-top:0;',
+     flow_display=flow_display
+) }}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>window.PIPE_API_BASE = {{ url_for('pipe.index')|tojson }};</script>
+{{ pipe_duty_scripts(glycol_options_by_fluid) }}
+{{ pipe_system_scripts(system) }}
+{% endblock %}

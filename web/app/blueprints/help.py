@@ -50,6 +50,7 @@ HELP_NAV = [
         "group": "Hydronics",
         "sections": [
             {"id": "pipe", "title": "Pipe Sizing"},
+            {"id": "pipe-system", "title": "Pipe System"},
         ],
     },
     {
@@ -84,6 +85,7 @@ ACTIVE_TO_ANCHOR = {
     "duct": "duct",
     "duct_index_leg": "duct",
     "pipe": "pipe",
+    "pipe_system": "pipe-system",
     "converter": "converter",
     "guides": "guides",
     "methodology": "methodology",

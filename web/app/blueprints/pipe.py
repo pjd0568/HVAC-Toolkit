@@ -739,7 +739,11 @@ def _sys_table_for_report(system: dict):
     return headers, rows, footer_count
 
 
-def _report_fields_for(fields: dict, system: dict) -> dict:
+def _report_fields_for_sizer(fields: dict) -> dict:
+    return dict(fields)
+
+
+def _report_fields_for_system(fields: dict, system: dict) -> dict:
     out = dict(fields)
     out["sys_row_count"] = str(system["row_count"])
     out["sys_safety_margin"] = str(system.get("safety_margin", 0))
@@ -753,6 +757,12 @@ def _report_fields_for(fields: dict, system: dict) -> dict:
     return out
 
 
+def _report_fields_for(fields: dict, system: dict) -> dict:
+    """Legacy combined flatten — prefer `_report_fields_for_sizer` /
+    `_report_fields_for_system` now that the modules are separate pages."""
+    return _report_fields_for_system(fields, system)
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @bp.route("/", methods=["GET"])
@@ -761,6 +771,14 @@ def index():
     from app.ui_prefs import redirect_to_v2
 
     return redirect_to_v2("v2.pipe")
+
+
+@bp.route("/system/", methods=["GET"])
+@require_module("pipe.system")
+def system_index():
+    from app.ui_prefs import redirect_to_v2
+
+    return redirect_to_v2("v2.pipe_system")
 
 
 @bp.route("/api/system-state", methods=["GET"])
@@ -852,21 +870,40 @@ def report():
     if state["error"]:
         return Response(state["error"], status=400)
 
-    system = _compute_system_state(request.form, U)
-    input_rows, result_rows, size_table = _report_rows(state, U, system)
+    input_rows, result_rows, size_table = _report_rows(state, U, system=None)
+    meta = report_meta_from_form(TOOL_TITLE)
+    pdf = build_pdf(
+        meta=meta,
+        input_rows=input_rows,
+        result_rows=result_rows,
+        extra_tables=[size_table],
+    )
+    return pdf_response(pdf, meta=meta, fallback="pipe-sizing-report")
 
-    extra = [size_table]
+
+@bp.route("/system/report", methods=["POST"])
+@require_module("pipe.system")
+def report_system():
+    U = current_view()
+    state = _compute_state(request.form, U)
+    if state["error"]:
+        return Response(state["error"], status=400)
+
+    system = _compute_system_state(request.form, U)
+    input_rows, result_rows, _size_table = _report_rows(state, U, system)
+
+    extra = []
     if system["rows"]:
         headers, rows, footer_count = _sys_table_for_report(system)
         extra.append(
             ("Pipe System — Pressure Drop", headers, rows, _SYS_PDF_COL_WIDTHS_MM, footer_count)
         )
 
-    meta = report_meta_from_form(TOOL_TITLE)
+    meta = report_meta_from_form("Pipe System — Pressure Drop")
     pdf = build_pdf(
         meta=meta,
         input_rows=input_rows,
         result_rows=result_rows,
         extra_tables=extra,
     )
-    return pdf_response(pdf, meta=meta, fallback="pipe-sizing-report")
+    return pdf_response(pdf, meta=meta, fallback="pipe-system-report")

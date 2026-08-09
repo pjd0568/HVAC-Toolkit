@@ -1,5 +1,113 @@
 {# Pipe System — compact composer above Tabulator results grid (mirrors Index Leg).
    Calc stays in blueprints/pipe.py (/api/system-state). #}
+{% from "_report_form.html" import report_form %}
+
+{% macro pipe_system_panel(system, U, report_action=None, report_fields=None, panel_style='', show_ctx_error=True, flow_display=None) %}
+{% set head = system.head %}
+<div class="panel pipe-system-panel tile-water-border" id="sys-panel" style="{{ panel_style }}">
+  <details class="panel-help">
+    <summary class="panel-head" aria-label="Pipe System. How to use">
+      <span>Pipe System — Pressure Drop</span>
+      <span class="help-inline-mark" aria-hidden="true">?</span>
+    </summary>
+    <div class="panel-help-body">
+      Fill the compact form above (type, DN, flow, length or fitting), check the
+      live preview, then press <strong>Add</strong> to commit a row into the
+      spreadsheet table. Committed rows can still be edited in-place.
+      Each row uses its own DN and optional flow (blank flow inherits the duty
+      flow from Design Inputs). Fitting/valve K-factors are indicative for
+      preliminary sizing — verify critical runs against manufacturer or primary
+      data. Devices take a manufacturer ΔP.
+    </div>
+  </details>
+  <div class="panel-body">
+
+    <div class="pipe-sys-params" id="sys-params">
+      <div class="pipe-sys-params-title">System parameters</div>
+      <div class="form-grid four">
+        <div>
+          <label>Fluid</label>
+          <div class="pipe-sys-fluid" id="sys-fluid-label">{{ head.fluid_label or '—' }}</div>
+          <div class="suffix">From Design Inputs above (duty / properties)</div>
+        </div>
+        <div style="grid-column: span 2;">
+          <label>System type</label>
+          <div class="mode-tabs" id="circuit-tabs">
+            <label class="mode-tab">
+              <input type="radio" name="circuit_ui" value="pressurised" id="circuit-pressurised"
+                     {{ 'checked' if head.fields.circuit == 'pressurised' }}>
+              Pressurised closed circuit
+            </label>
+            <label class="mode-tab">
+              <input type="radio" name="circuit_ui" value="open" id="circuit-open"
+                     {{ 'checked' if head.fields.circuit == 'open' }}>
+              Open tank
+            </label>
+          </div>
+        </div>
+        <div id="lift-field" {% if not head.lift_visible %}style="display:none"{% endif %}>
+          <label for="lift">Static lift height ({{ head.lift_sym }})</label>
+          <input id="lift" value="{{ head.fields.lift }}" inputmode="decimal" placeholder="0">
+          <div class="suffix">Vertical rise to open water surface — included in pump head</div>
+        </div>
+      </div>
+      <p class="suffix" id="head-note" style="margin:10px 0 0;">{{ head.note }}</p>
+    </div>
+
+    {% if show_ctx_error and system.ctx_error and not flow_display %}
+    <div class="error">{{ system.ctx_error }}</div>
+    {% endif %}
+
+    {{ pipe_system_components(system) }}
+
+    <div class="pipe-sys-section-label" style="margin-top:22px;">Required pump head</div>
+    <div id="head-panel">
+      {% if head.error %}
+      <div class="error">{{ head.error }}</div>
+      {% else %}
+      <table class="results" id="head-results-table">
+        <tr>
+          <th>System type</th>
+          <td id="head-circuit-label">{{ head.circuit_label }}</td>
+        </tr>
+        <tr id="head-lift-row" {% if not head.lift_visible %}style="display:none"{% endif %}>
+          <th>Static lift</th>
+          <td class="num">
+            <span class="valunit">
+              <span class="v" id="head-lift-val">{{ head.lift_display }}</span>
+              <span class="u" id="head-lift-sym">{{ head.lift_sym }}</span>
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <th>Static head</th>
+          <td class="num" id="head-static-summary">{{ head.static.summary if head.static else '—' }}</td>
+        </tr>
+        <tr>
+          <th>Circuit friction{% if system.safety_margin %} (with margin){% endif %}</th>
+          <td class="num" id="head-friction-summary">{{ head.friction.summary if head.friction else '—' }}</td>
+        </tr>
+        <tr>
+          <th>Required pump head</th>
+          <td class="num" style="font-weight:700;" id="head-pump-summary">{{ head.pump.summary if head.pump else '—' }}</td>
+        </tr>
+      </table>
+      <p class="suffix" style="margin-bottom:0;">
+        {% if U.system == 'SI' %}
+        Head shown as Pa · kPa · bar.
+        {% else %}
+        Head shown as psi · in.wg · ft of fluid (duty fluid density).
+        {% endif %}
+      </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if report_action and report_fields %}
+{{ report_form(report_action, report_fields, panel_class='tile-water-border') }}
+{% endif %}
+{% endmacro %}
 
 {% macro pipe_system_components(system) %}
 {% set stage_type = system.stage_raw.type or "straight" %}
@@ -150,7 +258,7 @@
   } | tojson }};
 </script>
 <script src="{{ url_for('static', filename='vendor/tabulator/tabulator.min.js') }}?v=6.3.1"></script>
-<script src="{{ url_for('static', filename='js/pipesystem.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/pipesystem.js') }}?v=3"></script>
 {% endmacro %}
 
 {% macro pipe_system_styles() %}

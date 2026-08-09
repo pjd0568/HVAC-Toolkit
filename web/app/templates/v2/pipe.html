@@ -1,16 +1,9 @@
 {% extends "v2/base.html" %}
 {% from "_report_form.html" import report_form %}
-{% from "_pipe_system.html" import pipe_system_components, pipe_system_scripts, pipe_system_styles %}
+{% from "_pipe_duty.html" import pipe_duty_form, pipe_duty_scripts %}
 {% block page_title %}Pipe Sizing{% endblock %}
-{% block extra_head %}
-{{ pipe_system_styles() }}
-{% endblock %}
 {% block content %}
 
-<div data-v2-wizard data-initial-step="{{ initial_step|default(1) }}">
-  <div class="v2-stepper"><span data-step-label>Step 1 of 3</span></div>
-
-<div class="v2-step" data-step="1" data-step-title="Duty">
 <div class="note-banner">
   Friction loss uses Darcy–Weisbach with Colebrook–White (CIBSE Guide C).
   Velocity traffic lights use <strong>per-DN bands</strong> (not a flat 1.5&nbsp;m/s
@@ -24,94 +17,7 @@
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="pipe-page-stack">
-<div class="panel tile-water-border">
-  <div class="panel-head">Design Inputs</div>
-  <div class="panel-body">
-    <form method="get" id="pipe-form">
-      <div class="form-grid four">
-        <div style="grid-column:1/-1;">
-          <label>Flow</label>
-          <div class="mode-tabs">
-            <label class="mode-tab">
-              <input type="radio" name="mode" value="from_load" {{ 'checked' if fields.mode == 'from_load' }}>
-              Calculate from load
-            </label>
-            <label class="mode-tab">
-              <input type="radio" name="mode" value="flow_known" {{ 'checked' if fields.mode == 'flow_known' }}>
-              Flow known
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <label for="application">Application</label>
-          <select id="application" name="application">
-            {% for key, label in applications.items() %}
-            <option value="{{ key }}" {{ 'selected' if fields.application == key }}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div>
-          <label for="fluid">Fluid</label>
-          <select id="fluid" name="fluid">
-            {% for key, label in fluids.items() %}
-            <option value="{{ key }}" {{ 'selected' if fields.fluid == key }}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div id="glycol-field" {% if fields.fluid == 'water' %}style="display:none"{% endif %}>
-          <label for="glycol_pct">Glycol concentration (% v/v)</label>
-          <select id="glycol_pct" name="glycol_pct">
-            {% for opt in glycol_options_by_fluid.get(fields.fluid, []) %}
-            <option value="{{ opt.pct }}" {{ 'selected' if fields.glycol_pct == opt.pct|string }}>{{ opt.label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div>
-          <label for="material">Pipe material</label>
-          <select id="material" name="material">
-            {% for key, label in materials.items() %}
-            <option value="{{ key }}" {{ 'selected' if fields.material == key }}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div id="load-field" {% if fields.mode != 'from_load' %}style="display:none"{% endif %}>
-          <label for="load">Load ({{ U.sym('power') }})</label>
-          <input id="load" name="load" value="{{ fields.load }}" inputmode="decimal">
-        </div>
-
-        <div id="flow-field" {% if fields.mode != 'flow_known' %}style="display:none"{% endif %}>
-          <label for="flow_ls">Flow (l/s)</label>
-          <input id="flow_ls" name="flow_ls" value="{{ fields.flow_ls }}" inputmode="decimal">
-        </div>
-
-        <div>
-          <label for="delta_t">ΔT ({% if U.system == 'IP' %}°F{% else %}K{% endif %} difference)</label>
-          <input id="delta_t" name="delta_t" value="{{ fields.delta_t }}" inputmode="decimal">
-        </div>
-
-        <div>
-          <label for="lwt">LWT — leaving water temp ({{ U.sym('temperature') }})</label>
-          <input id="lwt" name="lwt" value="{{ fields.lwt }}" inputmode="decimal">
-        </div>
-      </div>
-
-      {# Circuit / lift live on the system calculator; kept here so Calculate keeps them. #}
-      <input type="hidden" name="circuit" id="circuit-hidden"
-             value="{{ system.head.fields.circuit if system is defined and system.head else 'pressurised' }}">
-      <input type="hidden" name="lift" id="lift-hidden"
-             value="{{ system.head.fields.lift if system is defined and system.head else '0' }}">
-
-      <div style="margin-top:14px;">
-        <button class="btn-accent" type="submit">Calculate</button>
-      </div>
-    </form>
-  </div>
-</div>
+{{ pipe_duty_form(fields, fluids, materials, applications, glycol_options_by_fluid, U) }}
 
 {% if flow_display %}
 <div class="panel tile-water-border">
@@ -135,9 +41,7 @@
 </div>
 {% endif %}
 </div><!-- pipe-page-stack -->
-</div><!-- end step 1 -->
 
-<div class="v2-step" data-step="2" data-step-title="Size &amp; detail">
 <div class="pipe-results-layout">
   <div class="panel pipe-table-panel tile-water-border">
     <div class="panel-head">Pipe sizes — {{ materials[fields.material] }}</div>
@@ -219,192 +123,13 @@
   {% endif %}
 </div>
 
-</div><!-- end step 2 -->
-
-{% if access.can('pipe.system') %}
-<div class="v2-step" data-step="3" data-step-title="System">
-<div class="table-scroll">
-<div class="panel pipe-system-panel tile-water-border" id="sys-panel">
-  <details class="panel-help">
-    <summary class="panel-head" aria-label="Pipe System. How to use">
-      <span>Pipe System</span>
-      <span class="help-inline-mark" aria-hidden="true">?</span>
-    </summary>
-    <div class="panel-help-body">
-      Fill the compact form above (type, DN, flow, length or fitting), check the
-      live preview, then press <strong>Add</strong> to commit a row into the
-      spreadsheet table. Committed rows can still be edited in-place.
-      Each row uses its own DN and optional flow (blank flow inherits the duty
-      flow from Design Inputs). Fitting/valve K-factors are indicative for
-      preliminary sizing — verify critical runs against manufacturer or primary
-      data. Devices take a manufacturer ΔP.
-    </div>
-  </details>
-  <div class="panel-body">
-
-    {% set head = system.head %}
-    <div class="pipe-sys-params" id="sys-params">
-      <div class="pipe-sys-params-title">System parameters</div>
-      <div class="form-grid four">
-        <div>
-          <label>Fluid</label>
-          <div class="pipe-sys-fluid" id="sys-fluid-label">{{ head.fluid_label or '—' }}</div>
-          <div class="suffix">From Design Inputs above (duty / properties)</div>
-        </div>
-        <div style="grid-column: span 2;">
-          <label>System type</label>
-          <div class="mode-tabs" id="circuit-tabs">
-            <label class="mode-tab">
-              <input type="radio" name="circuit_ui" value="pressurised" id="circuit-pressurised"
-                     {{ 'checked' if head.fields.circuit == 'pressurised' }}>
-              Pressurised closed circuit
-            </label>
-            <label class="mode-tab">
-              <input type="radio" name="circuit_ui" value="open" id="circuit-open"
-                     {{ 'checked' if head.fields.circuit == 'open' }}>
-              Open tank
-            </label>
-          </div>
-        </div>
-        <div id="lift-field" {% if not head.lift_visible %}style="display:none"{% endif %}>
-          <label for="lift">Static lift height ({{ head.lift_sym }})</label>
-          <input id="lift" value="{{ head.fields.lift }}" inputmode="decimal" placeholder="0">
-          <div class="suffix">Vertical rise to open water surface — included in pump head</div>
-        </div>
-      </div>
-      <p class="suffix" id="head-note" style="margin:10px 0 0;">{{ head.note }}</p>
-    </div>
-
-    {% if system.ctx_error and not flow_display %}
-    <div class="error">{{ system.ctx_error }}</div>
-    {% endif %}
-
-    {{ pipe_system_components(system) }}
-
-    <div class="pipe-sys-section-label" style="margin-top:22px;">Required pump head</div>
-    <div id="head-panel">
-      {% if head.error %}
-      <div class="error">{{ head.error }}</div>
-      {% else %}
-      <table class="results" id="head-results-table">
-        <tr>
-          <th>System type</th>
-          <td id="head-circuit-label">{{ head.circuit_label }}</td>
-        </tr>
-        <tr id="head-lift-row" {% if not head.lift_visible %}style="display:none"{% endif %}>
-          <th>Static lift</th>
-          <td class="num">
-            <span class="valunit">
-              <span class="v" id="head-lift-val">{{ head.lift_display }}</span>
-              <span class="u" id="head-lift-sym">{{ head.lift_sym }}</span>
-            </span>
-          </td>
-        </tr>
-        <tr>
-          <th>Static head</th>
-          <td class="num" id="head-static-summary">{{ head.static.summary if head.static else '—' }}</td>
-        </tr>
-        <tr>
-          <th>Circuit friction{% if system.safety_margin %} (with margin){% endif %}</th>
-          <td class="num" id="head-friction-summary">{{ head.friction.summary if head.friction else '—' }}</td>
-        </tr>
-        <tr>
-          <th>Required pump head</th>
-          <td class="num" style="font-weight:700;" id="head-pump-summary">{{ head.pump.summary if head.pump else '—' }}</td>
-        </tr>
-      </table>
-      <p class="suffix" style="margin-bottom:0;">
-        {% if U.system == 'SI' %}
-        Head shown as Pa · kPa · bar.
-        {% else %}
-        Head shown as psi · in.wg · ft of fluid (duty fluid density).
-        {% endif %}
-      </p>
-      {% endif %}
-    </div>
-  </div>
-</div>
-</div><!-- table-scroll -->
 {% if report_fields %}
 {{ report_form(url_for('pipe.report'), report_fields, panel_class='tile-water-border') }}
 {% endif %}
-</div><!-- step 3 -->
-{% else %}
-<div class="v2-step" data-step="3" data-step-title="System">
-<div class="panel"><div class="panel-head">Pipe system</div><div class="panel-body"><p class="suffix">System builder needs suite access.</p></div></div>
-{% if report_fields %}
-{{ report_form(url_for('pipe.report'), report_fields, panel_class='tile-water-border') }}
-{% endif %}
-</div>
-{% endif %}
-
-  <div class="v2-step-nav">
-    <button type="button" class="btn-ghost" data-step-back>Back</button>
-    <button type="button" class="btn-accent" data-step-next>Continue</button>
-  </div>
-  <div class="v2-step-spacer" aria-hidden="true"></div>
-</div><!-- wizard -->
 
 {% endblock %}
 
 {% block extra_scripts %}
 <script>window.PIPE_API_BASE = {{ url_for('pipe.index')|tojson }};</script>
-{% if access.can('pipe.system') %}
-{{ pipe_system_scripts(system) }}
-{% endif %}
-<script src="{{ url_for('static', filename='js/v2_wizard.js') }}?v=2"></script>
-<script>
-(function () {
-  var form = document.getElementById('pipe-form');
-  if (!form) return;
-
-  function syncMode() {
-    var mode = (form.querySelector('input[name="mode"]:checked') || {}).value || 'from_load';
-    var loadField = document.getElementById('load-field');
-    var flowField = document.getElementById('flow-field');
-    if (loadField) loadField.style.display = mode === 'from_load' ? '' : 'none';
-    if (flowField) flowField.style.display = mode === 'flow_known' ? '' : 'none';
-  }
-
-  function syncFluid() {
-    var fluid = document.getElementById('fluid');
-    var glycol = document.getElementById('glycol-field');
-    var glycolSel = document.getElementById('glycol_pct');
-    if (!fluid || !glycol || !glycolSel) return;
-    var isWater = fluid.value === 'water';
-    glycol.style.display = isWater ? 'none' : '';
-    if (isWater) return;
-    var byFluid = {{ glycol_options_by_fluid | tojson }};
-    var opts = byFluid[fluid.value] || [];
-    var current = glycolSel.value;
-    glycolSel.innerHTML = '';
-    opts.forEach(function (opt) {
-      var el = document.createElement('option');
-      el.value = String(opt.pct);
-      el.textContent = opt.label;
-      if (String(opt.pct) === current) el.selected = true;
-      glycolSel.appendChild(el);
-    });
-    if (!glycolSel.value && opts.length) {
-      glycolSel.value = String(opts[Math.floor(opts.length / 2)].pct);
-    }
-  }
-
-  form.querySelectorAll('input[name="mode"]').forEach(function (el) {
-    el.addEventListener('change', syncMode);
-  });
-  var fluidSel = document.getElementById('fluid');
-  if (fluidSel) fluidSel.addEventListener('change', syncFluid);
-  syncFluid();
-
-  document.addEventListener('focus', function (e) {
-    var el = e.target;
-    if (!el || el.tagName !== 'INPUT') return;
-    if (el.type === 'number' || el.inputMode === 'decimal' || el.hasAttribute('data-row-field') ||
-        el.name === 'load' || el.name === 'flow_ls') {
-      el.select();
-    }
-  }, true);
-})();
-</script>
+{{ pipe_duty_scripts(glycol_options_by_fluid) }}
 {% endblock %}

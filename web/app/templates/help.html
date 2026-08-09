@@ -412,14 +412,14 @@
 
     <!-- ═══════════════ PIPE SIZING ═══════════════ -->
     <section class="help-section" id="pipe" data-help-section
-             data-keywords="pipe sizing hydronics lthw chw load flow delta t lwt glycol dtx epg ppg velocity pressure gradient dn carbon steel copper stainless dairy cibse darcy weisbach system fittings valves k-factor safety margin lift static head pump open pressurised bar kpa">
+             data-keywords="pipe sizing hydronics lthw chw load flow delta t lwt glycol dtx epg ppg velocity pressure gradient dn carbon steel copper stainless dairy cibse darcy weisbach">
       <h2 class="help-h">Pipe Sizing</h2>
-      <p class="help-lead"><span class="help-badge water">Hydronics</span> Flow from load or known flow; DN catalogue with traffic lights; circuit pressure-drop schedule with fittings and devices.</p>
+      <p class="help-lead"><span class="help-badge water">Hydronics</span> Flow from load or known flow; DN catalogue with traffic lights.</p>
 
       <div class="help-sub">When to use</div>
-      <p>Size LTHW or CHW pipework: derive flow from a heating or cooling duty, or check a known flow against standard DN sizes. Then total the index-circuit pressure drop with straight runs, fittings/valves (K-factors), and manufacturer devices entered as direct Pa.</p>
+      <p>Size LTHW or CHW pipework: derive flow from a heating or cooling duty, or check a known flow against standard DN sizes. For circuit pressure drop and pump head, use the separate <a href="#pipe-system">Pipe System</a> tool.</p>
 
-      <div class="help-sub">Inputs — Design (sizer)</div>
+      <div class="help-sub">Inputs — Design</div>
       <dl class="help-io">
         <dt>Flow mode</dt><dd><strong>Calculate from load</strong> — duty, ΔT and LWT give mass and volumetric flow. <strong>Flow known</strong> — enter flow directly in l/s (both l/s and m³/h are always shown).</dd>
         <dt>Application</dt><dd>LTHW or CHW — duty context (traffic-light bands are the same for both).</dd>
@@ -428,16 +428,26 @@
         <dt>Material</dt><dd>Carbon steel (BS EN 10255), copper (BS EN 1057), or thin-wall stainless dairy tube (DIN 11850).</dd>
       </dl>
 
-      <div class="help-sub">How to use — sizer</div>
+      <div class="help-sub">How to use</div>
       <ol class="help-steps">
         <li>Choose flow mode, application, fluid and pipe material.</li>
         <li>Enter load (or flow), ΔT and LWT, then click <strong>Calculate</strong>.</li>
         <li>Review the size table — green = ideal band (ΔP/L 200–300 Pa/m and per-DN velocity ideal); amber = CAPEX-heavy or CAPEX-light; red = out of range.</li>
         <li>Click a size row — pipe dimensions appear in the centre panel; flow and fluid data on the right.</li>
       </ol>
+      <div class="help-tip">Traffic-light bands for the DN catalogue are documented under <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Reference → Pipe Sizing Design Limits</a>. Velocity status uses per-DN bands (DN ≤ 50 max 1.5 m/s aligns with CIBSE Guide C Table 2.2; larger DN allow higher speeds) — not a flat 1.5 m/s limit on every size.</div>
+    </section>
 
-      <h3 class="help-sub">Pipe System</h3>
-      <p>Define the whole-system parameters first, then build the dynamic ΔP schedule. Fluid and duty come from Design Inputs; system type and lift sit at the top of this panel.</p>
+    <!-- ═══════════════ PIPE SYSTEM ═══════════════ -->
+    <section class="help-section" id="pipe-system" data-help-section
+             data-keywords="pipe system pressure drop hydronics fittings valves k-factor safety margin lift static head pump open pressurised bar kpa circuit index">
+      <h2 class="help-h">Pipe System</h2>
+      <p class="help-lead"><span class="help-badge water">Hydronics</span> Circuit pressure-drop schedule with fittings, devices, and required pump head.</p>
+
+      <div class="help-sub">When to use</div>
+      <p>Total the index-circuit pressure drop with straight runs, fittings/valves (K-factors), and manufacturer devices entered as direct Pa. Set Design Inputs on this page for fluid and duty flow; DN catalogue sizing stays in <a href="#pipe">Pipe Sizing</a>.</p>
+
+      <div class="help-sub">Inputs</div>
       <dl class="help-io">
         <dt>System type</dt><dd><strong>Pressurised closed circuit</strong> — return / gravity cancels physical lift; pump head = friction only. <strong>Open tank</strong> — pump must lift to the open water surface; pump head = static lift + friction. Lift height is shown only for open tank.</dd>
         <dt>Static lift height</dt><dd>Open tank only — vertical rise to the open water surface (m or ft).</dd>
@@ -449,11 +459,10 @@
       </dl>
       <ol class="help-steps">
         <li>Set Design Inputs (fluid, duty) and Calculate so flow and fluid properties are known.</li>
-        <li>In Pipe System, choose Pressurised closed circuit or Open tank; enter lift only if open.</li>
-        <li>Add components in the tinted top row and click <strong>+ Add</strong>; edit rows in place.</li>
+        <li>Choose Pressurised closed circuit or Open tank; enter lift only if open.</li>
+        <li>Add components in the compact form and click <strong>+ Add</strong>; edit rows in place on the spreadsheet.</li>
         <li>Read required pump head at the bottom of the panel.</li>
       </ol>
-      <div class="help-tip">Traffic-light bands for the DN catalogue are documented under <a href="{{ url_for('guides.article', slug='pipe-sizing-design-limits') }}">Reference → Pipe Sizing Design Limits</a>. Velocity status uses per-DN bands (DN ≤ 50 max 1.5 m/s aligns with CIBSE Guide C Table 2.2; larger DN allow higher speeds) — not a flat 1.5 m/s limit on every size.</div>
       <div class="help-note">Full system volume (all pipework including branches, client-side volume, chiller volume, minimum chiller volume — for glycol purchase, buffer tanks and expansion vessels) is planned as a later stage.</div>
     </section>
 
