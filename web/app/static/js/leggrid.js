@@ -478,59 +478,69 @@
 
     table = new Tabulator(mount, {
       data: (INITIAL.rows || []).map(gridRowFromApi),
-      layout: "fitColumns",
+      layout: "fitData",
       reactiveData: false,
       selectableRows: false,
+      rowHeight: 22,
       placeholder: "No rows yet — fill the form above and press Add.",
       columnHeaderVertAlign: "middle",
       rowFormatter: rowFormatter,
       columns: [
         {
-          title: "Item", field: "item", width: 54,
+          title: "Item", field: "item", width: 40,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           formatter: function (cell) { return String(cell.getRow().getPosition(true)); }
         },
         {
-          title: "Type", field: "type", width: 118,
+          title: "Type", field: "type", width: 72,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "list", editorParams: { values: typeValues() },
-          formatter: "lookup", formatterParams: typeValues(), editable: isEditable
+          formatter: function (cell) {
+            var map = { straight: "Straight", flex: "Flex", fitting: "Fitting", accessory: "Accessory" };
+            return map[cell.getValue()] || cell.getValue() || "";
+          },
+          editable: isEditable
         },
         {
-          title: "Shape", field: "shape", width: 100,
+          title: "Shape", field: "shape", width: 72,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "list", editorParams: { values: shapeValues() },
-          formatter: "lookup", formatterParams: shapeValues(), editable: isEditable
+          formatter: function (cell) {
+            var map = { circular: "Circ", rectangular: "Rect", flat_oval: "FO" };
+            return map[cell.getValue()] || cell.getValue() || "";
+          },
+          editable: isEditable
         },
         {
-          title: "Volume", field: "volume", width: 78,
+          title: "Volume", field: "volume", width: 64,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "input", editable: isEditable
         },
         {
-          title: "Dia/AxB", field: "size", width: 100,
+          title: "Dia/AxB", field: "size", width: 78,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "input", editable: isEditable
         },
         {
-          title: "Vel", field: "velocity", width: 70,
+          title: "Vel", field: "velocity", width: 52,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "VP", field: "vp", width: 70,
+          title: "VP", field: "vp", width: 52,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "Pa/m", field: "pam", width: 78,
+          title: "Pa/m", field: "pam", width: 58,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "m", field: "detail", minWidth: 120, widthGrow: 1,
+          title: "m", field: "detail", width: 72,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
-          editor: detailEditor, formatter: detailFormatter, editable: isEditable
+          editor: detailEditor, formatter: detailFormatter, editable: isEditable,
+          tooltip: true
         },
         {
-          title: "PD", field: "pd", width: 78,
+          title: "PD", field: "pd", width: 58,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "input", editable: isEditable,
           formatter: function (cell) {
@@ -549,7 +559,7 @@
           }
         },
         {
-          title: "", field: "_del", width: 44, hozAlign: "center", headerSort: false,
+          title: "", field: "_del", width: 32, hozAlign: "center", headerSort: false,
           formatter: function () {
             return "<button type=\"button\" class=\"btn-ghost leg-grid-remove\" aria-label=\"Remove row\">✕</button>";
           },
