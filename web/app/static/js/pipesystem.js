@@ -318,7 +318,12 @@
       if (!reportForm) return;
       Array.prototype.slice.call(reportForm.querySelectorAll('input[type="hidden"]')).forEach(function (inp) {
         var n = inp.name || "";
-        if (n.indexOf("sys_") === 0 || n.indexOf("stage_") === 0 || n === "circuit" || n === "lift") {
+        if (
+          n.indexOf("sys_") === 0 || n.indexOf("stage_") === 0 ||
+          n === "circuit" || n === "lift" ||
+          (window.HvacDraft && HvacDraft.PIPE_DUTY_KEYS.indexOf(n) !== -1) ||
+          n === "mode" || n === "application" || n === "load" || n === "flow_ls"
+        ) {
           inp.parentNode.removeChild(inp);
         }
       });
@@ -329,6 +334,11 @@
         inp.value = value == null ? "" : String(value);
         reportForm.appendChild(inp);
       }
+      // Current fluid / pipe conditions from the static panel
+      var duty = readDesignParams();
+      ["fluid", "material", "delta_t", "lwt", "glycol_pct", "mode", "application"].forEach(function (k) {
+        if (duty.has(k)) addHidden(k, duty.get(k));
+      });
       addHidden("sys_row_count", system.row_count || 0);
       addHidden("sys_safety_margin", system.safety_margin || 0);
       (system.rows || []).forEach(function (row) {

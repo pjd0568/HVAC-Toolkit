@@ -911,6 +911,51 @@ def _report_rows(state, U, system=None):
     return input_rows, result_rows, ("Pipe size table", size_headers, size_rows)
 
 
+def _report_rows_for_system(system: dict, U) -> tuple[list, list]:
+    """Inputs/results for the Pipe System PDF — no shared duty flow / catalogue."""
+    f = system.get("duty_fields") or {}
+    input_rows = [
+        ("Fluid", eng.FLUID_LABELS.get(f.get("fluid", "water"), f.get("fluid", "")), ""),
+    ]
+    if f.get("fluid") and f["fluid"] != "water":
+        input_rows.append(("Glycol concentration", f"{f.get('glycol_pct', '')} %", ""))
+    input_rows.extend([
+        ("Pipe type", eng.MATERIAL_LABELS.get(f.get("material", ""), f.get("material", "")), ""),
+        ("ΔT", f.get("delta_t", ""), "°F" if U.system == "IP" else "K"),
+        ("LWT", f.get("lwt", ""), U.sym("temperature")),
+    ])
+
+    head = system.get("head") or {}
+    if head.get("fields"):
+        input_rows.append(("Circuit type", head.get("circuit_label", ""), ""))
+        if head.get("lift_visible"):
+            input_rows.append(
+                ("Static lift", head["fields"].get("lift", ""), head.get("lift_sym", ""))
+            )
+
+    result_rows: list[tuple[str, str, str]] = []
+    if head.get("fluid_label"):
+        result_rows.append(("Fluid at mean temperature", head["fluid_label"], ""))
+    if head and not head.get("error") and head.get("pump"):
+        result_rows.extend([
+            ("Static head", (head.get("static") or {}).get("summary", "—"), ""),
+            ("Circuit friction", (head.get("friction") or {}).get("summary", "—"), ""),
+            ("Required pump head", (head.get("pump") or {}).get("summary", "—"), ""),
+        ])
+    if system.get("total_display"):
+        result_rows.append(
+            ("Total pressure drop", system["total_display"], system.get("total_sym", ""))
+        )
+        margin = system.get("safety_margin") or 0
+        if margin > 0 and system.get("total_with_margin_display"):
+            result_rows.append(
+                (f"Total with margin (+{margin:.0f}%)",
+                 system["total_with_margin_display"],
+                 system.get("total_sym", ""))
+            )
+    return input_rows, result_rows
+
+
 @bp.route("/report", methods=["POST"])
 @require_module("pipe.sizer")
 def report():
@@ -934,12 +979,11 @@ def report():
 @require_module("pipe.system")
 def report_system():
     U = current_view()
-    state = _compute_state(request.form, U)
-    if state["error"]:
-        return Response(state["error"], status=400)
-
     system = _compute_system_state(request.form, U)
-    input_rows, result_rows, _size_table = _report_rows(state, U, system)
+    if system.get("ctx_error"):
+        return Response(system["ctx_error"], status=400)
+
+    input_rows, result_rows = _report_rows_for_system(system, U)
 
     extra = []
     if system["rows"]:
