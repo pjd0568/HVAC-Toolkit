@@ -1,5 +1,5 @@
 /* Minimal service worker — satisfies installability; caches shell static assets only. */
-const CACHE = "hvac-calcs-v2-shell-2";
+const CACHE = "hvac-calcs-v2-shell-3";
 const PRECACHE = [
   "/static/css/v2.css",
   "/static/js/v2_shell.js",
@@ -8,6 +8,8 @@ const PRECACHE = [
   "/static/manifest.webmanifest",
   "/static/images/brand/app-icon-192.png",
   "/static/images/brand/app-icon-512.png",
+  "/static/images/brand/app-icon-maskable-192.png",
+  "/static/images/brand/app-icon-maskable-512.png",
 ];
 
 self.addEventListener("install", (event) => {

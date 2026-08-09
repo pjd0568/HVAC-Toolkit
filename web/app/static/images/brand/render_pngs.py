@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Rasterise V2 brand mark PNGs used by favicons and PDF headers.
+"""Rasterise V2 brand mark PNGs used by favicons, PWA icons, and PDF headers.
 
-Run from repo root (or anywhere) with the web venv:
+Run from repo root (or anywhere) with Pillow available:
 
-  web/.venv/bin/python web/app/static/images/brand/render_pngs.py
+  python3 web/app/static/images/brand/render_pngs.py
 
 Geometry matches icon.svg / app-icon.svg so SVG and PNG stay in sync.
+
+Maskable icons keep the mark inside the Android adaptive-icon safe zone
+(central ~80% diameter) so squircle/circle masks do not clip the artwork.
 """
 from __future__ import annotations
 
@@ -19,7 +22,7 @@ NAVY = (15, 23, 42, 255)
 TEAL = (20, 184, 166, 255)
 SKY = (96, 165, 250, 255)
 GRID = (148, 163, 184, 168)
-TILE_BG = (224, 242, 254, 255)
+TILE_BG = (224, 242, 254, 255)  # #E0F2FE — matches app-icon.svg
 
 
 def _cubic(p0, p1, p2, p3, steps=64):
@@ -37,9 +40,11 @@ def _scale_pts(pts, s: float, ox: float = 0, oy: float = 0):
     return [(ox + x * s, oy + y * s) for x, y in pts]
 
 
-def draw_mark(draw: ImageDraw.ImageDraw, size: int, *, dark: bool = False):
-    """Draw the 64-unit mark into a square of `size` pixels."""
-    s = size / 64.0
+def draw_mark(draw: ImageDraw.ImageDraw, size: int, *, dark: bool = False,
+              ox: float = 0, oy: float = 0, mark_size: float | None = None):
+    """Draw the 64-unit mark into a square region of `mark_size` (default = size)."""
+    ms = float(size if mark_size is None else mark_size)
+    s = ms / 64.0
     grid = (100, 116, 139, 230) if dark else GRID
     curve_lo = (224, 242, 254, 255) if dark else NAVY
 
@@ -51,7 +56,7 @@ def draw_mark(draw: ImageDraw.ImageDraw, size: int, *, dark: bool = False):
 
     sw = max(1, round(1.0 * s))
     for poly in lines:
-        draw.line(_scale_pts(poly, s), fill=grid, width=sw)
+        draw.line(_scale_pts(poly, s, ox, oy), fill=grid, width=sw)
 
     lower = _cubic((16.5, 46), (22, 42), (28, 36), (34, 28.5))
     lower += _cubic((34, 28.5), (40, 21), (45, 16.5), (48.5, 14.5))[1:]
@@ -59,38 +64,55 @@ def draw_mark(draw: ImageDraw.ImageDraw, size: int, *, dark: bool = False):
     upper += _cubic((37, 19.5), (42.5, 13.5), (46.5, 11), (49, 10))[1:]
 
     csw = max(2, round(2.25 * s))
-    draw.line(_scale_pts(lower, s), fill=curve_lo, width=csw, joint="curve")
-    draw.line(_scale_pts(upper, s), fill=TEAL, width=csw, joint="curve")
+    draw.line(_scale_pts(lower, s, ox, oy), fill=curve_lo, width=csw, joint="curve")
+    draw.line(_scale_pts(upper, s, ox, oy), fill=TEAL, width=csw, joint="curve")
 
-    # Round line caps (Pillow lines are square-ended)
     for path, color in ((lower, curve_lo), (upper, TEAL)):
         for px, py in (path[0], path[-1]):
-            x, y = px * s, py * s
+            x, y = ox + px * s, oy + py * s
             r = csw / 2
             draw.ellipse((x - r, y - r, x + r, y + r), fill=color)
 
     nodes = [(16.5, 40), (28.5, 28.5), (40.5, 16.2)]
     r = max(2.0, 2.4 * s)
     for nx, ny in nodes:
-        x, y = nx * s, ny * s
+        x, y = ox + nx * s, oy + ny * s
         draw.ellipse((x - r, y - r, x + r, y + r), fill=TEAL)
 
-    bx, by = 34 * s, 28.5 * s
+    bx, by = ox + 34 * s, oy + 28.5 * s
     br = max(2.0, 2.1 * s)
     draw.ellipse((bx - br, by - br, bx + br, by + br), fill=SKY)
 
 
-def _render_hires(size: int, *, dark: bool = False, bg=None, rounded: bool = False) -> Image.Image:
-    """Draw at 4× then downscale for smooth curves."""
+def _render_hires(
+    size: int,
+    *,
+    dark: bool = False,
+    bg=None,
+    rounded: bool = False,
+    mark_ratio: float = 1.0,
+) -> Image.Image:
+    """Draw at 4× then downscale for smooth curves.
+
+    mark_ratio < 1.0 centres a smaller mark (used for maskable safe-zone padding).
+    """
     scale = 4
     big = size * scale
-    base = Image.new("RGBA", (big, big), bg if bg is not None else (0, 0, 0, 0))
+    fill = bg if bg is not None else (0, 0, 0, 0)
+    base = Image.new("RGBA", (big, big), fill)
     draw = ImageDraw.Draw(base)
-    draw_mark(draw, big, dark=dark)
+
+    mark_size = big * mark_ratio
+    ox = (big - mark_size) / 2.0
+    oy = (big - mark_size) / 2.0
+    draw_mark(draw, big, dark=dark, ox=ox, oy=oy, mark_size=mark_size)
+
     if rounded:
         radius = int(14 / 64 * big)
         mask = Image.new("L", (big, big), 0)
-        ImageDraw.Draw(mask).rounded_rectangle((0, 0, big - 1, big - 1), radius=radius, fill=255)
+        ImageDraw.Draw(mask).rounded_rectangle(
+            (0, 0, big - 1, big - 1), radius=radius, fill=255
+        )
         out = Image.new("RGBA", (big, big), (0, 0, 0, 0))
         out.paste(base, (0, 0), mask)
         base = out
@@ -104,18 +126,39 @@ def render_transparent_icon(path: Path, size: int = 400):
 
 
 def render_app_icon(path: Path, size: int, *, dark: bool = False):
+    """Full-bleed tile for purpose:any — rounded corners, mark fills the tile."""
     bg = NAVY if dark else TILE_BG
-    img = _render_hires(size, dark=dark, bg=bg, rounded=True)
-    img.save(path, "PNG")
-    print(f"wrote {path.name} ({size}x{size})")
+    img = _render_hires(size, dark=dark, bg=bg, rounded=True, mark_ratio=1.0)
+    # Flatten to RGB so Android / iOS never see unexpected transparency edges
+    flat = Image.new("RGB", img.size, bg[:3])
+    flat.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+    flat.save(path, "PNG")
+    print(f"wrote {path.name} ({size}x{size}) any")
+
+
+def render_maskable_icon(path: Path, size: int = 512, *, dark: bool = False):
+    """Adaptive-icon asset for purpose:maskable.
+
+    Background fills the entire square (Android applies the mask). Mark is
+    scaled to ~62% so it sits inside the 80%-diameter safe zone.
+    """
+    bg = NAVY if dark else TILE_BG
+    img = _render_hires(size, dark=dark, bg=bg, rounded=False, mark_ratio=0.62)
+    flat = Image.new("RGB", img.size, bg[:3])
+    flat.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+    flat.save(path, "PNG")
+    print(f"wrote {path.name} ({size}x{size}) maskable")
 
 
 def main():
-    render_transparent_icon(HERE / "logo-pdf.png", 400)
+    # Do not overwrite logo-pdf.png / icon.png — those are separate brand assets.
     render_app_icon(HERE / "favicon-32.png", 32)
     render_app_icon(HERE / "apple-touch-icon.png", 180)
+    render_app_icon(HERE / "app-icon-192.png", 192)
     render_app_icon(HERE / "app-icon-512.png", 512)
     render_app_icon(HERE / "app-icon-dark-512.png", 512, dark=True)
+    render_maskable_icon(HERE / "app-icon-maskable-192.png", 192)
+    render_maskable_icon(HERE / "app-icon-maskable-512.png", 512)
 
 
 if __name__ == "__main__":

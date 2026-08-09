@@ -67,7 +67,7 @@ class Config:
     # Static brand mark paths (relative to the Flask static folder). Swap files in
     # static/images/brand/ to rebrand without template edits.
     # Bump when replacing brand files so Cloudflare/browser caches refresh.
-    BRAND_ASSET_VERSION = os.environ.get("BRAND_ASSET_VERSION", "20260728a")
+    BRAND_ASSET_VERSION = os.environ.get("BRAND_ASSET_VERSION", "20260809a")
 
     BRAND_MARK = os.environ.get("BRAND_MARK", "images/brand/icon.png")
     BRAND_LOCKUP = os.environ.get("BRAND_LOCKUP", "images/brand/lockup-tagline.png")
