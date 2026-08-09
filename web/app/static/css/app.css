@@ -1230,7 +1230,7 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 .leg-grid-wrap {
   width: 100%;
   max-width: 100%;
-  overflow-x: scroll;
+  overflow-x: auto;
   overflow-y: hidden;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
@@ -1251,7 +1251,8 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   border: none;
   font-size: 11.5px;
   background: #fff;
-  max-width: none;
+  width: 100% !important;
+  max-width: 100%;
 }
 #leg-grid .tabulator-header {
   background: #f0f0f0;

@@ -478,7 +478,7 @@
 
     table = new Tabulator(mount, {
       data: (INITIAL.rows || []).map(gridRowFromApi),
-      layout: "fitData",
+      layout: "fitColumns",
       reactiveData: false,
       selectableRows: false,
       rowHeight: 22,
@@ -487,12 +487,14 @@
       rowFormatter: rowFormatter,
       columns: [
         {
-          title: "Item", field: "item", width: 40,
+          title: "Item", field: "item", width: 40, minWidth: 36,
+          widthGrow: 0, widthShrink: 0,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           formatter: function (cell) { return String(cell.getRow().getPosition(true)); }
         },
         {
-          title: "Type", field: "type", width: 72,
+          title: "Type", field: "type", width: 78, minWidth: 64,
+          widthGrow: 1.1, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "list", editorParams: { values: typeValues() },
           formatter: function (cell) {
@@ -502,7 +504,8 @@
           editable: isEditable
         },
         {
-          title: "Shape", field: "shape", width: 72,
+          title: "Shape", field: "shape", width: 58, minWidth: 48,
+          widthGrow: 0.7, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "list", editorParams: { values: shapeValues() },
           formatter: function (cell) {
@@ -512,35 +515,42 @@
           editable: isEditable
         },
         {
-          title: "Volume", field: "volume", width: 64,
+          title: "Volume", field: "volume", width: 68, minWidth: 56,
+          widthGrow: 1, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "input", editable: isEditable
         },
         {
-          title: "Dia/AxB", field: "size", width: 78,
+          title: "Dia/AxB", field: "size", width: 80, minWidth: 64,
+          widthGrow: 1.2, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "input", editable: isEditable
         },
         {
-          title: "Vel", field: "velocity", width: 52,
+          title: "Vel", field: "velocity", width: 56, minWidth: 48,
+          widthGrow: 0.8, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "VP", field: "vp", width: 52,
+          title: "VP", field: "vp", width: 62, minWidth: 52,
+          widthGrow: 0.9, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "Pa/m", field: "pam", width: 58,
+          title: "Pa/m", field: "pam", width: 62, minWidth: 52,
+          widthGrow: 0.9, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, editable: false
         },
         {
-          title: "m", field: "detail", width: 72,
+          title: "m", field: "detail", width: 70, minWidth: 52,
+          widthGrow: 1.3, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: detailEditor, formatter: detailFormatter, editable: isEditable,
           tooltip: true
         },
         {
-          title: "PD", field: "pd", width: 58,
+          title: "PD", field: "pd", width: 64, minWidth: 52,
+          widthGrow: 1, widthShrink: 1,
           hozAlign: "center", headerHozAlign: "center", headerSort: false,
           editor: "input", editable: isEditable,
           formatter: function (cell) {
@@ -559,7 +569,9 @@
           }
         },
         {
-          title: "", field: "_del", width: 32, hozAlign: "center", headerSort: false,
+          title: "", field: "_del", width: 36, minWidth: 32,
+          widthGrow: 0, widthShrink: 0,
+          hozAlign: "center", headerSort: false,
           formatter: function () {
             return "<button type=\"button\" class=\"btn-ghost leg-grid-remove\" aria-label=\"Remove row\">✕</button>";
           },
@@ -570,6 +582,14 @@
         }
       ]
     });
+
+    // Refit columns when the panel width changes (composer / window resize).
+    if (typeof ResizeObserver !== "undefined") {
+      var ro = new ResizeObserver(function () {
+        if (table) table.redraw(true);
+      });
+      ro.observe(panel);
+    }
 
     table.on("cellEdited", function (cell) {
       if (applying) return;
