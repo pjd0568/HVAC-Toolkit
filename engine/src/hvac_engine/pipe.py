@@ -98,7 +98,7 @@ FLUID_LABELS: dict[FluidId, str] = {
 # Optgroup layout for the fluid <select> — water first, then library glycols,
 # then Hydratech Coolflow proprietary blends.
 FLUID_GROUPS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
-    ("", (("water", "Water"),)),
+    ("Base fluid", (("water", "Water"),)),
     (
         "Standard glycol (ASHRAE)",
         (

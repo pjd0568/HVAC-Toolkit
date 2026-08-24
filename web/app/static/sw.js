@@ -1,5 +1,5 @@
 /* Minimal service worker — satisfies installability; caches shell static assets only. */
-const CACHE = "hvac-calcs-v2-shell-3";
+const CACHE = "hvac-calcs-v2-shell-4";
 const PRECACHE = [
   "/static/css/v2.css",
   "/static/js/v2_shell.js",

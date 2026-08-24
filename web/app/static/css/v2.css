@@ -355,7 +355,6 @@ a:hover { color: var(--v2-green-ink); }
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
   z-index: 60;
 }
-.v2-nav-drop:hover > .v2-nav-drop-menu,
 .v2-nav-drop:focus-within > .v2-nav-drop-menu,
 .v2-nav-drop.open > .v2-nav-drop-menu {
   display: flex;

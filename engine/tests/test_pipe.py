@@ -88,6 +88,11 @@ def test_standard_mpg_more_viscous_than_eg():
 def test_fluid_groups_cover_all_labels():
   flat = {k for _, items in p.FLUID_GROUPS for k, _ in items}
   assert flat == set(p.FLUID_LABELS)
+  assert [g for g, _ in p.FLUID_GROUPS] == [
+      "Base fluid",
+      "Standard glycol (ASHRAE)",
+      "Hydratech Coolflow",
+  ]
 
 
 def test_evaluate_dn25_steel_hand_check():

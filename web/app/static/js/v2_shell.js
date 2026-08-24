@@ -26,8 +26,6 @@
   var menu = document.getElementById("v2-menu");
   var climateBtn = document.getElementById("v2-climate-btn");
   var climate = document.getElementById("v2-climate-sheet");
-  var suiteNav = document.querySelector(".v2-suite-nav");
-  var hoverCloseTimer = null;
 
   if (menuBtn && menu) {
     menuBtn.addEventListener("click", function () {
@@ -50,17 +48,8 @@
     var btn = drop.querySelector(".v2-nav-drop-btn");
     if (!btn) return;
 
-    // Desktop: open on hover; stays open until another suite item is hovered
-    // or the pointer leaves the whole suite nav.
-    drop.addEventListener("mouseenter", function () {
-      if (hoverCloseTimer) {
-        clearTimeout(hoverCloseTimer);
-        hoverCloseTimer = null;
-      }
-      openNavDrop(drop);
-    });
-
-    // Keyboard / touch: click toggles.
+    // Click / keyboard only. Hover-open covered the duty form on desktop
+    // (Hydronics sits over Fluid / Calculate) so clicks looked dead.
     btn.addEventListener("click", function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -71,21 +60,6 @@
       }
     });
   });
-
-  if (suiteNav) {
-    suiteNav.addEventListener("mouseleave", function () {
-      hoverCloseTimer = setTimeout(function () {
-        closeNavDrops();
-        hoverCloseTimer = null;
-      }, 120);
-    });
-    suiteNav.addEventListener("mouseenter", function () {
-      if (hoverCloseTimer) {
-        clearTimeout(hoverCloseTimer);
-        hoverCloseTimer = null;
-      }
-    });
-  }
 
   document.addEventListener("click", function (e) {
     if (!e.target.closest(".v2-nav-drop")) closeNavDrops();
