@@ -4,10 +4,11 @@
 **Status:** v1.2 Stage 3 — open vs pressurised + lift / static head
 (20 July 2026). Stages 1–2 remain as before.
 **Clean-room note:** Written from public engineering standards (CIBSE Guide C,
-BS EN 10255, BS EN 1057, DIN 11850) and published third-party manufacturer
-fluid data (Hydratech Coolflow DTX / EPG / PPG data sheets in
-`Support/Hydratech Glycol Data Sheets/`). No reference to any prior codebase,
-including `archive/Consumer HVAC App/`.
+BS EN 10255, BS EN 1057, DIN 11850), ASHRAE Handbook secondary-coolant
+property correlations for aqueous ethylene / monopropylene glycol, and published
+third-party manufacturer fluid data (Hydratech Coolflow DTX / EPG / PPG data
+sheets in `Support/Hydratech Glycol Data Sheets/`). No reference to any prior
+codebase, including `archive/Consumer HVAC App/`.
 
 **Phasing (Paul, 12 July 2026; Stage 2 scoped 14 July 2026; Stage 3 20 July 2026):**
 
@@ -56,6 +57,9 @@ full Pipe & Pipe System Calculator Paul described; the system schedule builder
   — DTX, EPG, PPG density, viscosity, specific heat and freezing point at
   **fixed catalogue concentration and temperature points** (not copied from any
   prior app; manufacturer's published data Paul holds independently).
+- **ASHRAE Handbook — Fundamentals, secondary coolants** — aqueous ethylene
+  glycol and propylene (monopropylene) glycol property correlations at volume
+  percent (CoolProp AEG / APG polynomial fits to ASHRAE tables).
 
 ---
 
@@ -67,7 +71,7 @@ full Pipe & Pipe System Calculator Paul described; the system schedule builder
 | **Load** | Duty in kW (SI) / Btu/h (IP) — only when `from_load` |
 | **ΔT** | Temperature difference across the circuit (K / °F difference) |
 | **LWT** | Leaving water temperature (°C / °F) — the temperature of water **leaving** the heat emitter (heating) or **leaving** the chiller coil (chilled water). Used with ΔT to derive the return temperature and the **mean water temperature** for property lookup |
-| **Fluid** | `water`, `dtx`, `epg`, `ppg` |
+| **Fluid** | `water`, `eg`, `mpg`, `dtx`, `epg`, `ppg` |
 | **Glycol concentration** | Fixed catalogue % — only for glycol fluids (see § Fluids) |
 | **Application** | `lthw` or `chw` — selects CIBSE Guide C velocity / Pa·m⁻¹ limits |
 | **Material** | `carbon_steel` (BS EN 10255), `copper` (BS EN 1057), `dairy_ss` (DIN 11850 thin-wall) |
@@ -173,20 +177,26 @@ interpolation). Freezing point 0 °C.
 
 ### Glycol fluids — fixed concentration catalogue
 
-Concentrations available in the UI are **per fluid**, taken from the Hydratech
-data sheet grid (% v/v in water). See addendum below for the exact steps.
+Concentrations available in the UI are **per fluid**. Hydratech Coolflow
+products use the manufacturer data-sheet grid (% v/v). Standard aqueous
+ethylene glycol and monopropylene glycol use the **same % v/v steps** as
+Coolflow IGE and Coolflow NTP respectively, with properties from ASHRAE
+secondary-coolant correlations (CoolProp AEG / APG fits).
 
 Fluids:
 
 | ID | Display name | Basis |
 |----|--------------|-------|
+| `eg` | Ethylene glycol (ASHRAE) | ASHRAE Handbook secondary coolants (vol %) |
+| `mpg` | Monopropylene glycol (ASHRAE) | ASHRAE Handbook secondary coolants (vol %) |
 | `dtx` | Coolflow DTX (DTX) | Coolflow DTX data sheet |
 | `epg` | Coolflow IGE (EG) | Coolflow IGE data sheet |
 | `ppg` | Coolflow NTP (PPG) | Coolflow NTP data sheet |
 
-At each (fluid, concentration %, temperature °C) grid point the engine holds
-ρ, μ, cp, and freezing point. Properties at arbitrary temperature within the
-tabulated range are **linearly interpolated**; concentration is **not**
+At each (fluid, concentration %, temperature °C) the engine holds
+ρ, μ, cp, and freezing point. Hydratech properties at arbitrary temperature
+within the tabulated range are **linearly interpolated**; ASHRAE fluids are
+evaluated from the published polynomial correlations. Concentration is **not**
 interpolated — the user picks a catalogue percentage.
 
 ---
@@ -380,6 +390,26 @@ manufacturer's own concentration grid (% v/v), not a shared 10–50 % ladder.
 
 Engine module: `hvac_engine/glycol_data.py` (regenerate via
 `engine/scripts/build_glycol_data.py` if the spreadsheet is updated).
+
+## Addendum — Standard ASHRAE glycols (24 Aug 2026)
+
+Alongside Hydratech Coolflow, the fluid list includes uninhibited aqueous
+**ethylene glycol** (`eg`) and **monopropylene glycol** (`mpg`) using ASHRAE
+Handbook secondary-coolant property correlations (CoolProp `AEG` / `APG`
+polynomial fits; ASHRAE 2001 / Skovrup 2013). Concentration is volume fraction
+(% v/v), matching the existing UI.
+
+| ID | Display name | Catalogue % v/v (shared with) |
+|----|--------------|-------------------------------|
+| `eg` | Ethylene glycol (ASHRAE) | Coolflow IGE (`epg`): 20, 27, 32, 37, 41, 45, 50, 55, 58 |
+| `mpg` | Monopropylene glycol (ASHRAE) | Coolflow NTP (`ppg`): 25, 33, 39, 44, 48, 53, 60 |
+
+Coolflow NTP is inhibited **propylene** glycol (labelled PPG in product data);
+the ASHRAE library counterpart is monopropylene glycol. Aqueous polypropylene
+glycol (polymer) is not published in ASHRAE secondary-coolant tables and is
+not offered.
+
+Engine module: `hvac_engine/standard_glycol.py`.
 
 ### Labels
 

@@ -4,7 +4,8 @@
 
 {% macro pipe_system_panel(
      system, U, fluids, materials, glycol_options_by_fluid,
-     report_action=None, report_fields=None, panel_style='') %}
+     report_action=None, report_fields=None, panel_style='', fluid_groups=None) %}
+{% set fluid_groups = fluid_groups if fluid_groups is not none else [('', fluids.items()|list)] %}
 {% set head = system.head %}
 {% set duty = system.duty_fields or {} %}
 <div class="panel pipe-system-panel tile-water-border" id="sys-panel" style="{{ panel_style }}">
@@ -31,8 +32,18 @@
         <label class="pipe-inline-field" for="fluid">
           <span>Fluid</span>
           <select id="fluid" name="fluid">
-            {% for key, label in fluids.items() %}
-            <option value="{{ key }}" {{ 'selected' if duty.fluid == key }}>{{ label }}</option>
+            {% for group_label, items in fluid_groups %}
+              {% if group_label %}
+              <optgroup label="{{ group_label }}">
+                {% for key, label in items %}
+                <option value="{{ key }}" {{ 'selected' if duty.fluid == key }}>{{ label }}</option>
+                {% endfor %}
+              </optgroup>
+              {% else %}
+                {% for key, label in items %}
+                <option value="{{ key }}" {{ 'selected' if duty.fluid == key }}>{{ label }}</option>
+                {% endfor %}
+              {% endif %}
             {% endfor %}
           </select>
         </label>

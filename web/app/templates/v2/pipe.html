@@ -10,7 +10,8 @@
 {{ pipe_duty_form(
      fields, fluids, materials, applications, glycol_options_by_fluid, U,
      title='Pipe Sizing',
-     help_body=pipe_sizer_help()
+     help_body=pipe_sizer_help(),
+     fluid_groups=fluid_groups
 ) }}
 
 {% if flow_display %}

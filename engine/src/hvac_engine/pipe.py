@@ -4,8 +4,10 @@ Implemented from specs/SPEC-pipe-sizing.md. Pure Python, canonical SI
 throughout. Friction loss via Darcy-Weisbach with Swamee-Jain explicit
 Colebrook-White (same approach as hvac_engine.duct). Pipe dimensions from
 BS EN 10255 (carbon steel), BS EN 1057 (copper), DIN 11850 (dairy stainless).
-Fluid properties: water from CIBSE/ASHRAE anchor tables; glycol fluids from
-Hydratech Coolflow published data at fixed concentration grid points.
+Fluid properties: water from CIBSE/ASHRAE anchor tables; standard aqueous
+ethylene / monopropylene glycol from ASHRAE secondary-coolant correlations;
+Hydratech Coolflow proprietary blends from published data sheets at fixed
+concentration grid points.
 """
 
 from __future__ import annotations
@@ -16,18 +18,20 @@ from typing import Literal
 
 from hvac_engine.fluid_mechanics import swamee_jain
 from hvac_engine.glycol_data import (
-    FLUID_LABELS as _GLYCOL_FLUID_LABELS,
-    GLYCOL_CONCENTRATIONS_PCT,
-    glycol_concentrations,
-    glycol_freeze_point_c,
-    glycol_grid,
+    FLUID_LABELS as _HYDRATECH_LABELS,
+    GLYCOL_CONCENTRATIONS_PCT as _HYDRATECH_CONCS,
+    glycol_concentrations as _hydratech_concentrations,
+    glycol_freeze_point_c as _hydratech_freeze_point_c,
+    glycol_grid as _hydratech_grid,
 )
+from hvac_engine import standard_glycol as _std_glycol
 
 FlowMode = Literal["from_load", "flow_known"]
 Application = Literal["lthw", "chw"]
-FluidId = Literal["water", "dtx", "epg", "ppg"]
+FluidId = Literal["water", "eg", "mpg", "dtx", "epg", "ppg"]
 MaterialId = Literal["carbon_steel", "copper", "dairy_ss"]
 CircuitType = Literal["open", "pressurised"]
+GlycolFluidId = Literal["eg", "mpg", "dtx", "epg", "ppg"]
 
 # Standard acceleration due to gravity (m/s²) — BIPM / ISO 80000-3.
 STANDARD_G = 9.80665
@@ -84,8 +88,50 @@ ROUGHNESS: dict[MaterialId, float] = {
 
 FLUID_LABELS: dict[FluidId, str] = {
     "water": "Water",
-    **_GLYCOL_FLUID_LABELS,
+    "eg": _std_glycol.FLUID_LABELS["eg"],
+    "mpg": _std_glycol.FLUID_LABELS["mpg"],
+    "dtx": _HYDRATECH_LABELS["dtx"],
+    "epg": _HYDRATECH_LABELS["epg"],
+    "ppg": _HYDRATECH_LABELS["ppg"],
 }
+
+# Optgroup layout for the fluid <select> — water first, then library glycols,
+# then Hydratech Coolflow proprietary blends.
+FLUID_GROUPS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
+    ("", (("water", "Water"),)),
+    (
+        "Standard glycol (ASHRAE)",
+        (
+            ("eg", FLUID_LABELS["eg"]),
+            ("mpg", FLUID_LABELS["mpg"]),
+        ),
+    ),
+    (
+        "Hydratech Coolflow",
+        (
+            ("dtx", FLUID_LABELS["dtx"]),
+            ("epg", FLUID_LABELS["epg"]),
+            ("ppg", FLUID_LABELS["ppg"]),
+        ),
+    ),
+)
+
+GLYCOL_CONCENTRATIONS_PCT: dict[GlycolFluidId, tuple[int, ...]] = {
+    **_std_glycol.GLYCOL_CONCENTRATIONS_PCT,
+    **_HYDRATECH_CONCS,
+}
+
+
+def glycol_concentrations(fluid: GlycolFluidId) -> tuple[int, ...]:
+    if fluid in _std_glycol.GLYCOL_CONCENTRATIONS_PCT:
+        return _std_glycol.glycol_concentrations(fluid)  # type: ignore[arg-type]
+    return tuple(_hydratech_concentrations(fluid))  # type: ignore[arg-type]
+
+
+def glycol_freeze_point_c(fluid: GlycolFluidId, concentration_pct: int) -> float:
+    if fluid in _std_glycol.GLYCOL_CONCENTRATIONS_PCT:
+        return _std_glycol.freeze_point_c(fluid, concentration_pct)  # type: ignore[arg-type]
+    return _hydratech_freeze_point_c(fluid, concentration_pct)  # type: ignore[arg-type]
 
 MATERIAL_LABELS: dict[MaterialId, str] = {
     "carbon_steel": "Carbon steel (BS EN 10255)",
@@ -345,12 +391,26 @@ def fluid_properties(
             freezing_point_c=0.0,
         )
 
-    if concentration_pct not in glycol_concentrations(fluid):
-        allowed = glycol_concentrations(fluid)
+    if fluid in _std_glycol.GLYCOL_CONCENTRATIONS_PCT:
+        rho, mu, cp, fp = _std_glycol.fluid_properties_si(
+            fluid, temperature_c, concentration_pct  # type: ignore[arg-type]
+        )
+        return FluidProperties(
+            fluid=fluid,
+            concentration_pct=concentration_pct,
+            temperature_c=temperature_c,
+            density_kg_m3=rho,
+            dynamic_viscosity_pa_s=mu,
+            cp_j_kgk=cp,
+            freezing_point_c=fp,
+        )
+
+    if concentration_pct not in glycol_concentrations(fluid):  # type: ignore[arg-type]
+        allowed = glycol_concentrations(fluid)  # type: ignore[arg-type]
         raise ValueError(
             f"glycol concentration must be one of {allowed}, got {concentration_pct!r}"
         )
-    grid = glycol_grid(fluid, concentration_pct)
+    grid = _hydratech_grid(fluid, concentration_pct)
     rho, mu, cp, fp = _interp_glycol(grid, temperature_c)
     return FluidProperties(
         fluid=fluid,
@@ -678,12 +738,14 @@ __all__ = [
     "CIRCUIT_LABELS",
     "CircuitType",
     "FRICTION_BANDS",
+    "FLUID_GROUPS",
     "FLUID_LABELS",
     "FlowMode",
     "FlowResult",
     "FluidId",
     "FluidProperties",
     "GLYCOL_CONCENTRATIONS_PCT",
+    "GlycolFluidId",
     "HeadBreakdown",
     "MATERIAL_LABELS",
     "MaterialId",

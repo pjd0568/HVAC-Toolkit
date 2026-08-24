@@ -847,15 +847,24 @@ total_with_margin = total_pa + margin_pa
 
 ## 5. Pipe / hydronics
 
-**Files:** `engine/src/hvac_engine/pipe.py`, `glycol_data.py`  
+**Files:** `engine/src/hvac_engine/pipe.py`, `glycol_data.py`, `standard_glycol.py`  
 **Spec:** `specs/SPEC-pipe-sizing.md`  
-**Stated references:** CIBSE Guide C; EN 10255 / EN 1057 / DIN 11850; Hydratech Coolflow data; Swamee–Jain; BIPM/ISO for `g`.
+**Stated references:** CIBSE Guide C; EN 10255 / EN 1057 / DIN 11850; ASHRAE
+secondary coolants (EG / MPG); Hydratech Coolflow data; Swamee–Jain; BIPM/ISO for `g`.
 
 ### 5.1 Fluid properties
 
 **Water:** Linear interpolation of table `(T, ρ, μ, Cp)` from 0–100 °C (CIBSE/ASHRAE anchor table — stated). Outside range: clamp to end-point row.
 
-**Glycol:** Hydratech Coolflow DTX / EPG / PPG grids at fixed % concentrations; interpolate `(T, ρ, μ, Cp, freeze_point)`. Freeze point from first grid row’s freeze column via `glycol_freeze_point_c`.
+**Standard glycol (`eg`, `mpg`):** ASHRAE aqueous ethylene / monopropylene glycol
+correlations (CoolProp AEG / APG polynomials; volume %). Catalogue % v/v matches
+Coolflow IGE and NTP respectively. Freeze point from the concentration-only
+exponential polynomial. Temperature clamped to the correlation envelope and not
+below freeze.
+
+**Hydratech glycol (`dtx`, `epg`, `ppg`):** Coolflow DTX / EPG / PPG grids at
+fixed % concentrations; interpolate `(T, ρ, μ, Cp, freeze_point)`. Freeze point
+from first grid row’s freeze column via `glycol_freeze_point_c`.
 
 **Mean water temperature for duty:**
 
@@ -865,11 +874,12 @@ T_mean = LWT + ΔT / 2
 
 **Kinematic viscosity:** `ν = μ / ρ`.
 
-**Source:** `fluid_properties`, `_interp_table`, `_interp_glycol`, `mean_water_temperature_c`, `glycol_data.*`
+**Source:** `fluid_properties`, `_interp_table`, `_interp_glycol`, `mean_water_temperature_c`, `glycol_data.*`, `standard_glycol.*`
 
 **Validation:** Water concentration must be 0; glycol % must be in catalogue set for fluid.
 
-**Reference:** CIBSE/ASHRAE water table; Hydratech Excel transcription — stated.
+**Reference:** CIBSE/ASHRAE water table; ASHRAE secondary coolants (AEG/APG);
+Hydratech Excel transcription — stated.
 
 ---
 

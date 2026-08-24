@@ -48,6 +48,48 @@ def test_hydratech_ppg_33pct_20c_matches_datasheet():
   assert props.freezing_point_c == pytest.approx(-15, abs=0.1)
 
 
+def test_standard_eg_uses_epg_mix_ladder():
+  assert p.glycol_concentrations("eg") == p.glycol_concentrations("epg")
+  assert p.glycol_concentrations("mpg") == p.glycol_concentrations("ppg")
+
+
+def test_standard_eg_32pct_20c_ashrae():
+  """ASHRAE AEG volume-% correlation (CoolProp AEG fit)."""
+  props = p.fluid_properties("eg", 20.0, concentration_pct=32)
+  assert props.density_kg_m3 == pytest.approx(1048.2, abs=1.0)
+  assert props.dynamic_viscosity_pa_s == pytest.approx(0.00229, rel=0.02)
+  assert props.cp_j_kgk == pytest.approx(3611, abs=20)
+  assert props.freezing_point_c == pytest.approx(-17.3, abs=0.3)
+
+
+def test_standard_mpg_33pct_20c_ashrae():
+  """ASHRAE APG volume-% correlation (CoolProp APG fit)."""
+  props = p.fluid_properties("mpg", 20.0, concentration_pct=33)
+  assert props.density_kg_m3 == pytest.approx(1030.9, abs=1.0)
+  assert props.dynamic_viscosity_pa_s == pytest.approx(0.00349, rel=0.02)
+  assert props.cp_j_kgk == pytest.approx(3806, abs=20)
+  assert props.freezing_point_c == pytest.approx(-15.3, abs=0.3)
+
+
+def test_standard_glycol_rejects_bad_concentration():
+  with pytest.raises(ValueError):
+    p.fluid_properties("eg", 20.0, concentration_pct=30)
+  with pytest.raises(ValueError):
+    p.fluid_properties("mpg", 20.0, concentration_pct=30)
+
+
+def test_standard_mpg_more_viscous_than_eg():
+  eg = p.fluid_properties("eg", 20.0, concentration_pct=50)
+  # nearest MPG catalogue % to 50 is 48 or 53 — compare 50 EG vs 53 MPG
+  mpg = p.fluid_properties("mpg", 20.0, concentration_pct=53)
+  assert mpg.dynamic_viscosity_pa_s > eg.dynamic_viscosity_pa_s
+
+
+def test_fluid_groups_cover_all_labels():
+  flat = {k for _, items in p.FLUID_GROUPS for k, _ in items}
+  assert flat == set(p.FLUID_LABELS)
+
+
 def test_evaluate_dn25_steel_hand_check():
   props = p.fluid_properties("water", 20.0)
   vol_m3h = 3.6  # 1 l/s

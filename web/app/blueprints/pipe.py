@@ -70,6 +70,8 @@ def _inject_glycol_concentrations():
     return {
         "glycol_concentrations_by_fluid": GLYCOL_CONCENTRATIONS_BY_FLUID,
         "glycol_options_by_fluid": _glycol_options_for_view(U),
+        "fluid_groups": eng.FLUID_GROUPS,
+        "fluids": eng.FLUID_LABELS,
     }
 
 

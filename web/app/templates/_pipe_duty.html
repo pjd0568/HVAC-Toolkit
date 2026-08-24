@@ -1,6 +1,7 @@
 {# Shared Design Inputs form for Pipe Sizer and Pipe System PD. #}
 
-{% macro pipe_duty_form(fields, fluids, materials, applications, glycol_options_by_fluid, U, system=None, title='Design Inputs', help_body=None) %}
+{% macro pipe_duty_form(fields, fluids, materials, applications, glycol_options_by_fluid, U, system=None, title='Design Inputs', help_body=None, fluid_groups=None) %}
+{% set fluid_groups = fluid_groups if fluid_groups is not none else [('', fluids.items()|list)] %}
 <div class="panel tile-water-border pipe-duty-panel">
   {% if help_body %}
   <details class="panel-help">
@@ -43,8 +44,18 @@
           <div class="pipe-duty-field">
             <label for="fluid">Fluid</label>
             <select id="fluid" name="fluid">
-              {% for key, label in fluids.items() %}
-              <option value="{{ key }}" {{ 'selected' if fields.fluid == key }}>{{ label }}</option>
+              {% for group_label, items in fluid_groups %}
+                {% if group_label %}
+                <optgroup label="{{ group_label }}">
+                  {% for key, label in items %}
+                  <option value="{{ key }}" {{ 'selected' if fields.fluid == key }}>{{ label }}</option>
+                  {% endfor %}
+                </optgroup>
+                {% else %}
+                  {% for key, label in items %}
+                  <option value="{{ key }}" {{ 'selected' if fields.fluid == key }}>{{ label }}</option>
+                  {% endfor %}
+                {% endif %}
               {% endfor %}
             </select>
           </div>
