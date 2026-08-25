@@ -4,6 +4,10 @@
 {% block page_title %}Duct Sizing{% endblock %}
 {% block content %}
 
+{% with tool='duct' %}
+{% include "_air_tool_nav.html" %}
+{% endwith %}
+
 <div id="duct-error">{% if error %}<div class="error">{{ error }}</div>{% endif %}</div>
 
 <div class="v2-duct-chrome">

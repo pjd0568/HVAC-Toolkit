@@ -5,6 +5,10 @@
 {% block page_title %}AHU Design{% endblock %}
 {% block content %}
 
+{% with tool='ahu' %}
+{% include "_psychro_tool_nav.html" %}
+{% endwith %}
+
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div data-v2-wizard data-initial-step="{{ initial_step|default(1) }}">

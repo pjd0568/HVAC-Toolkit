@@ -777,18 +777,28 @@ a:hover { color: var(--v2-green-ink); }
   margin-left: 8px;
 }
 
-/* Refrigeration suite — in-tool switcher + picker blurbs */
+/* Suite in-tool switcher (psychro / air / hydronics / refrigeration) */
+.suite-tool-nav,
 .refrig-tool-nav {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 6px;
   margin: 0 0 14px;
-  padding: 0;
+  padding: 2px 2px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
 }
+.suite-tool-nav a,
 .refrig-tool-nav a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
   padding: 7px 12px;
   font-size: 12.5px;
   font-weight: 600;
@@ -797,27 +807,58 @@ a:hover { color: var(--v2-green-ink); }
   border: 1px solid var(--v2-line);
   border-radius: 999px;
   text-decoration: none;
+  white-space: nowrap;
+  scroll-snap-align: start;
 }
+.suite-tool-nav a:hover,
 .refrig-tool-nav a:hover {
   color: var(--v2-green-ink);
   border-color: #99e0d9;
   background: var(--v2-green-soft);
   text-decoration: none;
 }
+.suite-tool-nav a.active,
 .refrig-tool-nav a.active {
   color: var(--v2-green-ink);
   border-color: #99e0d9;
   background: var(--v2-green-soft);
 }
+.suite-tool-nav a .soon,
 .refrig-tool-nav a .soon {
   font-size: 10px;
   font-weight: 600;
   color: var(--v2-muted);
   margin-left: 0;
 }
+.suite-tool-nav-all,
 .refrig-tool-nav-all {
   margin-left: auto;
   font-weight: 500 !important;
+}
+.suite-tool-nav-short { display: none; }
+@media (max-width: 720px) {
+  .suite-tool-nav,
+  .refrig-tool-nav {
+    position: sticky;
+    top: calc(var(--v2-top) - 1px);
+    z-index: 30;
+    margin: 0 -4px 12px;
+    padding: 8px 4px 10px;
+    background: var(--v2-bg);
+    box-shadow: 0 8px 12px -8px rgba(15, 23, 42, 0.12);
+  }
+  .suite-tool-nav a,
+  .refrig-tool-nav a {
+    padding: 8px 11px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+  .suite-tool-nav-full { display: none; }
+  .suite-tool-nav-short { display: inline; }
+  .suite-tool-nav-all,
+  .refrig-tool-nav-all {
+    margin-left: 6px;
+  }
 }
 .v2-nav-drop-menu a .soon {
   font-size: 10px;

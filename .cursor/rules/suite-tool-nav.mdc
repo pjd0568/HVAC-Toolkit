@@ -1,0 +1,38 @@
+---
+description: In-suite tool switcher (horizontal tabs) for V2 calculator pages
+globs: web/app/templates/v2/**/*.html,web/app/templates/_*-tool_nav.html,web/app/static/css/v2.css
+alwaysApply: false
+---
+
+# Suite tool nav (in-page tabs)
+
+Prefer the refrigeration-style **horizontal tool switcher** on every calculator page inside a suite. Users keep each tool’s form state (separate URLs / pages) but can jump tools without going back to the picker.
+
+## Pattern
+
+1. Partial: `_psychro_tool_nav.html`, `_air_tool_nav.html`, `_hydronics_tool_nav.html`, `_refrig_tool_nav.html`
+2. Include at the top of `{% block content %}`:
+
+```jinja
+{% with tool='coil' %}
+{% include "_psychro_tool_nav.html" %}
+{% endwith %}
+```
+
+3. CSS class: `.suite-tool-nav` (`.refrig-tool-nav` kept as alias)
+4. Each link: long label in `.suite-tool-nav-full`, short in `.suite-tool-nav-short` (mobile swaps via CSS)
+5. Coming-soon tools: same strip + `<span class="soon">Soon</span>`
+6. Trailing **All** link → suite picker
+
+## Mobile
+
+- Do **not** wrap pills into many rows on small screens.
+- Horizontal scroll (`overflow-x: auto`, `flex-wrap: nowrap`, touch scrolling).
+- Sticky under the fixed V2 topbar (`top: var(--v2-top)`).
+- Short labels at `max-width: 720px`.
+
+## Do not
+
+- Replace top-nav suite dropdowns or picker pages — tabs are the *in-suite* switcher only.
+- Use a different control style per suite (pills / underline / segmented) — keep one pattern.
+- Put suite tabs only on refrigeration; new modules must include the matching partial.

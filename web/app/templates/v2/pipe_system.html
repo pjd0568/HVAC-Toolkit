@@ -6,6 +6,10 @@
 {% endblock %}
 {% block content %}
 
+{% with tool='system' %}
+{% include "_hydronics_tool_nav.html" %}
+{% endwith %}
+
 {{ pipe_system_panel(
      system, U, fluids, materials, glycol_options_by_fluid,
      report_action=url_for('pipe.report_system'),

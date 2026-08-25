@@ -4,6 +4,10 @@
 {% block page_title %}Pipe Sizing{% endblock %}
 {% block content %}
 
+{% with tool='pipe' %}
+{% include "_hydronics_tool_nav.html" %}
+{% endwith %}
+
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="pipe-page-stack">

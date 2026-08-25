@@ -2,6 +2,10 @@
 {% block page_title %}Multi-Point Interactive Chart{% endblock %}
 {% block content %}
 
+{% with tool='chart' %}
+{% include "_psychro_tool_nav.html" %}
+{% endwith %}
+
 <div class="v2-greeting">Multi-point interactive chart</div>
 <div class="v2-greeting-sub">Long-press the chart to place points A–D, edit properties below, map a process between any two.</div>
 

@@ -2,8 +2,18 @@
 {% block page_title %}{{ tool.title }}{% endblock %}
 {% block content %}
 
-{% if suite_tool_nav %}
-{{ suite_tool_nav|safe }}
+{% if tool.suite == 'psychro' %}
+{% with tool='co2' %}
+{% include "_psychro_tool_nav.html" %}
+{% endwith %}
+{% elif tool.suite == 'duct' %}
+{% with tool=('room' if tool.slug == 'room-load' else 'grille') %}
+{% include "_air_tool_nav.html" %}
+{% endwith %}
+{% elif tool.suite == 'pipe' %}
+{% with tool=('vessel' if tool.slug == 'expansion-vessel' else 'buffer') %}
+{% include "_hydronics_tool_nav.html" %}
+{% endwith %}
 {% endif %}
 
 <div class="v2-greeting">{{ tool.title }}</div>
@@ -21,8 +31,8 @@
   </div>
 </div>
 
-{% if back_href and back_label %}
-<p class="muted" style="margin-top:14px; font-size:13px;">
+{% if back_href %}
+<p style="margin-top:16px;">
   <a href="{{ back_href }}">← {{ back_label }}</a>
 </p>
 {% endif %}

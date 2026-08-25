@@ -6,6 +6,10 @@
 {% block page_title %}Psychrometrics - Adiabatic Cooling{% endblock %}
 {% block content %}
 
+{% with tool='adiabatic' %}
+{% include "_psychro_tool_nav.html" %}
+{% endwith %}
+
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="psychro-layout">

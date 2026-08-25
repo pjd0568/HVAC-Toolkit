@@ -1,0 +1,30 @@
+{# In-suite switcher. Pass tool=duct|index|room|grille #}
+<nav class="suite-tool-nav" aria-label="Air distribution tools">
+  {% if access.can('duct.sizer') %}
+  <a href="{{ url_for('v2.duct') }}"
+     class="{{ 'active' if tool == 'duct' }}">
+    <span class="suite-tool-nav-full">Duct sizing</span>
+    <span class="suite-tool-nav-short">Duct</span>
+  </a>
+  {% endif %}
+  {% if access.can('duct.index_leg') %}
+  <a href="{{ url_for('v2.duct_index_leg') }}"
+     class="{{ 'active' if tool == 'index' }}">
+    <span class="suite-tool-nav-full">Index leg</span>
+    <span class="suite-tool-nav-short">Index</span>
+  </a>
+  {% endif %}
+  <a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}"
+     class="{{ 'active' if tool == 'room' }}">
+    <span class="suite-tool-nav-full">Room load</span>
+    <span class="suite-tool-nav-short">Load</span>
+    <span class="soon">Soon</span>
+  </a>
+  <a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}"
+     class="{{ 'active' if tool == 'grille' }}">
+    <span class="suite-tool-nav-full">Grille throw</span>
+    <span class="suite-tool-nav-short">Grille</span>
+    <span class="soon">Soon</span>
+  </a>
+  <a href="{{ url_for('v2.air_picker') }}" class="suite-tool-nav-all">All</a>
+</nav>

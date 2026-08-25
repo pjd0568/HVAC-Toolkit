@@ -71,4 +71,14 @@
       closeNavDrops();
     }
   });
+
+  // Keep the active suite tab visible in the horizontal mobile scroller
+  var activeTab = document.querySelector(".suite-tool-nav a.active, .refrig-tool-nav a.active");
+  if (activeTab && typeof activeTab.scrollIntoView === "function") {
+    try {
+      activeTab.scrollIntoView({ inline: "center", block: "nearest", behavior: "auto" });
+    } catch (err) {
+      activeTab.scrollIntoView(false);
+    }
+  }
 })();

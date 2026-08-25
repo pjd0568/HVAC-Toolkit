@@ -5,6 +5,10 @@
 {% block page_title %}Psychrometrics - Single Point{% endblock %}
 {% block content %}
 
+{% with tool='single' %}
+{% include "_psychro_tool_nav.html" %}
+{% endwith %}
+
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="psychro-layout">

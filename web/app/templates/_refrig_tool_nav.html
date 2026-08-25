@@ -1,20 +1,31 @@
-{# In-suite switcher for refrigeration tools. Pass tool=pt|pipe|diagnostics|charge #}
-<nav class="refrig-tool-nav" aria-label="Refrigeration tools">
+{# In-suite switcher. Pass tool=pt|pipe|diagnostics|charge #}
+<nav class="suite-tool-nav" aria-label="Refrigeration tools">
   {% if access.can('refrig.pt_table') %}
   <a href="{{ url_for('v2.refrig_pt_table') }}"
-     class="{{ 'active' if tool == 'pt' }}">PT table</a>
+     class="{{ 'active' if tool == 'pt' }}">
+    <span class="suite-tool-nav-full">PT table</span>
+    <span class="suite-tool-nav-short">PT</span>
+  </a>
   {% endif %}
   {% if access.can('refrig.pipe_sizer') %}
   <a href="{{ url_for('v2.refrig_pipe_sizer') }}"
-     class="{{ 'active' if tool == 'pipe' }}">DX pipe sizing</a>
+     class="{{ 'active' if tool == 'pipe' }}">
+    <span class="suite-tool-nav-full">DX pipe sizing</span>
+    <span class="suite-tool-nav-short">Pipe</span>
+  </a>
   {% endif %}
   {% if access.can('refrig.diagnostics') %}
   <a href="{{ url_for('v2.refrig_diagnostics') }}"
-     class="{{ 'active' if tool == 'diagnostics' }}">Superheat / subcooling</a>
+     class="{{ 'active' if tool == 'diagnostics' }}">
+    <span class="suite-tool-nav-full">Superheat / subcooling</span>
+    <span class="suite-tool-nav-short">SH/SC</span>
+  </a>
   {% endif %}
   <a href="{{ url_for('v2.refrig_charge') }}"
      class="{{ 'active' if tool == 'charge' }}">
-    Charge calculator <span class="soon">Soon</span>
+    <span class="suite-tool-nav-full">Charge calculator</span>
+    <span class="suite-tool-nav-short">Charge</span>
+    <span class="soon">Soon</span>
   </a>
-  <a href="{{ url_for('v2.refrig_picker') }}" class="refrig-tool-nav-all">All tools</a>
+  <a href="{{ url_for('v2.refrig_picker') }}" class="suite-tool-nav-all">All</a>
 </nav>
