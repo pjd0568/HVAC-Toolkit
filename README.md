@@ -18,22 +18,38 @@ web/        Flask application (app factory + blueprints) consuming the engine.
 
 ## Local then Railway
 
-Live site (`hvac-calcs.app`) deploys from GitHub **`main`**. Develop and test on
-this machine first; only merge to `main` when you are ready for Railway to
-publish.
+| Branch | Role |
+|--------|------|
+| **`main`** (Main) | Day-to-day development and local testing |
+| **`Publish`** | Production — Railway deploys `hvac-calcs.app` from this branch only |
 
-1. **Branch** from `main` (`feat/weather`, `feat/projects`, …).
+Work and commit on **`main`**. When a change is ready for the live site, push it
+to **`Publish`**. Railway does **not** deploy from `main`.
+
+1. **Stay on `main`** (or branch from it: `feat/weather`, `feat/projects`, …).
 2. **Run locally** (below). Use `ACCESS_DEV_TIER=pro` in `.env` so the suite is
    unlocked without Stripe. Optional: `REGISTRATION_OPEN=true` so you can
    create a local account; or open `/login?preview=1` when `ACCESS_DEV_TIER` is
    set (logs in `preview@example.com`).
 3. **Test** — engine `pytest`, then click through the tool at
    `http://127.0.0.1:5000/app`.
-4. **Merge to `main` and push.** Railway builds from the repo root
-   (`railway.toml` → `web/Dockerfile`) and runs `flask --app wsgi db upgrade`.
+4. **Publish when ready** — update the deploy branch and push:
+
+   ```bash
+   git checkout main
+   git push origin main          # backup / share work on GitHub
+   git push origin main:Publish  # deploy: copies main → Publish on GitHub
+   ```
+
+   Railway builds from the repo root (`railway.toml` → `web/Dockerfile`) and
+   runs `flask --app wsgi db upgrade`.
 
 Do not put `ACCESS_DEV_TIER` or `REGISTRATION_OPEN=true` on Railway unless you
 mean it. Production secrets stay in the Railway dashboard, not in git.
+
+> **Branch name note:** Git’s development branch is `main` (lowercase). macOS
+> treats `Main` and `main` as the same name, so we keep the standard `main`
+> spelling for the local/Main line of work.
 
 ## Local development
 
@@ -60,8 +76,8 @@ Open `http://127.0.0.1:5000/` (coming soon), then `/app` after login.
 
 ## Deploy on Railway
 
-Railway is already linked to this GitHub repo. A push to **`main`** is the
-publish step.
+Railway is linked to this GitHub repo and watches **`Publish`** only. A push to
+`Publish` (see `git push origin main:Publish` above) is the publish step.
 
 1. Service root = **repository root** (not `web/`). Builder: [`railway.toml`](railway.toml)
    → [`web/Dockerfile`](web/Dockerfile).
@@ -74,6 +90,12 @@ publish step.
 
 If the build fails, confirm the service root is the monorepo root and the
 Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.
+
+To re-point the Railway service at `Publish` (e.g. after reconnecting GitHub):
+
+```bash
+railway service source connect --repo pjd0568/HVAC-Toolkit --branch Publish --service "Pauls Hvac App"
+```
 
 ## Cloudflare + domain
 
