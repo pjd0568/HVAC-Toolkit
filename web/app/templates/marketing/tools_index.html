@@ -1,0 +1,35 @@
+{% extends "marketing/base.html" %}
+{% block title %}HVAC Calculators — Psychrometric, Duct &amp; Pipe Sizing | HVAC-calcs.app{% endblock %}
+{% block meta_description %}Browse HVAC calculator guides: free psychrometric calculator, mixed air, duct sizing, chilled water pipe sizing and LTHW pressure drop. SI and imperial. HVAC-calcs.app.{% endblock %}
+{% block content %}
+
+<section class="coming-hero">
+  <h1 class="coming-title">HVAC calculator guides</h1>
+  <p class="coming-lead">
+    Public guides for the tools engineers search for — with methods and formulas —
+    plus a clear path into the full suite (14-day trial, then £9.50/month).
+  </p>
+</section>
+
+<section class="coming-section" style="max-width:720px;">
+  <ul class="tool-index-list">
+    {% for t in landings %}
+    <li>
+      <a href="{{ url_for('pages.tool_landing', slug=t.slug) }}">
+        <span class="tool-index-title">{{ t.h1 }}</span>
+        <span class="tool-index-desc">{{ t.lead }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="coming-section">
+  <p class="coming-section-lead">
+    Prefer to try immediately?
+    <a href="{{ url_for('main.coming_soon') }}#psychro-teaser">Free psychrometric calculator</a>
+    on the homepage — no account required.
+  </p>
+</section>
+
+{% endblock %}

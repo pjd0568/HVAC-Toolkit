@@ -1,0 +1,95 @@
+{% extends "marketing/base.html" %}
+{% block title %}{{ landing.title }}{% endblock %}
+{% block meta_description %}{{ landing.meta_description }}{% endblock %}
+{% block content %}
+
+<article class="tool-landing">
+  <p class="coming-eyebrow">{{ landing.eyebrow }}</p>
+  <h1 class="coming-title">{{ landing.h1 }}</h1>
+  <p class="coming-lead">{{ landing.lead }}</p>
+
+  <div class="coming-actions">
+    {% if current_user.is_authenticated %}
+      <a class="btn-accent" href="{{ url_for(landing.cta_app_endpoint) }}">{{ landing.cta_label }}</a>
+      <a class="btn-ghost" href="{{ url_for('v2.dashboard') }}">Open toolkit</a>
+    {% elif registration_open %}
+      <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
+      <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for(landing.cta_app_endpoint)) }}">Log in</a>
+    {% else %}
+      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">Pricing / Subscribe</a>
+      <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for(landing.cta_app_endpoint)) }}">Log in</a>
+    {% endif %}
+    {% if landing.slug == 'psychrometric-calculator' %}
+      <a class="btn-ghost" href="{{ url_for('main.coming_soon') }}#psychro-teaser">Try free calculator</a>
+    {% endif %}
+  </div>
+
+  <section class="coming-section">
+    <h2>{{ landing.how_heading }}</h2>
+    <p class="coming-section-lead">{{ landing.how_body }}</p>
+  </section>
+
+  <section class="coming-section">
+    <h2>{{ landing.concept_heading }}</h2>
+    <p class="coming-section-lead">{{ landing.concept_body }}</p>
+  </section>
+
+  <section class="coming-section">
+    <h2>{{ landing.formulas_heading }}</h2>
+    <ul class="coming-list">
+      {% for line in landing.formulas %}
+      <li>{{ line }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% if related %}
+  <section class="coming-section">
+    <h2>Related calculators</h2>
+    <ul class="coming-list">
+      {% for r in related %}
+      <li><a href="{{ url_for('pages.tool_landing', slug=r.slug) }}">{{ r.h1 }}</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="coming-section">
+    <p class="coming-section-lead">
+      <a href="{{ url_for('pages.tools_index') }}">All calculator guides</a>
+      · <a href="{{ url_for('billing.subscribe') }}">Pricing</a>
+      · <a href="{{ url_for('pages.contact') }}">Contact</a>
+    </p>
+    <p class="muted" style="font-size:13px; line-height:1.45;">
+      Results are a design aid. Always apply professional judgement and verify against
+      codes, standards and manufacturer data.
+    </p>
+  </section>
+</article>
+
+{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": {{ landing.h1|tojson }},
+  "url": {{ (public_base_url ~ request.path)|tojson }},
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "description": {{ landing.meta_description|tojson }},
+  "offers": {
+    "@type": "Offer",
+    "price": "9.50",
+    "priceCurrency": "GBP",
+    "description": "Full suite after 14-day free trial"
+  },
+  "provider": {
+    "@type": "Organization",
+    "name": {{ brand_name|tojson }},
+    "url": {{ public_base_url|tojson }}
+  }
+}
+</script>
+{% endblock %}

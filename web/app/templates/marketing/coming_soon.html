@@ -1,6 +1,6 @@
 {% extends "marketing/base.html" %}
-{% block title %}{{ brand_name }} — psychrometric, duct &amp; pipe sizing calculators{% endblock %}
-{% block meta_description %}Online HVAC calculators for engineers: psychrometric calculator, duct sizing calculator, pipe sizing calculator, unit conversion, and PDF reports. SI and imperial. 14-day free trial, then £9.50/month.{% endblock %}
+{% block title %}Free Psychrometric, Duct &amp; Pipe Sizing Calculators | HVAC-calcs.app{% endblock %}
+{% block meta_description %}Online HVAC calculators for engineers: free psychrometric calculator, mixed air, duct sizing, chilled water pipe sizing and pressure drop. SI and imperial. 14-day free trial, then £9.50/month.{% endblock %}
 {% block body_class %}marketing-home{% endblock %}
 {% block content %}
 <section class="coming-hero">
@@ -28,6 +28,7 @@
     {% if current_user.is_authenticated or registration_open %}
     <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a>
     {% endif %}
+    <a class="btn-ghost" href="{{ url_for('pages.tools_index') }}">Calculator guides</a>
   </div>
 </section>
 
@@ -38,11 +39,15 @@
   <p class="coming-section-lead">
     A focused suite of HVAC engineering calculators. Start with a
     <strong>14-day free trial</strong>, then continue for
-    <strong>£9.50/month</strong> for full suite access.
+    <strong>£9.50/month</strong> for full suite access. Read the public
+    <a href="{{ url_for('pages.tools_index') }}">calculator guides</a> for methods
+    and formulas before you open the app.
   </p>
   <ul class="coming-list">
-    <li><strong>Psychrometric calculator</strong> — multi-point interactive chart, single point, mixed air, cooling coil, desiccant, heat &amp; humidify, adiabatic cool, AHU design</li>
-    <li><strong>Duct sizing calculator</strong> and <strong>pipe sizing calculator</strong> with system / index-leg workflows</li>
+    <li><a href="{{ url_for('pages.tool_landing', slug='psychrometric-calculator') }}"><strong>Psychrometric calculator</strong></a> — free single-point teaser, plus multi-point chart, mixed air, cooling coil, desiccant, heat &amp; humidify, adiabatic cool, AHU design</li>
+    <li><a href="{{ url_for('pages.tool_landing', slug='mixed-air-calculator') }}"><strong>Mixed air calculator</strong></a> — outdoor + return blend for AHU entering conditions</li>
+    <li><a href="{{ url_for('pages.tool_landing', slug='duct-sizing-calculator') }}"><strong>Duct sizing calculator</strong></a> and <a href="{{ url_for('pages.tool_landing', slug='lthw-pipe-pressure-drop') }}"><strong>pipe pressure-drop</strong></a> workflows</li>
+    <li><a href="{{ url_for('pages.tool_landing', slug='chilled-water-pipe-sizing') }}"><strong>Chilled water pipe sizing</strong></a> with velocity and pressure-gradient checks</li>
     <li><strong>Coming next</strong> — project-based data storage and ASHRAE weather data analysis</li>
     <li>HVAC unit converter, design guides, and PDF reports</li>
   </ul>

@@ -41,6 +41,34 @@ def terms():
     )
 
 
+@bp.get("/tools/")
+def tools_index():
+    from app.seo_tools import list_landings
+
+    return render_template(
+        "marketing/tools_index.html",
+        landings=list_landings(),
+    )
+
+
+@bp.get("/tools/<slug>")
+def tool_landing(slug: str):
+    from flask import abort
+
+    from app.seo_tools import get_landing
+
+    landing = get_landing(slug)
+    if landing is None:
+        abort(404)
+    related = [get_landing(s) for s in landing.related_slugs]
+    related = [r for r in related if r is not None]
+    return render_template(
+        "marketing/tool_landing.html",
+        landing=landing,
+        related=related,
+    )
+
+
 @bp.get("/privacy")
 def privacy():
     return render_template(
@@ -178,15 +206,20 @@ def bing_site_auth():
 
 @bp.get("/sitemap.xml")
 def sitemap_xml():
+    from app.seo_tools import list_landings
+
     base = current_app.config["PUBLIC_BASE_URL"].rstrip("/")
-    # Public marketing URLs only — calculators require login.
+    # Public marketing URLs only — logged-in calculators stay out of the sitemap.
     paths = [
         ("/", "weekly", "1.0"),
+        ("/tools/", "weekly", "0.9"),
         ("/subscribe", "weekly", "0.8"),
         ("/contact", "monthly", "0.6"),
         ("/terms", "yearly", "0.3"),
         ("/privacy", "yearly", "0.3"),
     ]
+    for landing in list_landings():
+        paths.append((f"/tools/{landing.slug}", "monthly", "0.85"))
     urls = []
     for path, freq, priority in paths:
         urls.append(

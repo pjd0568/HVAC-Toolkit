@@ -24,6 +24,8 @@ _PUBLIC_ENDPOINTS = frozenset(
         "pages.robots_txt",
         "pages.sitemap_xml",
         "pages.bing_site_auth",
+        "pages.tools_index",
+        "pages.tool_landing",
         "static",
     }
 )
@@ -122,6 +124,9 @@ def create_app(config_class: type = Config) -> Flask:
         def _brand_url(filename: str) -> str:
             return f"{url_for('static', filename=filename)}?v={v}"
 
+        base = app.config.get("PUBLIC_BASE_URL", "https://hvac-calcs.app").rstrip("/")
+        apple_path = url_for("static", filename=apple)
+
         return {
             "brand_name": app.config["BRAND_NAME"],
             "brand_tag": app.config["BRAND_TAG"],
@@ -131,9 +136,8 @@ def create_app(config_class: type = Config) -> Flask:
             "brand_hero_url": _brand_url(hero),
             "brand_favicon_url": _brand_url(favicon),
             "brand_apple_touch_url": _brand_url(apple),
-            "public_base_url": app.config.get(
-                "PUBLIC_BASE_URL", "https://hvac-calcs.app"
-            ),
+            "brand_og_image_url": f"{base}{apple_path}",
+            "public_base_url": base,
             "legal_entity": app.config.get("LEGAL_ENTITY", "PJD IT Systems"),
             "contact_email": app.config.get("CONTACT_EMAIL", "info@hvac-calcs.app"),
             "default_meta_description": (

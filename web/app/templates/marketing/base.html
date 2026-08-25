@@ -11,13 +11,13 @@
 <meta property="og:title" content="{{ self.title() }}">
 <meta property="og:description" content="{{ self.meta_description() }}">
 <meta property="og:url" content="{{ public_base_url }}{{ request.path }}">
-<meta property="og:image" content="{{ brand_apple_touch_url }}">
+<meta property="og:image" content="{{ brand_og_image_url }}">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="{{ self.title() }}">
 <meta name="twitter:description" content="{{ self.meta_description() }}">
 <link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-21">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-22">
 {% block extra_head %}{% endblock %}
 </head>
 <body class="marketing-body {% block body_class %}{% endblock %}">
@@ -26,6 +26,7 @@
       {% include "_brand_lockup.html" %}
     </a>
     <nav class="marketing-nav">
+      <a href="{{ url_for('pages.tools_index') }}">Calculators</a>
       <a href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a>
       <a href="{{ url_for('pages.contact') }}">Contact</a>
       {% if current_user.is_authenticated %}
@@ -64,6 +65,7 @@
       <span class="muted">A {{ legal_entity }} product</span>
     </div>
     <nav class="marketing-footer-nav" aria-label="Legal and support">
+      <a href="{{ url_for('pages.tools_index') }}">Calculators</a>
       <a href="{{ url_for('pages.contact') }}">Contact</a>
       <a href="{{ url_for('pages.terms') }}">Terms</a>
       <a href="{{ url_for('pages.privacy') }}">Privacy</a>
