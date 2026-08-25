@@ -53,7 +53,7 @@
       <h3 class="help-sub">PDF report &amp; PNG chart export</h3>
       <p>Once a psychrometric or duct calculation succeeds, a <strong>Download PDF Report</strong> panel appears under the results. Fill in the Project / System / Revision / Author fields and download a formatted report with the inputs, results and chart. Where there's a chart, an <strong>Export Chart (PNG)</strong> button gives you just the image. Reports are generated from the same calculation as the screen, so they can never disagree with it.</p>
 
-      <div class="help-tip">New here? Start with <a href="#single-point">Psychrometrics — Multi-Point Interactive Chart</a> to place states on the chart, or open <a href="#weather">Weather &amp; Design Conditions</a> for the planned ASHRAE lookup and links to ASHRAE’s own tools. On a phone, see <a href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">Add to mobile homescreen</a> to install the toolkit like an app.</div>
+      <div class="help-tip">New here? Start with <a href="#interactive-chart">Psychrometrics — Multi-Point Interactive Chart</a> or <a href="#single-point">Single Point</a>, or open <a href="#weather">Weather &amp; Design Conditions</a> for the planned ASHRAE lookup and links to ASHRAE’s own tools. On a phone, see <a href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">Add to mobile homescreen</a> to install the toolkit like an app.</div>
     </section>
 
     <!-- ═══════════════ ADD TO MOBILE HOMESCREEN ═══════════════ -->
@@ -123,14 +123,14 @@
       <ol class="help-steps">
         <li>Open <a href="{{ url_for('weather.index') }}">Weather &amp; Design Conditions</a> for links to ASHRAE’s <strong>Weather Data Viewer</strong> and free <strong>Station Finder</strong>.</li>
         <li>Read summer/winter design dry-bulb and wet-bulb (or RH) from that source or from your ASHRAE / CIBSE tables.</li>
-        <li>Enter those values in <a href="#single-point">Psychrometrics — Multi-Point Interactive Chart</a> (or another psychrometric tool) as the outdoor-air state.</li>
+        <li>Enter those values in <a href="#single-point">Psychrometrics — Single Point</a> (or another psychrometric tool) as the outdoor-air state.</li>
       </ol>
 
       <div class="help-note">Memory Slots remain available for carrying a condition between tools once you have values to paste; they are no longer filled from an in-app weather lookup.</div>
     </section>
 
     <!-- ═══════════════ MULTI-POINT INTERACTIVE CHART ═══════════════ -->
-    <section class="help-section" id="single-point" data-help-section
+    <section class="help-section" id="interactive-chart" data-help-section
              data-keywords="psychrometrics multi point interactive chart long press place points process map heat cool humidify dehumidify airflow kW moist air dry bulb wet bulb dew point relative humidity moisture ratio enthalpy">
       <h2 class="help-h">Psychrometrics — Multi-Point Interactive Chart</h2>
       <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Place up to four labelled state points on the psychrometric chart, refine their properties, and map heating/cooling and humidification between any two.</p>
@@ -150,6 +150,35 @@
       <p>Each point lists the full moist-air state. The process map reports heat or cool (ΔT) and humidify or dehumidify (ΔW). With airflow, duties are in kW and moisture change in kg/h. The path is a straight chord between the two states — not a coil ADP model.</p>
     </section>
 
+    <!-- ═══════════════ SINGLE POINT ═══════════════ -->
+    <section class="help-section" id="single-point" data-help-section
+             data-keywords="psychrometrics single point state moist air dry bulb wet bulb dew point relative humidity moisture ratio enthalpy specific volume density vapour pressure altitude barometric pressure">
+      <h2 class="help-h">Psychrometrics — Single Point</h2>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Resolve the complete state of moist air from any two of its properties. Enter a dry-bulb temperature and one more property; get every other property back.</p>
+
+      <h3 class="help-sub">When to use it</h3>
+      <p>Any time you have a partial description of an air condition and need the rest — for example you know dry-bulb and RH and want the wet-bulb, dew point, enthalpy or moisture content. It's the building block behind the other psychrometric tools.</p>
+
+      <h3 class="help-sub">Inputs</h3>
+      <dl class="help-io">
+        <dt>Altitude</dt><dd>Site elevation. The <strong>Barometric Pressure</strong> beside it is derived automatically (standard atmosphere) and is read-only — psychrometric properties depend on pressure, so this keeps them correct for the site. At sea level leave it at 0.</dd>
+        <dt>State Dry Bulb</dt><dd>The dry-bulb (ordinary thermometer) temperature.</dd>
+        <dt>State Second Property</dt><dd>Which second property you're providing: Relative humidity (%), Wet bulb, Moisture ratio, or Dew point.</dd>
+        <dt>State Second Value</dt><dd>The value of whichever second property you selected.</dd>
+      </dl>
+
+      <h3 class="help-sub">How to use it</h3>
+      <ol class="help-steps">
+        <li>Set the site Altitude (or leave 0 for sea level).</li>
+        <li>Enter the Dry Bulb temperature.</li>
+        <li>Choose the Second Property and enter its value.</li>
+        <li>Press <strong>Calculate</strong>. The full state is listed and plotted on the psychrometric chart. Optionally change inputs and <strong>Add Point B</strong> to compare two states.</li>
+      </ol>
+
+      <h3 class="help-sub">Reading the results</h3>
+      <p>You get dry-bulb, wet-bulb, dew point, relative humidity, humidity ratio, specific enthalpy, specific volume, density and vapour pressure — plus the point marked on the chart. "— (dry air)" for dew point means the air is so dry the dew point is below the model's floor.</p>
+    </section>
+
     <!-- ═══════════════ MIXED AIR ═══════════════ -->
     <section class="help-section" id="mixed-air" data-help-section
              data-keywords="mixed air mixing two airstreams fresh return recirculation adiabatic mix fog saturation condensate mass flow proportion blend">
@@ -161,7 +190,7 @@
 
       <h3 class="help-sub">Inputs</h3>
       <dl class="help-io">
-        <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure, as in the Multi-Point Interactive Chart.</dd>
+        <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure, as in Single Point.</dd>
         <dt>Stream A / Stream B — Dry Bulb, Second Property, Second Value</dt><dd>The condition of each airstream, entered as dry-bulb plus a second property.</dd>
         <dt>Stream A / Stream B — Flow</dt><dd>The volume flow rate of each stream. The proportions set the weighting of the mix.</dd>
       </dl>

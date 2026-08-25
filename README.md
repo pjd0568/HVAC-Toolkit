@@ -16,6 +16,25 @@ engine/     hvac_engine — standalone, pure-Python calculation package.
 web/        Flask application (app factory + blueprints) consuming the engine.
 ```
 
+## Local then Railway
+
+Live site (`hvac-calcs.app`) deploys from GitHub **`main`**. Develop and test on
+this machine first; only merge to `main` when you are ready for Railway to
+publish.
+
+1. **Branch** from `main` (`feat/weather`, `feat/projects`, …).
+2. **Run locally** (below). Use `ACCESS_DEV_TIER=pro` in `.env` so the suite is
+   unlocked without Stripe. Optional: `REGISTRATION_OPEN=true` so you can
+   create a local account; or open `/login?preview=1` when `ACCESS_DEV_TIER` is
+   set (logs in `preview@example.com`).
+3. **Test** — engine `pytest`, then click through the tool at
+   `http://127.0.0.1:5000/app`.
+4. **Merge to `main` and push.** Railway builds from the repo root
+   (`railway.toml` → `web/Dockerfile`) and runs `flask --app wsgi db upgrade`.
+
+Do not put `ACCESS_DEV_TIER` or `REGISTRATION_OPEN=true` on Railway unless you
+mean it. Production secrets stay in the Railway dashboard, not in git.
+
 ## Local development
 
 ```bash
@@ -23,7 +42,7 @@ web/        Flask application (app factory + blueprints) consuming the engine.
 cd engine && pip install -e ".[dev]" && pytest
 
 # Web app (needs Postgres — easiest via Compose)
-cp .env.example .env   # set SECRET_KEY at minimum
+cp .env.example .env   # set SECRET_KEY; add ACCESS_DEV_TIER=pro for local suite access
 docker compose up --build
 
 # Or run Flask against Compose Postgres only:
@@ -32,29 +51,26 @@ cd web && python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 export DATABASE_URL=postgresql://app:app@127.0.0.1:5432/app
 export SECRET_KEY=dev-only-change-me
+export ACCESS_DEV_TIER=pro
 flask --app wsgi db upgrade
 flask --app wsgi run --debug
 ```
 
-Open `http://127.0.0.1:5000/` (coming soon), register at `/register`, then use `/app`.
+Open `http://127.0.0.1:5000/` (coming soon), then `/app` after login.
 
 ## Deploy on Railway
 
-1. Create a Railway project and link this GitHub repo at the **repository root**
-   (not `web/`). Builder uses Docker via [`railway.toml`](railway.toml) →
-   [`web/Dockerfile`](web/Dockerfile).
-2. Add the **Postgres** plugin; Railway injects `DATABASE_URL`.
-3. Set variables: `SECRET_KEY` (long random), `BRAND_NAME` (e.g. `HVAC Calcs`),
-   optional `BRAND_TAG`. Leave `REGISTRATION_OPEN` unset or `false` until launch
-   (existing accounts can still log in; `/register` stays closed). Optional:
-   `CONTACT_EMAIL`, `LEGAL_ENTITY`, and `MAIL_*` SMTP vars so `/contact` sends
-   mail server-side (otherwise it opens a mailto draft).
-4. Deploy. Release command runs `flask --app wsgi db upgrade`. Health check:
-   `GET /health`.
-5. Custom domain: Railway → Domains → `hvac-calcs.app`. Copy the CNAME/ALIAS
-   into Cloudflare DNS. SSL mode on Cloudflare: **Full (strict)** once Railway
-   has issued its certificate.
-6. After go-live, submit `https://hvac-calcs.app/sitemap.xml` in Google Search Console.
+Railway is already linked to this GitHub repo. A push to **`main`** is the
+publish step.
+
+1. Service root = **repository root** (not `web/`). Builder: [`railway.toml`](railway.toml)
+   → [`web/Dockerfile`](web/Dockerfile).
+2. Postgres plugin injects `DATABASE_URL`.
+3. Production variables live in Railway only: `SECRET_KEY`, Stripe, Resend, etc.
+   Leave `REGISTRATION_OPEN` unset/`false` unless you are opening public trials.
+4. Health check: `GET /health`. Custom domain: `hvac-calcs.app` (Cloudflare
+   SSL **Full (strict)**).
+5. After go-live, submit `https://hvac-calcs.app/sitemap.xml` in Google Search Console.
 
 If the build fails, confirm the service root is the monorepo root and the
 Dockerfile path is `web/Dockerfile`. Gunicorn binds `$PORT` automatically.

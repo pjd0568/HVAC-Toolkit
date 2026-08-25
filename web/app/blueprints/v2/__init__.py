@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, redirect, render_template, request, session, url_for
 from flask_login import login_required
 from hvac_engine import converter as cv
 from hvac_engine import pipe as eng
@@ -12,6 +12,7 @@ from app.access_gate import require_module
 from app.blueprints import duct as duct_mod
 from app.blueprints import pipe as pipe_mod
 from app.blueprints import psychro as psy_mod
+from app.teaser import TEASER_FORM_SESSION_KEY
 from app.ui_prefs import redirect_with_ui
 from app.units import current_view
 
@@ -212,10 +213,10 @@ def pipe_system():
 # ── Psychrometrics ──────────────────────────────────────────────────────────
 
 
-@bp.route("/psychrometrics/single-point", methods=["GET", "POST"])
+@bp.route("/psychrometrics/interactive-chart", methods=["GET"])
 @require_module("psychro.single_point")
-def single_point():
-    """Multi-Point Interactive Chart (replaces the former Single Point tool)."""
+def interactive_chart():
+    """Multi-Point Interactive Chart — place A–D and map a process between any two."""
     U = current_view()
     form = {"altitude": U.fmt("altitude", 0.0)}
     try:
@@ -225,7 +226,7 @@ def single_point():
     chart = psy_mod._chart_or_blank([], [], pressure, U.system)
     return render_template(
         "v2/interactive_chart.html",
-        active="psychro",
+        active="psychro_ix",
         nav="psychro",
         chart=chart,
         pressure=pressure,
@@ -237,11 +238,79 @@ def single_point():
     )
 
 
-@bp.route("/psychrometrics/interactive-chart", methods=["GET"])
+@bp.route("/psychrometrics/single-point", methods=["GET", "POST"])
 @require_module("psychro.single_point")
-def interactive_chart():
-    """Alias — Multi-Point Interactive Chart lives at single-point."""
-    return redirect(url_for("v2.single_point"), code=301)
+def single_point():
+    """Classic Single Point — resolve a moist-air state (optional Point B)."""
+    U = current_view()
+    error = None
+    pressure = None
+    saved = psy_mod._get_saved_points()
+
+    if request.method == "POST":
+        action = request.form.get("action", "calculate")
+        form = {k: request.form.get(k, d) for k, d in psy_mod._SINGLE_POINT_DEFAULTS.items()}
+        if action == "reset":
+            psy_mod._clear_saved_points()
+            return redirect(url_for("v2.single_point"))
+        try:
+            pressure, result, _, _ = psy_mod._run_single_point(form, U)
+            entry = psy_mod._state_to_session("A", result)
+            if action == "add_b":
+                if not saved:
+                    psy_mod._set_saved_points([entry])
+                else:
+                    entry["label"] = "B"
+                    psy_mod._set_saved_points([saved[0], entry])
+            else:
+                entry["label"] = "A"
+                if len(saved) >= 2:
+                    b = dict(saved[1])
+                    b["label"] = "B"
+                    psy_mod._set_saved_points([entry, b])
+                else:
+                    psy_mod._set_saved_points([entry])
+            saved = psy_mod._get_saved_points()
+        except ValueError as exc:
+            error = str(exc)
+            try:
+                pressure = psy_mod._resolve_pressure(form, U)
+            except ValueError:
+                pressure = None
+    else:
+        teaser_form = session.pop(TEASER_FORM_SESSION_KEY, None)
+        if isinstance(teaser_form, dict):
+            form = {k: teaser_form.get(k, d) for k, d in psy_mod._SINGLE_POINT_DEFAULTS.items()}
+        else:
+            form = psy_mod._display_defaults(
+                psy_mod._SINGLE_POINT_DEFAULTS, psy_mod._SINGLE_POINT_FIELD_UNITS, U
+            )
+            psy_mod._paste_slot_into(form, "s", U)
+        try:
+            pressure = psy_mod._resolve_pressure(form, U)
+        except ValueError:
+            pressure = None
+    if pressure is None:
+        try:
+            pressure = psy_mod._resolve_pressure(form, U)
+        except ValueError:
+            pressure = psy.P_ATM
+
+    chart_pts, chart_segs = psy_mod._chart_points_and_segments(saved)
+    chart = psy_mod._chart_or_blank(chart_pts, chart_segs, pressure, U.system)
+    return render_template(
+        "v2/psychro.html",
+        active="psychro",
+        nav="psychro",
+        form=form,
+        second_properties=psy_mod._second_properties(U),
+        saved_points=saved,
+        error=error,
+        chart=chart,
+        pressure=pressure,
+        can_add_b=len(saved) >= 1,
+        has_points=len(saved) >= 1,
+    )
 
 
 def _psychro_simple_post(

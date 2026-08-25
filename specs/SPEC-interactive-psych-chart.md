@@ -2,6 +2,7 @@
 
 **Module:** `hvac_engine.processes.map_state_process` + web `psychro.interactive_chart`
 **Status:** v0.1 POC — 9 August 2026
+**URL:** `/v2/psychrometrics/interactive-chart` (suite module gate: `psychro.single_point`)
 **Clean-room note:** Built on SPEC-psychrometrics.md / SPEC-ahu-processes.md (ASHRAE HOF Ch.1).
 
 ## Purpose

@@ -48,7 +48,8 @@
         <span class="nav-chevron" aria-hidden="true"></span>
       </button>
       <div class="nav-group-items">
-        <a class="nav-item {{ 'active' if active == 'psychro' }}" href="{{ url_for('v2.single_point') }}">Multi-Point Interactive Chart</a>
+        <a class="nav-item {{ 'active' if active == 'psychro_ix' }}" href="{{ url_for('v2.interactive_chart') }}">Multi-Point Interactive Chart</a>
+        <a class="nav-item {{ 'active' if active == 'psychro' }}" href="{{ url_for('v2.single_point') }}">Single Point</a>
         <a class="nav-item {{ 'active' if active == 'psychro_mix' }}" href="{{ url_for('v2.mixed_air') }}">Mixed Air</a>
         <a class="nav-item {{ 'active' if active == 'psychro_coil' }}" href="{{ url_for('v2.cooling_coil') }}">Cooling Coil</a>
         <a class="nav-item {{ 'active' if active == 'psychro_desiccant' }}" href="{{ url_for('v2.desiccant') }}">Desiccant Dehumidification</a>

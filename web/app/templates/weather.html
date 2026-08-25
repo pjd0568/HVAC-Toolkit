@@ -48,12 +48,13 @@
 
 <div class="section-label" style="margin-top:28px;">Meanwhile in this app</div>
 <p class="page-sub" style="max-width:640px;margin-bottom:16px;">
-  Use <a href="{{ url_for('v2.single_point') }}">Psychrometrics — Multi-Point Interactive Chart</a>
-  (or Mixed Air / Cooling Coil / AHU Design) and type the outdoor dry-bulb and
+  Use <a href="{{ url_for('v2.single_point') }}">Psychrometrics — Single Point</a>
+  (or the <a href="{{ url_for('v2.interactive_chart') }}">multi-point interactive chart</a>,
+  Mixed Air / Cooling Coil / AHU Design) and type the outdoor dry-bulb and
   wet-bulb (or RH) from your ASHRAE or CIBSE table.
 </p>
 <p>
-  <a class="btn-accent" href="{{ url_for('v2.single_point') }}">Open Multi-Point Chart</a>
+  <a class="btn-accent" href="{{ url_for('v2.single_point') }}">Open Single Point</a>
   <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a>
 </p>
 

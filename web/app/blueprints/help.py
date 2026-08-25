@@ -32,7 +32,8 @@ HELP_NAV = [
     {
         "group": "Psychrometrics",
         "sections": [
-            {"id": "single-point", "title": "Multi-Point Interactive Chart"},
+            {"id": "interactive-chart", "title": "Multi-Point Interactive Chart"},
+            {"id": "single-point", "title": "Single Point"},
             {"id": "mixed-air", "title": "Mixed Air"},
             {"id": "cooling-coil", "title": "Cooling Coil"},
             {"id": "desiccant", "title": "Desiccant Dehumidification"},
@@ -77,6 +78,7 @@ ACTIVE_TO_ANCHOR = {
     "dashboard": "overview",
     "weather": "weather",
     "psychro": "single-point",
+    "psychro_ix": "interactive-chart",
     "psychro_mix": "mixed-air",
     "psychro_coil": "cooling-coil",
     "psychro_desiccant": "desiccant",

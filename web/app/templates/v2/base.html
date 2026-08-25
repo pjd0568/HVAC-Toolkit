@@ -29,7 +29,8 @@
     <div class="v2-nav-drop {{ 'active' if nav == 'psychro' }}">
       <button type="button" class="v2-nav-drop-btn" aria-expanded="false" aria-haspopup="true">Psychro</button>
       <div class="v2-nav-drop-menu" role="menu">
-        <a href="{{ url_for('v2.single_point') }}" role="menuitem" class="{{ 'active' if active == 'psychro' }}">Multi-point interactive chart</a>
+        <a href="{{ url_for('v2.interactive_chart') }}" role="menuitem" class="{{ 'active' if active == 'psychro_ix' }}">Multi-point interactive chart</a>
+        <a href="{{ url_for('v2.single_point') }}" role="menuitem" class="{{ 'active' if active == 'psychro' }}">Single point</a>
         <a href="{{ url_for('v2.mixed_air') }}" role="menuitem" class="{{ 'active' if active == 'psychro_mix' }}">Mixed air</a>
         <a href="{{ url_for('v2.cooling_coil') }}" role="menuitem" class="{{ 'active' if active == 'psychro_coil' }}">Cooling coil</a>
         <a href="{{ url_for('v2.desiccant') }}" role="menuitem" class="{{ 'active' if active == 'psychro_desiccant' }}">Desiccant</a>

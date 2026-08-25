@@ -3,10 +3,11 @@
 {% block content %}
 
 <div class="v2-greeting">Psychrometrics</div>
-<div class="v2-greeting-sub">Pick a tool — start with the multi-point interactive chart, or open AHU for a stepped flow on smaller screens.</div>
+<div class="v2-greeting-sub">Pick a tool — start with the multi-point interactive chart or Single Point, or open AHU for a stepped flow on smaller screens.</div>
 
 <ul class="v2-picker-list">
-  <li><a href="{{ url_for('v2.single_point') }}">Multi-point interactive chart</a></li>
+  <li><a href="{{ url_for('v2.interactive_chart') }}">Multi-point interactive chart</a></li>
+  <li><a href="{{ url_for('v2.single_point') }}">Single point</a></li>
   <li><a href="{{ url_for('v2.mixed_air') }}">Mixed air</a></li>
   <li><a href="{{ url_for('v2.cooling_coil') }}">Cooling coil</a></li>
   <li><a href="{{ url_for('v2.desiccant') }}">Desiccant dehumidification</a></li>
