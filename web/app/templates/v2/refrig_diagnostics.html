@@ -11,49 +11,65 @@
 <div class="panel" style="max-width:820px;">
   <div class="panel-head">Superheat &amp; subcooling</div>
   <div class="panel-body">
-    <form method="get">
-      <div class="form-grid three">
-        <div>
-          <label for="refrigerant">Refrigerant</label>
-          <select id="refrigerant" name="refrigerant">
-            {% for glabel, items in refrigerant_groups %}
-            <optgroup label="{{ glabel }}">
-              {% for r in items %}
-              <option value="{{ r.id }}" {{ 'selected' if r.id == fields.refrigerant }} {{ 'disabled' if not r.available }}>
-                {{ r.label }}{% if not r.available %} — Coming soon{% endif %}
-              </option>
+    <form method="get" class="compact-form">
+      <fieldset class="compact-group">
+        <legend>Refrigerant</legend>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="refrigerant">Fluid</label>
+            <select id="refrigerant" name="refrigerant">
+              {% for glabel, items in refrigerant_groups %}
+              <optgroup label="{{ glabel }}">
+                {% for r in items %}
+                <option value="{{ r.id }}" {{ 'selected' if r.id == fields.refrigerant }} {{ 'disabled' if not r.available }}>
+                  {{ r.label }}{% if not r.available %} — Coming soon{% endif %}
+                </option>
+                {% endfor %}
+              </optgroup>
               {% endfor %}
-            </optgroup>
-            {% endfor %}
-          </select>
+            </select>
+          </div>
+          <div class="compact-field">
+            <label for="p_unit">P unit</label>
+            <select id="p_unit" name="p_unit">
+              <option value="barg" {{ 'selected' if fields.p_unit == 'barg' }}>barg</option>
+              <option value="bara" {{ 'selected' if fields.p_unit == 'bara' }}>bara</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label for="p_unit">Pressure unit</label>
-          <select id="p_unit" name="p_unit">
-            <option value="barg" {{ 'selected' if fields.p_unit == 'barg' }}>barg (gauge)</option>
-            <option value="bara" {{ 'selected' if fields.p_unit == 'bara' }}>bara (absolute)</option>
-          </select>
+      </fieldset>
+
+      <fieldset class="compact-group">
+        <legend>Measured pressures</legend>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="p_low">Low side</label>
+            <input id="p_low" name="p_low" value="{{ fields.p_low }}" inputmode="decimal">
+          </div>
+          <div class="compact-field">
+            <label for="p_high">High side</label>
+            <input id="p_high" name="p_high" value="{{ fields.p_high }}" inputmode="decimal">
+          </div>
         </div>
-        <div></div>
-        <div>
-          <label for="p_low">Low-side pressure</label>
-          <input id="p_low" name="p_low" value="{{ fields.p_low }}" inputmode="decimal">
+      </fieldset>
+
+      <fieldset class="compact-group">
+        <legend>Pipe temperatures</legend>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="t_suction_c">Suction °C</label>
+            <input id="t_suction_c" name="t_suction_c" value="{{ fields.t_suction_c }}" inputmode="decimal">
+          </div>
+          <div class="compact-field">
+            <label for="t_liquid_c">Liquid °C</label>
+            <input id="t_liquid_c" name="t_liquid_c" value="{{ fields.t_liquid_c }}" inputmode="decimal">
+          </div>
         </div>
-        <div>
-          <label for="p_high">High-side pressure</label>
-          <input id="p_high" name="p_high" value="{{ fields.p_high }}" inputmode="decimal">
-        </div>
-        <div></div>
-        <div>
-          <label for="t_suction_c">Suction line temp (°C)</label>
-          <input id="t_suction_c" name="t_suction_c" value="{{ fields.t_suction_c }}" inputmode="decimal">
-        </div>
-        <div>
-          <label for="t_liquid_c">Liquid line temp (°C)</label>
-          <input id="t_liquid_c" name="t_liquid_c" value="{{ fields.t_liquid_c }}" inputmode="decimal">
-        </div>
+      </fieldset>
+
+      <div class="compact-actions">
+        <button class="btn-accent" type="submit">Calculate</button>
       </div>
-      <div style="margin-top:14px;"><button class="btn-accent" type="submit">Calculate</button></div>
     </form>
     <p class="muted" style="margin-top:12px; font-size:13px; line-height:1.5;">
       Superheat = suction temp − dew point at low-side pressure.

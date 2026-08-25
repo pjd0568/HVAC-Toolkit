@@ -1,0 +1,50 @@
+---
+description: Compact calculator form layout for all V2/tool modules
+globs: web/app/templates/**/*.html,web/app/static/css/**/*.css
+alwaysApply: true
+---
+
+# Compact form layout (design rule)
+
+Calculator input panels must use the **compact form** pattern — not stacked
+label-above-input grids — unless an existing tool already uses a specialised
+layout (e.g. psychrometric state paste / chart) and is only being patched.
+
+## Required pattern
+
+```html
+<form method="get" class="compact-form">
+  <fieldset class="compact-group">
+    <legend>Group name</legend>
+    <div class="compact-row"><!-- or cols-2 / cols-4 -->
+      <div class="compact-field">
+        <label for="id">Short label</label>
+        <input id="id" name="..." ...>
+      </div>
+      <!-- more short fields on the same row -->
+    </div>
+  </fieldset>
+  <div class="compact-actions">
+    <button class="btn-accent" type="submit">…</button>
+  </div>
+</form>
+```
+
+CSS lives in `web/app/static/css/app.css` (`.compact-form`); V2 keeps multi-column
+rows via overrides in `v2.css` (do **not** wrap these fields in `.form-grid` —
+V2 collapses `.form-grid` to one column).
+
+## Rules
+
+1. **Label + control on one line** — `.compact-field` (fixed-width right-aligned label + input/select).
+2. **Align columns** — same label column width across a row; prefer short labels (`Tevap °C`, `SH K`) with `title=` for longer hints.
+3. **Group related inputs** — `<fieldset class="compact-group">` + `<legend>` (Duty, Cycle, Pressures, …).
+4. **Pack short scalars** — 2–3 (or 4) fields per `.compact-row` when they are single-value entries.
+5. **Mobile** — rows collapse to one field per line below ~720px; label stays beside the control.
+6. **New modules** — ship compact forms by default. When refactoring older tools, migrate inputs to `.compact-form` rather than adding more `.form-grid` stacks.
+
+## Anti-patterns
+
+- Label on its own line with the input below for every field.
+- Empty grid cells used only for spacing.
+- Long paragraph labels in the label column — shorten the label; put detail in help text or `title`.

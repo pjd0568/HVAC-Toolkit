@@ -1007,6 +1007,42 @@ a:hover { color: var(--v2-green-ink); }
   gap: 12px;
   max-width: none;
 }
+/* Compact forms keep multi-column rows on V2 (do not inherit form-grid collapse). */
+.v2-main .compact-form .compact-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+.v2-main .compact-form .compact-row.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.v2-main .compact-form .compact-row.cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.v2-main .compact-form .compact-field {
+  display: grid;
+  grid-template-columns: 7.25rem minmax(0, 1fr);
+  gap: 6px 8px;
+  align-items: center;
+}
+.v2-main .compact-form .compact-field label {
+  margin: 0;
+  min-height: 0;
+  text-align: right;
+}
+@media (max-width: 720px) {
+  .v2-main .compact-form .compact-row,
+  .v2-main .compact-form .compact-row.cols-2,
+  .v2-main .compact-form .compact-row.cols-4 {
+    grid-template-columns: 1fr;
+  }
+  .v2-main .compact-form .compact-field,
+  .v2-main .compact-form .compact-field.span-2,
+  .v2-main .compact-form .compact-field.span-3 {
+    grid-column: auto;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+  }
+}
 .v2-main .psychro-layout {
   display: flex;
   flex-direction: column;
