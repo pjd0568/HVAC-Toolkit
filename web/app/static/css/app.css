@@ -2058,6 +2058,47 @@ table.leg-rows-table tfoot tr.leg-total-margin-tr td { border-top: 1px solid var
   margin: 14px 0 10px;
   color: #1e3a5f;
 }
+.pipe-sys-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin: 14px 0 10px;
+}
+.pipe-sys-section-head .pipe-sys-section-label {
+  margin: 0;
+}
+.pipe-pd-unit-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.pipe-pd-unit-btn {
+  margin: 0;
+  padding: 5px 11px;
+  border: none;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  line-height: 1.2;
+}
+.pipe-pd-unit-btn + .pipe-pd-unit-btn {
+  border-left: 1px solid var(--line, #e2e8f0);
+}
+.pipe-pd-unit-btn.on {
+  background: var(--v2-green-soft, #e6f7f5);
+  color: var(--v2-green-ink, #0f766e);
+}
+.pipe-pd-unit-btn:hover:not(.on) {
+  color: var(--ink, #0f172a);
+  background: #f8fafc;
+}
 .pipe-sys-duty { margin-bottom: 4px; }
 .pipe-sys-fluid-note { margin: 8px 0 0; }
 .pipe-inline-grid {

@@ -56,6 +56,16 @@
       fitting: "", quantity: "1", label: "Device", dp: "10"
     };
     var pressureSym = INITIAL.velocity_pressure_sym || "Pa";
+    var canTogglePdUnit = pressureSym === "Pa";
+    var PD_UNIT_KEY = "hvac_pipe_sys_pd_unit";
+    var pdUnit = "Pa";
+    if (canTogglePdUnit) {
+      try {
+        var savedPd = localStorage.getItem(PD_UNIT_KEY);
+        if (savedPd === "kPa" || savedPd === "Pa") pdUnit = savedPd;
+      } catch (e) { /* ignore */ }
+    }
+    var lastSystemState = INITIAL;
     var GLYCOL_BY_FLUID = window.PIPE_GLYCOL_BY_FLUID || {};
 
     var errorBox = document.getElementById("sys-error");
@@ -125,9 +135,79 @@
       return row.friction_or_k_display || "—";
     }
 
+    function formatPdFromPa(pa) {
+      if (pa == null || !isFinite(Number(pa))) return "—";
+      var n = Number(pa);
+      if (pdUnit === "kPa") {
+        return (Math.round(n / 10) / 100).toFixed(2);
+      }
+      return (Math.round(n * 100) / 100).toFixed(2);
+    }
+
+    function pdSym() {
+      return pdUnit === "kPa" ? "kPa" : (pressureSym || "Pa");
+    }
+
+    function deviceDpToPaString(displayVal) {
+      var raw = String(displayVal == null ? "" : displayVal).trim().replace(",", ".");
+      if (!raw) return "";
+      var n = parseFloat(raw);
+      if (!isFinite(n)) return String(displayVal);
+      if (pdUnit === "kPa") n = n * 1000;
+      return String(Math.round(n * 100) / 100);
+    }
+
+    function syncPdUnitToggle() {
+      var paBtn = document.getElementById("sys-pd-unit-pa");
+      var kpaBtn = document.getElementById("sys-pd-unit-kpa");
+      if (paBtn) paBtn.classList.toggle("on", pdUnit === "Pa");
+      if (kpaBtn) kpaBtn.classList.toggle("on", pdUnit === "kPa");
+      var dpLabel = document.querySelector('label[for="stage_dp"] span');
+      if (dpLabel) dpLabel.textContent = "Manual ΔP (" + pdSym() + ")";
+      if (table) {
+        try {
+          table.updateColumnDefinition("pd", { title: "PD (" + pdSym() + ")" });
+        } catch (err) { /* ignore */ }
+      }
+    }
+
+    function refreshPdDisplays() {
+      syncPdUnitToggle();
+      if (table) {
+        applying = true;
+        try {
+          table.getRows().forEach(function (row) {
+            var d = row.getData();
+            var type = d.type || "straight";
+            var nextPd = formatPdFromPa(d.dp_pa);
+            if (type === "device" && (d.dp_pa == null || !isFinite(Number(d.dp_pa)))) {
+              var base = d.dp != null && d.dp !== "" ? d.dp : d.pd;
+              var paGuess = parseFloat(String(base == null ? "" : base).replace(",", "."));
+              nextPd = isFinite(paGuess) ? formatPdFromPa(paGuess) : (base || "");
+            }
+            row.update({ pd: nextPd });
+          });
+        } finally {
+          applying = false;
+        }
+      }
+      if (lastSystemState) {
+        applyTotals(lastSystemState);
+        updateStagePreview(lastSystemState);
+      }
+    }
+
     function gridRowFromApi(row) {
       var raw = Object.assign({}, DEFAULT_RAW, row.raw || {});
       var type = row.type || raw.type || "straight";
+      var dpPa = row.dp_pa != null ? Number(row.dp_pa) : null;
+      var pd;
+      if (type === "device") {
+        if (dpPa != null && isFinite(dpPa)) pd = formatPdFromPa(dpPa);
+        else pd = raw.dp || row.dp_display || "";
+      } else {
+        pd = formatPdFromPa(dpPa);
+      }
       return {
         type: type,
         dn: raw.dn != null && raw.dn !== "" ? String(raw.dn) : (row.dn != null ? String(row.dn) : ""),
@@ -137,7 +217,8 @@
         vp: row.velocity_pressure_display || "—",
         pam: pamFromApi(row),
         detail: detailFromApi(row),
-        pd: type === "device" ? (raw.dp || row.dp_display || "") : (row.dp_display || "—"),
+        pd: pd,
+        dp_pa: dpPa,
         length: raw.length || "",
         fitting: row.fitting_key || raw.fitting || "",
         label: raw.label || "",
@@ -165,7 +246,7 @@
         raw.quantity = d.quantity || "1";
       } else if (type === "device") {
         raw.label = d.detail != null ? String(d.detail) : (d.label || DEFAULT_RAW.label);
-        raw.dp = d.pd != null ? String(d.pd) : (d.dp || DEFAULT_RAW.dp);
+        raw.dp = deviceDpToPaString(d.pd != null ? d.pd : (d.dp || DEFAULT_RAW.dp));
       }
       return raw;
     }
@@ -240,12 +321,15 @@
       dpLine.className = "leg-preview-dp";
       var dpSpan = document.createElement("span");
       dpSpan.id = "stage-sys-dp";
-      dpSpan.textContent = s.dp_display;
+      var stagePa = s.dp_pa != null ? Number(s.dp_pa) : null;
+      dpSpan.textContent = stagePa != null && isFinite(stagePa)
+        ? formatPdFromPa(stagePa)
+        : s.dp_display;
       dpLine.appendChild(dpSpan);
       dpLine.appendChild(document.createTextNode(" "));
       var symSpan = document.createElement("span");
       symSpan.className = "u";
-      symSpan.textContent = system.velocity_pressure_sym || pressureSym;
+      symSpan.textContent = pdSym();
       dpLine.appendChild(symSpan);
 
       stageResultCell.appendChild(metrics);
@@ -305,6 +389,9 @@
       });
       if (!opts.skipStaging && stage) {
         var stageRaw = readFieldsFrom(stage);
+        if ((stageRaw.type || "") === "device") {
+          stageRaw.dp = deviceDpToPaString(stageRaw.dp);
+        }
         ROW_FIELDS.forEach(function (f) {
           params.set("stage_" + f, stageRaw[f] == null ? "" : String(stageRaw[f]));
         });
@@ -380,12 +467,29 @@
     }
 
     function applyTotals(system) {
-      setText("sys-total", system.total_display);
-      setText("sys-total-sym", system.total_sym);
-      setText("sys-margin-amount", system.margin_amount_display || "0");
-      setText("sys-margin-sym", system.total_sym);
-      setText("sys-total-margin", system.total_with_margin_display || system.total_display);
-      setText("sys-total-margin-sym", system.total_sym);
+      var sym = pdSym();
+      var totalPa = system.total_pa != null ? Number(system.total_pa) : null;
+      var marginPa = system.margin_amount_pa != null ? Number(system.margin_amount_pa) : null;
+      var withMarginPa = system.total_with_margin_pa != null
+        ? Number(system.total_with_margin_pa) : null;
+      if (pdUnit === "kPa" && totalPa != null && isFinite(totalPa)) {
+        setText("sys-total", formatPdFromPa(totalPa));
+        setText("sys-total-sym", sym);
+        setText("sys-margin-amount", formatPdFromPa(marginPa != null ? marginPa : 0));
+        setText("sys-margin-sym", sym);
+        setText(
+          "sys-total-margin",
+          formatPdFromPa(withMarginPa != null ? withMarginPa : totalPa)
+        );
+        setText("sys-total-margin-sym", sym);
+      } else {
+        setText("sys-total", system.total_display);
+        setText("sys-total-sym", system.total_sym);
+        setText("sys-margin-amount", system.margin_amount_display || "0");
+        setText("sys-margin-sym", system.total_sym);
+        setText("sys-total-margin", system.total_with_margin_display || system.total_display);
+        setText("sys-total-margin-sym", system.total_sym);
+      }
       if (safetyMargin && document.activeElement !== safetyMargin) {
         safetyMargin.value = String(Math.round(system.safety_margin || 0));
       }
@@ -471,6 +575,7 @@
 
       function finish() {
         try {
+          lastSystemState = system;
           TYPE_OPTIONS = system.type_options || TYPE_OPTIONS;
           DN_OPTIONS = system.dn_options || DN_OPTIONS;
           FITTING_GROUPS = system.fitting_groups || FITTING_GROUPS;
@@ -485,6 +590,7 @@
           persistDraft(paramsFromSystemApi(system), opts);
           rewriteSizeLinks();
           showError(null);
+          syncPdUnitToggle();
         } finally {
           applying = false;
         }
@@ -659,7 +765,7 @@
           }
         },
         {
-          title: "PD", field: "pd", minWidth: 55,
+          title: "PD (" + pdSym() + ")", field: "pd", minWidth: 70,
           hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
           editor: "input", editable: isEditable,
           formatter: function (cell) {
@@ -762,7 +868,9 @@
         } else if (f === "label") {
           input.value = DEFAULT_RAW.label || "";
         } else if (f === "dp") {
-          input.value = DEFAULT_RAW.dp || "";
+          input.value = pdUnit === "kPa"
+            ? formatPdFromPa(parseFloat(String(DEFAULT_RAW.dp || "0").replace(",", ".")) || 0)
+            : (DEFAULT_RAW.dp || "");
         } else {
           input.value = "";
         }
@@ -774,6 +882,9 @@
         if (!stage) return;
         var existingCount = table.getDataCount();
         var stagingRaw = readFieldsFrom(stage);
+        if ((stagingRaw.type || "") === "device") {
+          stagingRaw.dp = deviceDpToPaString(stagingRaw.dp);
+        }
         var overrides = { sys_row_count: String(existingCount + 1) };
         ROW_FIELDS.forEach(function (f) {
           overrides["sys_" + f + "_" + existingCount] = stagingRaw[f];
@@ -870,6 +981,38 @@
       }
     });
     syncGlycol();
+
+    document.querySelectorAll(".pipe-pd-unit-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var next = btn.getAttribute("data-pd-unit");
+        if (!next || next === pdUnit || !canTogglePdUnit) return;
+        // Convert composer device ΔP field between units when toggling
+        var dpInput = document.getElementById("stage_dp");
+        if (dpInput && dpInput.value !== "") {
+          var n = parseFloat(String(dpInput.value).replace(",", "."));
+          if (isFinite(n)) {
+            if (pdUnit === "Pa" && next === "kPa") {
+              dpInput.value = (Math.round(n / 10) / 100).toFixed(2);
+            } else if (pdUnit === "kPa" && next === "Pa") {
+              dpInput.value = (Math.round(n * 1000 * 100) / 100).toFixed(2);
+            }
+          }
+        }
+        pdUnit = next;
+        try { localStorage.setItem(PD_UNIT_KEY, pdUnit); } catch (e) { /* ignore */ }
+        refreshPdDisplays();
+      });
+    });
+
+    // Initial composer Manual ΔP may be SI Pa from the server
+    if (canTogglePdUnit && pdUnit === "kPa") {
+      var stageDp = document.getElementById("stage_dp");
+      if (stageDp && stageDp.value !== "") {
+        var pa0 = parseFloat(String(stageDp.value).replace(",", "."));
+        if (isFinite(pa0)) stageDp.value = formatPdFromPa(pa0);
+      }
+    }
+    syncPdUnitToggle();
 
     applyTotals(INITIAL);
     updateStagePreview(INITIAL);

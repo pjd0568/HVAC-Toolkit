@@ -164,7 +164,15 @@
 {% set stage = system.stage_raw %}
 {% set defaults = system.default_row_raw or {} %}
 
-    <div class="pipe-sys-section-label">Components — pressure drop</div>
+    <div class="pipe-sys-section-head">
+      <div class="pipe-sys-section-label">Components — pressure drop</div>
+      {% if U.system == 'SI' %}
+      <div class="pipe-pd-unit-toggle" role="group" aria-label="Pressure drop units">
+        <button type="button" class="pipe-pd-unit-btn on" data-pd-unit="Pa" id="sys-pd-unit-pa">Pa</button>
+        <button type="button" class="pipe-pd-unit-btn" data-pd-unit="kPa" id="sys-pd-unit-kpa">kPa</button>
+      </div>
+      {% endif %}
+    </div>
 
     <div id="sys-error"></div>
 
@@ -295,6 +303,9 @@
     "row_count": system.row_count,
     "total_display": system.total_display,
     "total_sym": system.total_sym,
+    "total_pa": system.total_pa,
+    "margin_amount_pa": system.margin_amount_pa,
+    "total_with_margin_pa": system.total_with_margin_pa,
     "safety_margin": system.safety_margin,
     "margin_amount_display": system.margin_amount_display,
     "total_with_margin_display": system.total_with_margin_display,
@@ -316,7 +327,7 @@
 </script>
 <script src="{{ url_for('static', filename='vendor/tabulator/tabulator.min.js') }}?v=6.3.1"></script>
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
-<script src="{{ url_for('static', filename='js/pipesystem.js') }}?v=8"></script>
+<script src="{{ url_for('static', filename='js/pipesystem.js') }}?v=9"></script>
 {% endmacro %}
 
 {% macro pipe_system_styles() %}
