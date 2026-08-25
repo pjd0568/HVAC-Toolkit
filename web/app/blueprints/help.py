@@ -56,6 +56,12 @@ HELP_NAV = [
         ],
     },
     {
+        "group": "Refrigeration",
+        "sections": [
+            {"id": "refrigeration", "title": "PT Table & DX Pipe Sizing"},
+        ],
+    },
+    {
         "group": "Utilities",
         "sections": [
             {"id": "converter", "title": "Unit Converter"},
@@ -89,6 +95,7 @@ ACTIVE_TO_ANCHOR = {
     "duct_index_leg": "duct",
     "pipe": "pipe",
     "pipe_system": "pipe-system",
+    "refrig": "refrigeration",
     "converter": "converter",
     "guides": "guides",
     "methodology": "methodology",

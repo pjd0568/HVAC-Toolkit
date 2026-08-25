@@ -12,6 +12,7 @@ from app.access_gate import require_module
 from app.blueprints import duct as duct_mod
 from app.blueprints import pipe as pipe_mod
 from app.blueprints import psychro as psy_mod
+from app.blueprints import refrigeration as refrig_mod
 from app.teaser import TEASER_FORM_SESSION_KEY
 from app.ui_prefs import redirect_with_ui
 from app.units import current_view
@@ -125,6 +126,100 @@ def air_picker():
 @login_required
 def water_picker():
     return render_template("v2/water_picker.html", active="pipe", nav="pipe")
+
+
+@bp.get("/refrigeration/")
+@login_required
+def refrig_picker():
+    return render_template("v2/refrig_picker.html", active="refrig", nav="refrig")
+
+
+@bp.get("/refrigeration/pt-table/")
+@require_module("refrig.pt_table")
+def refrig_pt_table():
+    state = refrig_mod._compute_pt(request.args)
+    return render_template(
+        "v2/refrig_pt_table.html",
+        active="refrig_pt",
+        nav="refrig",
+        **state,
+    )
+
+
+@bp.get("/refrigeration/pipe-sizer/")
+@require_module("refrig.pipe_sizer")
+def refrig_pipe_sizer():
+    state = refrig_mod._compute_pipe(request.args)
+    return render_template(
+        "v2/refrig_pipe_sizer.html",
+        active="refrig_pipe",
+        nav="refrig",
+        **state,
+    )
+
+
+@bp.get("/refrigeration/diagnostics/")
+@login_required
+def refrig_diagnostics():
+    """Coming soon — superheat / subcooling from measured P and T."""
+    return render_template(
+        "v2/refrig_diagnostics.html",
+        active="refrig_diagnostics",
+        nav="refrig",
+    )
+
+
+@bp.get("/refrigeration/charge/")
+@login_required
+def refrig_charge():
+    """Coming soon — trim charge and total system charge."""
+    return render_template(
+        "v2/refrig_charge.html",
+        active="refrig_charge",
+        nav="refrig",
+    )
+
+
+@bp.get("/acoustics/")
+@login_required
+def acoustics_picker():
+    from app.coming_soon_tools import tools_for_suite
+
+    return render_template(
+        "v2/acoustics_picker.html",
+        active="acoustics",
+        nav="acoustics",
+        tools=tools_for_suite("acoustics"),
+    )
+
+
+@bp.get("/coming-soon/<slug>/")
+@login_required
+def coming_soon_tool(slug: str):
+    """Generic Coming Soon placeholder for roadmap modules."""
+    from flask import abort
+
+    from app.coming_soon_tools import tool_by_slug
+
+    tool = tool_by_slug(slug)
+    if tool is None:
+        abort(404)
+
+    back = {
+        "psychro": ("v2.psychro_picker", "All psychro tools"),
+        "duct": ("v2.air_picker", "All air tools"),
+        "pipe": ("v2.water_picker", "All hydronics tools"),
+        "acoustics": ("v2.acoustics_picker", "All acoustics tools"),
+    }.get(tool.suite)
+
+    return render_template(
+        "v2/coming_soon_tool.html",
+        active=tool.active,
+        nav=tool.nav,
+        tool=tool,
+        back_href=url_for(back[0]) if back else None,
+        back_label=back[1] if back else None,
+    )
 
 
 @bp.get("/duct-sizing/")

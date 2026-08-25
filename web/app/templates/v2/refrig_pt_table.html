@@ -1,0 +1,178 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Refrigeration — PT Table{% endblock %}
+{% block content %}
+
+{% with tool='pt' %}
+{% include "_refrig_tool_nav.html" %}
+{% endwith %}
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<div class="panel" style="max-width:960px;">
+  <div class="panel-head">PT table</div>
+  <div class="panel-body">
+    <form method="get" class="conv-form">
+      <div class="form-grid">
+        <div>
+          <label for="refrigerant">Refrigerant</label>
+          <select id="refrigerant" name="refrigerant" onchange="this.form.submit()">
+            {% for glabel, items in refrigerant_groups %}
+            <optgroup label="{{ glabel }}">
+              {% for r in items %}
+              <option value="{{ r.id }}" {{ 'selected' if r.id == fields.refrigerant }} {{ 'disabled' if not r.available }}>
+                {{ r.label }}{% if not r.available %} — Coming soon{% endif %}
+              </option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </form>
+    <p class="muted" style="margin-top:12px; font-size:13px; line-height:1.5;">
+      Enter temperature or a measured pressure. Liquid = bubble; vapour = dew.
+      Switch barg / bara as needed. Evaporating design uses dew; condensing uses bubble.
+    </p>
+  </div>
+</div>
+
+{% if result and pt_points %}
+{% if result.glide_notable %}
+<div class="warn-banner">Zeotropic glide up to {{ '%.1f'|format(result.max_glide_k) }}&nbsp;K — bubble and dew pressures differ.</div>
+{% else %}
+<div class="muted" style="margin:10px 0; font-size:13px;">Negligible glide for {{ result.refrigerant.label }} — one saturation pressure shown.</div>
+{% endif %}
+
+<div class="panel" style="max-width:960px;">
+  <div class="panel-head pt-panel-head">
+    <span>{{ result.refrigerant.label }} — saturation</span>
+    <div class="pt-mode-toggle" role="group" aria-label="Pressure reference">
+      <button type="button" class="pt-mode-btn is-active" id="pt-mode-barg" data-mode="barg">barg</button>
+      <button type="button" class="pt-mode-btn" id="pt-mode-bara" data-mode="bara">bara</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="pt-explorer" id="pt-explorer"
+         data-glide="{{ '1' if result.glide_notable else '0' }}"
+         data-t-min="{{ pt_points[0].t|int }}"
+         data-t-max="{{ pt_points[-1].t|int }}">
+
+      <div class="pt-main-row">
+        <div class="pt-gauges {{ 'pt-gauges-single' if not result.glide_notable else '' }}" id="pt-gauges">
+          <div class="pt-gauge-card" id="pt-card-liq" data-phase="liq">
+            <h3 id="pt-liq-title">{{ 'Saturation' if not result.glide_notable else 'Liquid · bubble' }}</h3>
+            <div class="pt-dial" id="pt-dial-liq" style="--pct:0; --accent:#00A99D;">
+              <div class="pt-dial-ring" aria-hidden="true"></div>
+              <div class="pt-dial-needle" aria-hidden="true"></div>
+              <div class="pt-dial-hub" aria-hidden="true"></div>
+              <div class="pt-dial-scale">
+                <span id="pt-liq-min">−</span>
+                <span id="pt-liq-max">−</span>
+              </div>
+            </div>
+            <div class="pt-dial-readout">
+              <span class="pt-gauge-value" id="pt-liq-value">—</span>
+              <span class="pt-gauge-unit" data-p-unit>barg</span>
+            </div>
+            <div class="pt-gauge-sub" id="pt-glide"></div>
+          </div>
+
+          {% if result.glide_notable %}
+          <div class="pt-gauge-card" id="pt-card-vap" data-phase="vap">
+            <h3>Vapour · dew</h3>
+            <div class="pt-dial" id="pt-dial-vap" style="--pct:0; --accent:#1A4F7A;">
+              <div class="pt-dial-ring" aria-hidden="true"></div>
+              <div class="pt-dial-needle" aria-hidden="true"></div>
+              <div class="pt-dial-hub" aria-hidden="true"></div>
+              <div class="pt-dial-scale">
+                <span id="pt-vap-min">−</span>
+                <span id="pt-vap-max">−</span>
+              </div>
+            </div>
+            <div class="pt-dial-readout">
+              <span class="pt-gauge-value" id="pt-vap-value">—</span>
+              <span class="pt-gauge-unit" data-p-unit>barg</span>
+            </div>
+            <div class="pt-gauge-sub">Suction / evaporating lookup</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="pt-table-wrap">
+          <div class="pt-table-label">P / T window</div>
+          <table class="results" id="pt-table">
+            <thead>
+              <tr>
+                <th class="num">Temp (°C)</th>
+                {% if result.glide_notable %}
+                <th class="num">Liq (<span data-p-unit>barg</span>)</th>
+                <th class="num">Vap (<span data-p-unit>barg</span>)</th>
+                {% else %}
+                <th class="num">P (<span data-p-unit>barg</span>)</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody id="pt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="pt-controls">
+        <div class="pt-control-block">
+          <div class="pt-slider-head">
+            <label for="pt-temp">Temperature</label>
+            <div class="pt-temp-controls">
+              <input type="number" class="pt-temp-input" id="pt-temp-input"
+                     min="{{ pt_points[0].t|int }}" max="{{ pt_points[-1].t|int }}" step="1" value="0"
+                     inputmode="decimal" aria-label="Temperature °C">
+              <span class="pt-temp-unit">°C</span>
+            </div>
+          </div>
+          <input class="pt-temp-slider" id="pt-temp" type="range"
+                 min="{{ pt_points[0].t|int }}" max="{{ pt_points[-1].t|int }}" step="1" value="0">
+          <div class="pt-slider-ticks">
+            <span>{{ pt_points[0].t|int }} °C</span>
+            <span>0 °C</span>
+            <span>{{ pt_points[-1].t|int }} °C</span>
+          </div>
+        </div>
+
+        <div class="pt-control-block pt-pressure-block">
+          <div class="pt-slider-head">
+            <label for="pt-pressure-input">Measured pressure</label>
+            {% if result.glide_notable %}
+            <select id="pt-pressure-phase" class="pt-phase-select" aria-label="Pressure phase">
+              <option value="liq">Liquid (bubble)</option>
+              <option value="vap" selected>Vapour (dew)</option>
+            </select>
+            {% else %}
+            <input type="hidden" id="pt-pressure-phase" value="liq">
+            {% endif %}
+          </div>
+          <div class="pt-pressure-row">
+            <input type="number" class="pt-pressure-input" id="pt-pressure-input"
+                   step="0.01" inputmode="decimal" placeholder="e.g. 7.12"
+                   aria-label="Measured pressure">
+            <span class="pt-temp-unit" data-p-unit>barg</span>
+            <button type="button" class="btn-ghost pt-pressure-go" id="pt-pressure-go">Find °C</button>
+            <div class="pt-pressure-result" id="pt-pressure-result" aria-live="polite">
+              <span class="pt-pressure-result-label">Sat. temp</span>
+              <span class="pt-pressure-result-value" id="pt-pressure-temp">—</span>
+              <span class="pt-pressure-result-unit">°C</span>
+            </div>
+          </div>
+          <p class="pt-pressure-hint muted" id="pt-pressure-hint" hidden></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="pt-data">{{ pt_points|tojson }}</script>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/refrig_pt.js') }}?v=4"></script>
+{% endblock %}

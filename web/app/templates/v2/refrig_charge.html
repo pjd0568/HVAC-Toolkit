@@ -1,0 +1,34 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Refrigerant Charge{% endblock %}
+{% block content %}
+
+{% with tool='charge' %}
+{% include "_refrig_tool_nav.html" %}
+{% endwith %}
+
+<div class="v2-greeting">Refrigerant charge</div>
+<div class="v2-greeting-sub">Commissioning trim charge and total system charge for the F-Gas logbook — planned for this suite.</div>
+
+<div class="panel" style="max-width:720px;">
+  <div class="panel-head">Planned inputs</div>
+  <div class="panel-body" style="font-size:13px; line-height:1.6;">
+    <ul style="margin:0 0 12px 1.1em; padding:0;">
+      <li>Factory pre-charge (kg) and pre-charged pipe allowance (m)</li>
+      <li>Liquid-line diameter (ACR catalogue)</li>
+      <li>Actual total installed pipe length (m)</li>
+    </ul>
+    <p style="margin:0;">
+      Extra length beyond the factory allowance will be multiplied by published
+      trim factors (g/m by liquid-line size) to give additional charge and
+      absolute total system charge.
+    </p>
+  </div>
+</div>
+
+<p class="muted" style="margin-top:14px; font-size:13px;">
+  Live tools available now:
+  <a href="{{ url_for('v2.refrig_pipe_sizer') }}">DX pipe sizing</a> ·
+  <a href="{{ url_for('v2.refrig_pt_table') }}">PT table</a>.
+</p>
+
+{% endblock %}

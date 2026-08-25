@@ -517,12 +517,39 @@
       <div class="help-note">Full system volume (all pipework including branches, client-side volume, chiller volume, minimum chiller volume — for glycol purchase, buffer tanks and expansion vessels) is planned as a later stage.</div>
     </section>
 
+    <!-- ═══════════════ REFRIGERATION ═══════════════ -->
+    <section class="help-section" id="refrigeration" data-help-section
+             data-keywords="refrigeration dx pt table coolprop suction liquid discharge acr copper en 12735 r32 r410a r454b glide bubble dew oil return superheat subcooling charge">
+      <h2 class="help-h">Refrigeration / DX</h2>
+      <p class="help-lead"><span class="help-badge util">Refrigeration</span> Sub-critical PT table, ACR copper line sizing, and planned site diagnostics / charge tools.</p>
+
+      <div class="help-sub">When to use</div>
+      <p><strong>PT table</strong> — look up bubble (liquid) and dew (vapour) gauge pressures vs temperature for common refrigerants, including zeotropic glide. <strong>DX pipe sizing</strong> — pick ACR copper for suction, liquid or discharge from capacity and cycle temperatures. <strong>Superheat &amp; subcooling</strong> and <strong>charge calculator</strong> are on the roadmap (placeholder pages in the Refrigeration menu).</p>
+
+      <div class="help-sub">Inputs — Pipe sizer</div>
+      <dl class="help-io">
+        <dt>Evaporating / condensing temp</dt><dd>Evaporating uses <strong>dew</strong> pressure; condensing uses <strong>bubble</strong> pressure (important for blends with glide).</dd>
+        <dt>Superheat / subcooling</dt><dd>Used for evaporator Δh and liquid-line density.</dd>
+        <dt>Line type</dt><dd>Suction, liquid, or discharge — each has its own velocity band.</dd>
+        <dt>Suction orientation</dt><dd>Upflow risers need ≥10&nbsp;m/s for oil return.</dd>
+        <dt>Discharge temp</dt><dd>Optional; if blank, estimated as condensing + 40&nbsp;K (flagged in results).</dd>
+      </dl>
+
+      <div class="help-tip">v1 sizes on velocity only — equivalent ΔTsat pressure drop is not checked yet. ACR sizes live in the engine catalogue (not a separate DB). R-744 (CO₂) is listed as Coming soon. See <a href="{{ url_for('methodology.index') }}">Methodology</a>.</div>
+
+      <div class="help-sub">Coming next</div>
+      <dl class="help-io">
+        <dt>Superheat &amp; subcooling</dt><dd>Gauge pressures + pipe temperatures → colour-coded SH / SC vs healthy ranges (uses the same CoolProp saturation core as the PT table).</dd>
+        <dt>Charge calculator</dt><dd>Factory pre-charge, pipe allowance, liquid-line size, and installed length → trim charge and total system charge for the F-Gas logbook.</dd>
+      </dl>
+    </section>
+
     <!-- ═══════════════ METHODOLOGY ═══════════════ -->
     <section class="help-section" id="methodology" data-help-section
              data-keywords="methodology limitations standards ashrae cibse climate era5 provenance coil model k-factor flex provisional">
       <h2 class="help-h">Methodology &amp; Limitations</h2>
       <p class="help-lead"><span class="help-badge util">Reference</span> Standards basis, disclosed simplifications, and climate-data provenance.</p>
-      <p>See the dedicated <a href="{{ url_for('methodology.index') }}">Methodology &amp; Limitations</a> page for the full summary — psychrometric/AHU coil models, duct and pipe methods, planning-grade K-values, and ERA5 vs licensed station design conditions.</p>
+      <p>See the dedicated <a href="{{ url_for('methodology.index') }}">Methodology &amp; Limitations</a> page for the full summary — psychrometric/AHU coil models, duct and pipe methods, refrigeration/DX (CoolProp), planning-grade K-values, and ERA5 vs licensed station design conditions.</p>
     </section>
 
     <!-- ═══════════════ PROJECTS ═══════════════ -->

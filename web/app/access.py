@@ -36,12 +36,23 @@ SUITE_MODULES: frozenset[str] = frozenset({
     "duct.index_leg",
     "pipe.sizer",
     "pipe.system",
+    "refrig.pt_table",
+    "refrig.pipe_sizer",
     "converter",
 })
 
 COMING_SOON_MODULES: frozenset[str] = frozenset({
     "weather",
     "projects",
+    "refrig.diagnostics",
+    "refrig.charge",
+    "room.load",
+    "air.grille_throw",
+    "pipe.expansion_vessel",
+    "pipe.buffer_tank",
+    "iaq.co2",
+    "acoustics.duct_nr",
+    "acoustics.barrier",
 })
 
 # module_id → label (for upgrade / gate copy).
@@ -60,6 +71,17 @@ MODULES: dict[str, dict[str, str]] = {
     "duct.index_leg": {"label": "Duct Index Leg"},
     "pipe.sizer": {"label": "Pipe Sizing"},
     "pipe.system": {"label": "Pipe System"},
+    "pipe.expansion_vessel": {"label": "Hydronics — Expansion Vessel"},
+    "pipe.buffer_tank": {"label": "Hydronics — Buffer Tank"},
+    "room.load": {"label": "Air — Room Load"},
+    "air.grille_throw": {"label": "Air — Grille Throw"},
+    "iaq.co2": {"label": "Ventilation — Fresh Air & CO₂"},
+    "acoustics.duct_nr": {"label": "Acoustics — Duct Attenuation & NR"},
+    "acoustics.barrier": {"label": "Acoustics — Barrier Screening"},
+    "refrig.pt_table": {"label": "Refrigeration — PT Table"},
+    "refrig.pipe_sizer": {"label": "Refrigeration — DX Pipe Sizing"},
+    "refrig.diagnostics": {"label": "Refrigeration — Superheat & Subcooling"},
+    "refrig.charge": {"label": "Refrigeration — Charge Calculator"},
     "weather": {"label": "Weather & Design Conditions (ASHRAE lookup)"},
     "converter": {"label": "Unit Converter"},
     "projects": {"label": "Projects"},

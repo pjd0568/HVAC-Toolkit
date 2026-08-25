@@ -37,6 +37,7 @@
         <a href="{{ url_for('v2.heat_humidify') }}" role="menuitem" class="{{ 'active' if active == 'psychro_heat_humidify' }}">Heat &amp; humidify</a>
         <a href="{{ url_for('v2.adiabatic_cool') }}" role="menuitem" class="{{ 'active' if active == 'psychro_adiabatic_cool' }}">Adiabatic cool</a>
         <a href="{{ url_for('v2.ahu') }}" role="menuitem" class="{{ 'active' if active == 'psychro_ahu' }}">AHU design</a>
+        <a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}" role="menuitem" class="{{ 'active' if active == 'iaq_co2' }}">Fresh air &amp; CO₂ <span class="soon">Soon</span></a>
         <a href="{{ url_for('v2.psychro_picker') }}" role="menuitem" class="v2-nav-drop-all">All psychro tools</a>
       </div>
     </div>
@@ -50,6 +51,9 @@
         {% if access.can('duct.index_leg') %}
         <a href="{{ url_for('v2.duct_index_leg') }}" role="menuitem" class="{{ 'active' if active == 'duct_index_leg' }}">Index leg — pressure drop</a>
         {% endif %}
+        <a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}" role="menuitem" class="{{ 'active' if active == 'room_load' }}">Room load <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}" role="menuitem" class="{{ 'active' if active == 'grille_throw' }}">Grille throw <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.air_picker') }}" role="menuitem" class="v2-nav-drop-all">All air tools</a>
       </div>
     </div>
 
@@ -62,6 +66,33 @@
         {% if access.can('pipe.system') %}
         <a href="{{ url_for('v2.pipe_system') }}" role="menuitem" class="{{ 'active' if active == 'pipe_system' }}">System — pressure drop</a>
         {% endif %}
+        <a href="{{ url_for('v2.coming_soon_tool', slug='expansion-vessel') }}" role="menuitem" class="{{ 'active' if active == 'expansion_vessel' }}">Expansion vessel <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.coming_soon_tool', slug='buffer-tank') }}" role="menuitem" class="{{ 'active' if active == 'buffer_tank' }}">Buffer tank <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.water_picker') }}" role="menuitem" class="v2-nav-drop-all">All hydronics tools</a>
+      </div>
+    </div>
+
+    <div class="v2-nav-drop {{ 'active' if nav == 'refrig' }}">
+      <button type="button" class="v2-nav-drop-btn" aria-expanded="false" aria-haspopup="true">Refrigeration</button>
+      <div class="v2-nav-drop-menu" role="menu">
+        {% if access.can('refrig.pipe_sizer') %}
+        <a href="{{ url_for('v2.refrig_pipe_sizer') }}" role="menuitem" class="{{ 'active' if active == 'refrig_pipe' }}">DX pipe sizing</a>
+        {% endif %}
+        {% if access.can('refrig.pt_table') %}
+        <a href="{{ url_for('v2.refrig_pt_table') }}" role="menuitem" class="{{ 'active' if active == 'refrig_pt' }}">PT table</a>
+        {% endif %}
+        <a href="{{ url_for('v2.refrig_diagnostics') }}" role="menuitem" class="{{ 'active' if active == 'refrig_diagnostics' }}">Superheat &amp; subcooling <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.refrig_charge') }}" role="menuitem" class="{{ 'active' if active == 'refrig_charge' }}">Charge calculator <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.refrig_picker') }}" role="menuitem" class="v2-nav-drop-all">All refrigeration tools</a>
+      </div>
+    </div>
+
+    <div class="v2-nav-drop {{ 'active' if nav == 'acoustics' }}">
+      <button type="button" class="v2-nav-drop-btn" aria-expanded="false" aria-haspopup="true">Acoustics</button>
+      <div class="v2-nav-drop-menu" role="menu">
+        <a href="{{ url_for('v2.coming_soon_tool', slug='duct-nr') }}" role="menuitem" class="{{ 'active' if active == 'acoustics_duct_nr' }}">Duct attenuation &amp; NR <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.coming_soon_tool', slug='barrier') }}" role="menuitem" class="{{ 'active' if active == 'acoustics_barrier' }}">Barrier screening <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.acoustics_picker') }}" role="menuitem" class="v2-nav-drop-all">All acoustics tools</a>
       </div>
     </div>
 
@@ -130,6 +161,20 @@
       <li><a href="{{ url_for('guides.index') }}">Design Guides</a></li>
       <li><a href="{{ url_for('methodology.index') }}">Methodology</a></li>
       <li><a href="{{ url_for('pages.contact') }}">Contact</a></li>
+    </ul>
+
+    <div class="v2-menu-section">Coming soon</div>
+    <ul class="v2-menu-list">
+      <li><a href="{{ url_for('v2.refrig_diagnostics') }}">Superheat &amp; subcooling</a></li>
+      <li><a href="{{ url_for('v2.refrig_charge') }}">Charge calculator</a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}">Room load</a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}">Grille throw</a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='expansion-vessel') }}">Expansion vessel</a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='buffer-tank') }}">Buffer tank</a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}">Fresh air &amp; CO₂</a></li>
+      <li><a href="{{ url_for('v2.acoustics_picker') }}">Acoustics</a></li>
+      <li><a href="{{ url_for('weather.index') }}">Weather &amp; design conditions</a></li>
+      <li><a href="{{ url_for('projects.index') }}">Projects</a></li>
     </ul>
 
     <div class="v2-menu-section">Account</div>

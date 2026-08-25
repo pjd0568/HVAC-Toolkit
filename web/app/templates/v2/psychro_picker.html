@@ -5,15 +5,53 @@
 <div class="v2-greeting">Psychrometrics</div>
 <div class="v2-greeting-sub">Pick a tool — start with the multi-point interactive chart or Single Point, or open AHU for a stepped flow on smaller screens.</div>
 
-<ul class="v2-picker-list">
-  <li><a href="{{ url_for('v2.interactive_chart') }}">Multi-point interactive chart</a></li>
-  <li><a href="{{ url_for('v2.single_point') }}">Single point</a></li>
-  <li><a href="{{ url_for('v2.mixed_air') }}">Mixed air</a></li>
-  <li><a href="{{ url_for('v2.cooling_coil') }}">Cooling coil</a></li>
-  <li><a href="{{ url_for('v2.desiccant') }}">Desiccant dehumidification</a></li>
-  <li><a href="{{ url_for('v2.heat_humidify') }}">Heat &amp; humidify</a></li>
-  <li><a href="{{ url_for('v2.adiabatic_cool') }}">Adiabatic cool</a></li>
-  <li><a href="{{ url_for('v2.ahu') }}">AHU design</a></li>
+<ul class="v2-picker-list refrig-picker-list">
+  <li>
+    <a href="{{ url_for('v2.interactive_chart') }}">
+      <span class="refrig-picker-title">Multi-point interactive chart</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.single_point') }}">
+      <span class="refrig-picker-title">Single point</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.mixed_air') }}">
+      <span class="refrig-picker-title">Mixed air</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.cooling_coil') }}">
+      <span class="refrig-picker-title">Cooling coil</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.desiccant') }}">
+      <span class="refrig-picker-title">Desiccant dehumidification</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.heat_humidify') }}">
+      <span class="refrig-picker-title">Heat &amp; humidify</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.adiabatic_cool') }}">
+      <span class="refrig-picker-title">Adiabatic cool</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.ahu') }}">
+      <span class="refrig-picker-title">AHU design</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}">
+      <span class="refrig-picker-title">Fresh air &amp; CO₂ <span class="soon">Coming soon</span></span>
+      <span class="refrig-picker-desc">Build-up to a critical CO₂ threshold under peak occupancy.</span>
+    </a>
+  </li>
 </ul>
 
 {% endblock %}

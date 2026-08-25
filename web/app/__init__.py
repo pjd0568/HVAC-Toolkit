@@ -81,6 +81,7 @@ def create_app(config_class: type = Config) -> Flask:
     from app.blueprints.pipe import bp as pipe_bp
     from app.blueprints.projects import bp as projects_bp
     from app.blueprints.psychro import bp as psychro_bp
+    from app.blueprints.refrigeration import bp as refrigeration_bp
     from app.blueprints.v2 import bp as v2_bp
     from app.blueprints.weather import bp as weather_bp
 
@@ -92,6 +93,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(psychro_bp, url_prefix="/psychrometrics")
     app.register_blueprint(duct_bp, url_prefix="/duct-sizing")
     app.register_blueprint(pipe_bp, url_prefix="/pipe-sizing")
+    app.register_blueprint(refrigeration_bp, url_prefix="/refrigeration")
     app.register_blueprint(converter_bp, url_prefix="/converter")
     app.register_blueprint(projects_bp, url_prefix="/projects")
     app.register_blueprint(guides_bp, url_prefix="/reference")

@@ -59,6 +59,24 @@
 </div>
 
 <div class="panel" style="max-width:820px; margin-top:14px;">
+  <div class="panel-head">Refrigeration / DX</div>
+  <div class="panel-body" style="font-size:13px; line-height:1.6;">
+    <p>Saturation and single-phase properties from <strong>CoolProp</strong> (HEOS).
+    PT table: bubble (Q=0) and dew (Q=1) pressures as barg
+    (gauge vs 1.01325&nbsp;bar abs). Zeotropic blends show glide.</p>
+    <p>Temperature convention: evaporating temperature → <strong>dew</strong> pressure;
+    condensing temperature → <strong>bubble</strong> pressure. Mass flow
+    ṁ = Q / Δh across the evaporator (superheated outlet minus
+    isenthalpic inlet after expansion).</p>
+    <p>ACR copper sizes from BS&nbsp;EN&nbsp;12735-1 (not water copper BS&nbsp;EN&nbsp;1057).
+    v1 sizes on <strong>velocity only</strong> (suction 8–15&nbsp;m/s, risers ≥10;
+    liquid 0.5–1.5; discharge 10–18). Oil-return warning below 5&nbsp;m/s suction.
+    Equivalent ΔTsat friction drop is not yet checked. R-744 (CO₂) / transcritical
+    logic is out of scope for this release.</p>
+  </div>
+</div>
+
+<div class="panel" style="max-width:820px; margin-top:14px;">
   <div class="panel-head">Climate / design weather</div>
   <div class="panel-body" style="font-size:13px; line-height:1.6;">
     <p>Percentile method follows ASHRAE HOF Ch.14 (per-year then average). When

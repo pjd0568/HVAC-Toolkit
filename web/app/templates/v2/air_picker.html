@@ -3,13 +3,37 @@
 {% block content %}
 
 <div class="v2-greeting">Air distribution</div>
-<div class="v2-greeting-sub">Size a duct, or build an index-leg pressure-drop run. Switch freely — each tool keeps its work in this tab until you clear the table.</div>
+<div class="v2-greeting-sub">Size a duct, build an index-leg pressure-drop run, or preview room load and grille throw tools on the roadmap.</div>
 
-<ul class="v2-picker-list">
-  <li><a href="{{ url_for('v2.duct') }}">Duct sizing</a></li>
-  {% if access.can('duct.index_leg') %}
-  <li><a href="{{ url_for('v2.duct_index_leg') }}">Index leg — pressure drop</a></li>
+<ul class="v2-picker-list refrig-picker-list">
+  {% if access.can('duct.sizer') %}
+  <li>
+    <a href="{{ url_for('v2.duct') }}">
+      <span class="refrig-picker-title">Duct sizing</span>
+      <span class="refrig-picker-desc">Circular, rectangular, and flat-oval by velocity or pressure gradient.</span>
+    </a>
+  </li>
   {% endif %}
+  {% if access.can('duct.index_leg') %}
+  <li>
+    <a href="{{ url_for('v2.duct_index_leg') }}">
+      <span class="refrig-picker-title">Index leg — pressure drop</span>
+      <span class="refrig-picker-desc">Build a path of duct sections and fittings to a total ΔP.</span>
+    </a>
+  </li>
+  {% endif %}
+  <li>
+    <a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}">
+      <span class="refrig-picker-title">Room load <span class="soon">Coming soon</span></span>
+      <span class="refrig-picker-desc">Peak sensible and latent loads from fabric, orientation, and gains.</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}">
+      <span class="refrig-picker-title">Grille throw <span class="soon">Coming soon</span></span>
+      <span class="refrig-picker-desc">Throw to terminal velocities with Coanda risk warning.</span>
+    </a>
+  </li>
 </ul>
 
 {% endblock %}

@@ -1,0 +1,19 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Acoustics{% endblock %}
+{% block content %}
+
+<div class="v2-greeting">Acoustics</div>
+<div class="v2-greeting-sub">Noise control tools for duct paths and outdoor barriers — on the roadmap.</div>
+
+<ul class="v2-picker-list refrig-picker-list">
+  {% for t in tools %}
+  <li>
+    <a href="{{ url_for('v2.coming_soon_tool', slug=t.slug) }}">
+      <span class="refrig-picker-title">{{ t.title }} <span class="soon">Coming soon</span></span>
+      <span class="refrig-picker-desc">{{ t.picker_desc }}</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+
+{% endblock %}

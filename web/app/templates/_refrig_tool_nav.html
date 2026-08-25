@@ -1,0 +1,20 @@
+{# In-suite switcher for refrigeration tools. Pass tool=pt|pipe|diagnostics|charge #}
+<nav class="refrig-tool-nav" aria-label="Refrigeration tools">
+  {% if access.can('refrig.pt_table') %}
+  <a href="{{ url_for('v2.refrig_pt_table') }}"
+     class="{{ 'active' if tool == 'pt' }}">PT table</a>
+  {% endif %}
+  {% if access.can('refrig.pipe_sizer') %}
+  <a href="{{ url_for('v2.refrig_pipe_sizer') }}"
+     class="{{ 'active' if tool == 'pipe' }}">DX pipe sizing</a>
+  {% endif %}
+  <a href="{{ url_for('v2.refrig_diagnostics') }}"
+     class="{{ 'active' if tool == 'diagnostics' }}">
+    Superheat / subcooling <span class="soon">Soon</span>
+  </a>
+  <a href="{{ url_for('v2.refrig_charge') }}"
+     class="{{ 'active' if tool == 'charge' }}">
+    Charge calculator <span class="soon">Soon</span>
+  </a>
+  <a href="{{ url_for('v2.refrig_picker') }}" class="refrig-tool-nav-all">All tools</a>
+</nav>

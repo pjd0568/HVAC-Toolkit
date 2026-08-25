@@ -1,0 +1,39 @@
+{% extends "v2/base.html" %}
+{% block page_title %}Refrigeration{% endblock %}
+{% block content %}
+
+<div class="v2-greeting">Refrigeration</div>
+<div class="v2-greeting-sub">Sub-critical DX tools for pipe sizing, PT lookup, site diagnostics, and charge. Switch freely within this suite.</div>
+
+<ul class="v2-picker-list refrig-picker-list">
+  {% if access.can('refrig.pipe_sizer') %}
+  <li>
+    <a href="{{ url_for('v2.refrig_pipe_sizer') }}">
+      <span class="refrig-picker-title">DX pipe sizing</span>
+      <span class="refrig-picker-desc">Mass flow from capacity and Δh; ACR copper for suction / liquid / discharge velocity bands and oil-return warnings.</span>
+    </a>
+  </li>
+  {% endif %}
+  {% if access.can('refrig.pt_table') %}
+  <li>
+    <a href="{{ url_for('v2.refrig_pt_table') }}">
+      <span class="refrig-picker-title">PT table</span>
+      <span class="refrig-picker-desc">Bubble / dew pressures vs temperature, gauges, and measured-pressure → saturation temperature.</span>
+    </a>
+  </li>
+  {% endif %}
+  <li>
+    <a href="{{ url_for('v2.refrig_diagnostics') }}">
+      <span class="refrig-picker-title">Superheat &amp; subcooling <span class="soon">Coming soon</span></span>
+      <span class="refrig-picker-desc">Live fault-finding from gauge pressures and pipe temperatures — colour-coded SH / SC ranges.</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.refrig_charge') }}">
+      <span class="refrig-picker-title">Refrigerant charge <span class="soon">Coming soon</span></span>
+      <span class="refrig-picker-desc">Additional trim charge and total system charge from factory pre-charge, pipe size, and installed length.</span>
+    </a>
+  </li>
+</ul>
+
+{% endblock %}

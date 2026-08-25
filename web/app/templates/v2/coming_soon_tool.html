@@ -1,0 +1,30 @@
+{% extends "v2/base.html" %}
+{% block page_title %}{{ tool.title }}{% endblock %}
+{% block content %}
+
+{% if suite_tool_nav %}
+{{ suite_tool_nav|safe }}
+{% endif %}
+
+<div class="v2-greeting">{{ tool.title }}</div>
+<div class="v2-greeting-sub">{{ tool.lead }} <span class="soon">Coming soon</span></div>
+
+<div class="panel" style="max-width:720px;">
+  <div class="panel-head">Planned inputs</div>
+  <div class="panel-body" style="font-size:13px; line-height:1.6;">
+    <ul style="margin:0 0 12px 1.1em; padding:0;">
+      {% for item in tool.planned_inputs %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+    <p class="muted" style="margin:0;">{{ tool.picker_desc }}</p>
+  </div>
+</div>
+
+{% if back_href and back_label %}
+<p class="muted" style="margin-top:14px; font-size:13px;">
+  <a href="{{ back_href }}">← {{ back_label }}</a>
+</p>
+{% endif %}
+
+{% endblock %}

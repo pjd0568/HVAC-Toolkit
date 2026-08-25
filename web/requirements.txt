@@ -10,4 +10,5 @@ Flask-Migrate>=4.0
 psycopg[binary]>=3.1
 stripe>=11.0
 python-dotenv>=1.0
+CoolProp>=6.6
 -e ../engine

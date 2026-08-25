@@ -42,6 +42,28 @@
 </article>
 
 <article class="v2-card">
+  <h2>Refrigeration</h2>
+  <p>Sub-critical DX — PT table, pipe sizing, and upcoming site diagnostics / charge tools.</p>
+  <ul class="v2-card-links">
+    <li><a href="{{ url_for('v2.refrig_picker') }}">Open refrigeration tools</a></li>
+    {% if access.can('refrig.pipe_sizer') %}
+    <li><a href="{{ url_for('v2.refrig_pipe_sizer') }}">DX pipe sizing</a></li>
+    {% endif %}
+    {% if access.can('refrig.pt_table') %}
+    <li><a href="{{ url_for('v2.refrig_pt_table') }}">PT table</a></li>
+    {% endif %}
+  </ul>
+</article>
+
+<article class="v2-card">
+  <h2>Acoustics</h2>
+  <p>Duct path NR and outdoor barrier screening — coming soon.</p>
+  <ul class="v2-card-links">
+    <li><a href="{{ url_for('v2.acoustics_picker') }}">Open acoustics tools</a></li>
+  </ul>
+</article>
+
+<article class="v2-card">
   <h2>Utilities</h2>
   <p>Unit conversion across SI and imperial.</p>
   <ul class="v2-card-links">
