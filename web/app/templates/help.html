@@ -524,7 +524,7 @@
       <p class="help-lead"><span class="help-badge util">Refrigeration</span> Sub-critical PT table, ACR copper line sizing, and planned site diagnostics / charge tools.</p>
 
       <div class="help-sub">When to use</div>
-      <p><strong>PT table</strong> — look up bubble (liquid) and dew (vapour) gauge pressures vs temperature for common refrigerants, including zeotropic glide. <strong>DX pipe sizing</strong> — pick ACR copper for suction, liquid or discharge from capacity and cycle temperatures. <strong>Superheat &amp; subcooling</strong> and <strong>charge calculator</strong> are on the roadmap (placeholder pages in the Refrigeration menu).</p>
+      <p><strong>PT table</strong> — look up bubble (liquid) and dew (vapour) gauge pressures vs temperature for common refrigerants, including zeotropic glide. <strong>DX pipe sizing</strong> — pick ACR copper for suction, liquid or discharge from capacity and cycle temperatures. <strong>Superheat &amp; subcooling</strong> — site diagnostics from gauge pressures and pipe temperatures with colour-coded ranges. <strong>Charge calculator</strong> is still on the roadmap.</p>
 
       <div class="help-sub">Inputs — Pipe sizer</div>
       <dl class="help-io">
@@ -537,9 +537,15 @@
 
       <div class="help-tip">v1 sizes on velocity only — equivalent ΔTsat pressure drop is not checked yet. ACR sizes live in the engine catalogue (not a separate DB). R-744 (CO₂) is listed as Coming soon. See <a href="{{ url_for('methodology.index') }}">Methodology</a>.</div>
 
+      <div class="help-sub">Inputs — Superheat &amp; subcooling</div>
+      <dl class="help-io">
+        <dt>Low / high gauge pressures</dt><dd>Converted to absolute for CoolProp. Saturation at low side uses <strong>dew</strong>; high side uses <strong>bubble</strong>.</dd>
+        <dt>Suction / liquid temperatures</dt><dd>Measured pipe temperatures. SH = T<sub>suction</sub> − T<sub>dew</sub>; SC = T<sub>bubble</sub> − T<sub>liquid</sub>.</dd>
+        <dt>Colour bands</dt><dd>Typical TXV field guidance (e.g. SH &lt; 3&nbsp;K floodback risk). Prefer manufacturer target SH/SC when available.</dd>
+      </dl>
+
       <div class="help-sub">Coming next</div>
       <dl class="help-io">
-        <dt>Superheat &amp; subcooling</dt><dd>Gauge pressures + pipe temperatures → colour-coded SH / SC vs healthy ranges (uses the same CoolProp saturation core as the PT table).</dd>
         <dt>Charge calculator</dt><dd>Factory pre-charge, pipe allowance, liquid-line size, and installed length → trim charge and total system charge for the F-Gas logbook.</dd>
       </dl>
     </section>

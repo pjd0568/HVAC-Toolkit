@@ -2268,6 +2268,70 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
   font-weight: 400;
 }
 
+/* Superheat / subcooling diagnostics matrix */
+.shsc-matrix {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 820px;
+  margin: 14px 0;
+}
+.shsc-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  border-left: 4px solid var(--line);
+}
+.shsc-card.shsc-green { border-left-color: var(--tl-green); }
+.shsc-card.shsc-amber { border-left-color: var(--tl-amber); }
+.shsc-card.shsc-red { border-left-color: var(--tl-red); }
+.shsc-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.shsc-value {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.shsc-unit { font-size: 1rem; font-weight: 600; color: var(--muted); }
+.shsc-headline {
+  font-weight: 700;
+  margin-top: 6px;
+  font-size: 14px;
+}
+.shsc-card.shsc-green .shsc-headline { color: #1b6b45; }
+.shsc-card.shsc-amber .shsc-headline { color: #79600F; }
+.shsc-card.shsc-red .shsc-headline { color: #9b2c2c; }
+.shsc-detail {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 6px 0 10px;
+}
+.shsc-meta {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+}
+.shsc-meta div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.shsc-meta dt { color: var(--muted); margin: 0; }
+.shsc-meta dd { margin: 0; font-weight: 600; }
+@media (max-width: 640px) {
+  .shsc-matrix { grid-template-columns: 1fr; }
+}
+
 .pricing-hero { padding: 16px 0 4px; max-width: 720px; }
 .pricing-hero h1 { font-size: 1.75rem; margin-bottom: 8px; }
 .pricing-grid {

@@ -6,29 +6,107 @@
 {% include "_refrig_tool_nav.html" %}
 {% endwith %}
 
-<div class="v2-greeting">Superheat &amp; subcooling</div>
-<div class="v2-greeting-sub">Site diagnostics from measured pressures and pipe temperatures — coming next on this roadmap.</div>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-<div class="panel" style="max-width:720px;">
-  <div class="panel-head">Planned inputs</div>
-  <div class="panel-body" style="font-size:13px; line-height:1.6;">
-    <ul style="margin:0 0 12px 1.1em; padding:0;">
-      <li>Refrigerant selection</li>
-      <li>Measured high-side and low-side gauge pressures</li>
-      <li>Measured liquid-line and suction-line temperatures</li>
-    </ul>
-    <p style="margin:0;">
-      The engine will use CoolProp saturation (bubble / dew) at those pressures —
-      the same property core as the PT table — then report actual superheat and
-      subcooling with a colour-coded matrix (e.g. floodback risk when SH is too low).
+<div class="panel" style="max-width:820px;">
+  <div class="panel-head">Superheat &amp; subcooling</div>
+  <div class="panel-body">
+    <form method="get">
+      <div class="form-grid three">
+        <div>
+          <label for="refrigerant">Refrigerant</label>
+          <select id="refrigerant" name="refrigerant">
+            {% for glabel, items in refrigerant_groups %}
+            <optgroup label="{{ glabel }}">
+              {% for r in items %}
+              <option value="{{ r.id }}" {{ 'selected' if r.id == fields.refrigerant }} {{ 'disabled' if not r.available }}>
+                {{ r.label }}{% if not r.available %} — Coming soon{% endif %}
+              </option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="p_unit">Pressure unit</label>
+          <select id="p_unit" name="p_unit">
+            <option value="barg" {{ 'selected' if fields.p_unit == 'barg' }}>barg (gauge)</option>
+            <option value="bara" {{ 'selected' if fields.p_unit == 'bara' }}>bara (absolute)</option>
+          </select>
+        </div>
+        <div></div>
+        <div>
+          <label for="p_low">Low-side pressure</label>
+          <input id="p_low" name="p_low" value="{{ fields.p_low }}" inputmode="decimal">
+        </div>
+        <div>
+          <label for="p_high">High-side pressure</label>
+          <input id="p_high" name="p_high" value="{{ fields.p_high }}" inputmode="decimal">
+        </div>
+        <div></div>
+        <div>
+          <label for="t_suction_c">Suction line temp (°C)</label>
+          <input id="t_suction_c" name="t_suction_c" value="{{ fields.t_suction_c }}" inputmode="decimal">
+        </div>
+        <div>
+          <label for="t_liquid_c">Liquid line temp (°C)</label>
+          <input id="t_liquid_c" name="t_liquid_c" value="{{ fields.t_liquid_c }}" inputmode="decimal">
+        </div>
+      </div>
+      <div style="margin-top:14px;"><button class="btn-accent" type="submit">Calculate</button></div>
+    </form>
+    <p class="muted" style="margin-top:12px; font-size:13px; line-height:1.5;">
+      Superheat = suction temp − dew point at low-side pressure.
+      Subcooling = bubble point at high-side pressure − liquid temp.
+      Colour bands are typical TXV field guidance — prefer manufacturer targets.
     </p>
   </div>
 </div>
 
-<p class="muted" style="margin-top:14px; font-size:13px;">
-  Meanwhile use the <a href="{{ url_for('v2.refrig_pt_table') }}">PT table</a>
-  for saturation lookups, or
-  <a href="{{ url_for('v2.refrig_pipe_sizer') }}">DX pipe sizing</a> for line diameters.
-</p>
+{% if result %}
+<div class="shsc-matrix" role="list">
+  <article class="shsc-card shsc-{{ result.superheat.status }}" role="listitem">
+    <div class="shsc-card-head">
+      <span class="dot {{ result.superheat.status }}"></span>
+      <span>Superheat</span>
+    </div>
+    <div class="shsc-value">{{ '%.1f'|format(result.superheat_k) }} <span class="shsc-unit">K</span></div>
+    <div class="shsc-headline">{{ result.superheat.headline }}</div>
+    <p class="shsc-detail">{{ result.superheat.detail }}</p>
+    <dl class="shsc-meta">
+      <div><dt>Suction temp</dt><dd>{{ '%.1f'|format(result.t_suction_c) }} °C</dd></div>
+      <div><dt>Dew @ low P</dt><dd>{{ '%.1f'|format(result.t_dew_evap_c) }} °C</dd></div>
+      <div><dt>Low-side</dt><dd>{{ '%.2f'|format(result.p_low_barg) }} barg</dd></div>
+    </dl>
+  </article>
+  <article class="shsc-card shsc-{{ result.subcooling.status }}" role="listitem">
+    <div class="shsc-card-head">
+      <span class="dot {{ result.subcooling.status }}"></span>
+      <span>Subcooling</span>
+    </div>
+    <div class="shsc-value">{{ '%.1f'|format(result.subcooling_k) }} <span class="shsc-unit">K</span></div>
+    <div class="shsc-headline">{{ result.subcooling.headline }}</div>
+    <p class="shsc-detail">{{ result.subcooling.detail }}</p>
+    <dl class="shsc-meta">
+      <div><dt>Liquid temp</dt><dd>{{ '%.1f'|format(result.t_liquid_c) }} °C</dd></div>
+      <div><dt>Bubble @ high P</dt><dd>{{ '%.1f'|format(result.t_bubble_cond_c) }} °C</dd></div>
+      <div><dt>High-side</dt><dd>{{ '%.2f'|format(result.p_high_barg) }} barg</dd></div>
+    </dl>
+  </article>
+</div>
+
+{% if result.glide_evap_k >= 0.3 or result.glide_cond_k >= 0.3 %}
+<div class="warn-banner">
+  Zeotropic glide at measured pressures: evaporating ≈ {{ '%.1f'|format(result.glide_evap_k) }} K
+  (bubble {{ '%.1f'|format(result.t_bubble_evap_c) }} °C → dew {{ '%.1f'|format(result.t_dew_evap_c) }} °C);
+  condensing ≈ {{ '%.1f'|format(result.glide_cond_k) }} K
+  (bubble {{ '%.1f'|format(result.t_bubble_cond_c) }} °C → dew {{ '%.1f'|format(result.t_dew_cond_c) }} °C).
+</div>
+{% endif %}
+
+{% for note in result.notes %}
+<p class="muted" style="font-size:12.5px; max-width:820px; line-height:1.45;">{{ note }}</p>
+{% endfor %}
+{% endif %}
 
 {% endblock %}

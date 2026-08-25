@@ -81,7 +81,7 @@
         {% if access.can('refrig.pt_table') %}
         <a href="{{ url_for('v2.refrig_pt_table') }}" role="menuitem" class="{{ 'active' if active == 'refrig_pt' }}">PT table</a>
         {% endif %}
-        <a href="{{ url_for('v2.refrig_diagnostics') }}" role="menuitem" class="{{ 'active' if active == 'refrig_diagnostics' }}">Superheat &amp; subcooling <span class="soon">Soon</span></a>
+        <a href="{{ url_for('v2.refrig_diagnostics') }}" role="menuitem" class="{{ 'active' if active == 'refrig_diagnostics' }}">Superheat &amp; subcooling</a>
         <a href="{{ url_for('v2.refrig_charge') }}" role="menuitem" class="{{ 'active' if active == 'refrig_charge' }}">Charge calculator <span class="soon">Soon</span></a>
         <a href="{{ url_for('v2.refrig_picker') }}" role="menuitem" class="v2-nav-drop-all">All refrigeration tools</a>
       </div>
@@ -165,7 +165,6 @@
 
     <div class="v2-menu-section">Coming soon</div>
     <ul class="v2-menu-list">
-      <li><a href="{{ url_for('v2.refrig_diagnostics') }}">Superheat &amp; subcooling</a></li>
       <li><a href="{{ url_for('v2.refrig_charge') }}">Charge calculator</a></li>
       <li><a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}">Room load</a></li>
       <li><a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}">Grille throw</a></li>

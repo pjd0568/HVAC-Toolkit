@@ -33,15 +33,16 @@ read this file, refresh the canvas if statuses changed, and reply with
 - Psychrometrics suite (states, mix, coil, desiccant, heat/humidify, adiabatic, AHU)
 - Air: duct sizing + index-leg pressure drop
 - Hydronics: pipe DN sizer + system pressure-drop / pump head
-- **Refrigeration:** PT table + DX pipe sizer (velocity); suite nav + Soon placeholders
+- **Refrigeration:** PT table + DX pipe sizer (velocity) — on Publish
+- **Refrigeration REF-03:** Superheat & subcooling diagnostics — on `main` (local; not Publish yet)
 - Public SEO `/tools/*` landings + sitemap
 - Unit converter, help, methodology, design guides
 
 ### In progress
-- _(none — next slice is REF-03 Superheat & subcooling)_
+- REF-03 local sign-off on `main` before promoting to Publish
 
 ### Future (engines not started)
-- **P0** REF-03 Superheat & subcooling · REF-04 Charge calculator *(nav live)*
+- **P0** REF-04 Charge calculator *(nav live)*
 - Epic 1 — Room load & grille throw *(nav live)*
 - Epic 2 — Acoustics *(nav live)*
 - Epic 3 — Expansion vessel & buffer *(nav live)*
@@ -58,8 +59,8 @@ that epic’s “Scope notes” and update status here.
 
 | Priority | Item | Why next |
 |----------|------|----------|
-| **P0** | Refrigeration SH/SC diagnostics | Nav live; reuses CoolProp PT core; high site value |
-| **P0** | Refrigeration charge calculator | Completes DX commissioning trio with pipe + SH/SC |
+| **P0** | Promote REF-03 SH/SC to Publish | After local sign-off on `main` |
+| **P0** | Refrigeration charge calculator | Completes DX commissioning trio |
 | **P1** | Epic 3 — Expansion vessel + buffer | Already sketched as pipe Stage 4; extends Hydronics |
 | **P1** | Epic 4 — CO₂ / fresh air | Natural fit with psychro + room volume |
 | **P2** | Epic 1 — Room load (simplified) | Large surface area; start with UK simplified method, not full CIBSE dynamic |
@@ -88,7 +89,7 @@ that epic’s “Scope notes” and update status here.
 | HYD-02 | Pipe system ΔP | **Done** | Stages 1–3 |
 | REF-01 | PT table | **Done** | CoolProp bubble/dew; on Publish |
 | REF-02 | DX pipe sizer (velocity) | **Done** | ΔTsat friction deferred |
-| REF-03 | Superheat & subcooling | **Soon** | Placeholder routes + nav |
+| REF-03 | Superheat & subcooling | **WIP** | On `main`; promote to Publish after local test |
 | REF-04 | Charge calculator | **Soon** | Placeholder routes + nav |
 | REF-05 | DX pipe ΔTsat / Darcy | **Planned** | Pipe sizer v1.1 |
 | REF-06 | P–h / cycle overview | **Deferred** | Out of v1 |
@@ -232,3 +233,4 @@ any scope wideners before coding.
 | 25 Aug 2026 | Added traffic-light Cursor Canvas board (`development-plan.canvas.tsx`); agent keeps it synced with this plan. |
 | 25 Aug 2026 | Wired Coming Soon links into suite menus, pickers, hamburger, and dashboard for Epics 1–4 + Acoustics. |
 | 25 Aug 2026 | Shipped REF-01 PT table + REF-02 DX pipe sizer to `main` / `Publish`. Next: REF-03 SH/SC. |
+| 25 Aug 2026 | REF-03 Superheat & subcooling on `main` only (local testing; not Publish). |

@@ -22,12 +22,14 @@
     </a>
   </li>
   {% endif %}
+  {% if access.can('refrig.diagnostics') %}
   <li>
     <a href="{{ url_for('v2.refrig_diagnostics') }}">
-      <span class="refrig-picker-title">Superheat &amp; subcooling <span class="soon">Coming soon</span></span>
+      <span class="refrig-picker-title">Superheat &amp; subcooling</span>
       <span class="refrig-picker-desc">Live fault-finding from gauge pressures and pipe temperatures — colour-coded SH / SC ranges.</span>
     </a>
   </li>
+  {% endif %}
   <li>
     <a href="{{ url_for('v2.refrig_charge') }}">
       <span class="refrig-picker-title">Refrigerant charge <span class="soon">Coming soon</span></span>

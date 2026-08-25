@@ -554,10 +554,206 @@ def _recommend(rows: list[AcrSizeResult]) -> AcrSizeResult | None:
     return rows[-1]
 
 
+# ── Superheat / subcooling diagnostics ───────────────────────────────────────
+
+HealthStatus = Literal["green", "amber", "red"]
+
+# Transparent site-diagnostics bands (K). TXV-oriented defaults; not a substitute
+# for manufacturer target SH / SC.
+SH_FLOODBACK_K = 3.0
+SH_LOW_AMBER_K = 5.0
+SH_HIGH_AMBER_K = 15.0
+SH_HIGH_RED_K = 20.0
+
+SC_LOW_RED_K = 2.0
+SC_LOW_AMBER_K = 4.0
+SC_HIGH_AMBER_K = 12.0
+SC_HIGH_RED_K = 18.0
+
+
+@dataclass(frozen=True)
+class BandReading:
+    value_k: float
+    status: HealthStatus
+    headline: str
+    detail: str
+
+
+@dataclass(frozen=True)
+class ShScResult:
+    refrigerant: RefrigerantInfo
+    p_low_barg: float
+    p_high_barg: float
+    t_suction_c: float
+    t_liquid_c: float
+    t_dew_evap_c: float
+    t_bubble_cond_c: float
+    t_bubble_evap_c: float
+    t_dew_cond_c: float
+    superheat_k: float
+    subcooling_k: float
+    superheat: BandReading
+    subcooling: BandReading
+    glide_evap_k: float
+    glide_cond_k: float
+    notes: tuple[str, ...]
+
+
+def _barg_to_pa(p_barg: float) -> float:
+    return (p_barg + P_ATM_BAR) * 1e5
+
+
+def _bara_to_barg(p_bara: float) -> float:
+    return p_bara - P_ATM_BAR
+
+
+def saturation_at_pressure_barg(
+    refrigerant_id: str,
+    p_barg: float,
+) -> tuple[float, float]:
+    """Return (T_bubble_c, T_dew_c) at gauge pressure."""
+    info = get_refrigerant(refrigerant_id)
+    _require_available(info)
+    if p_barg <= -P_ATM_BAR + 0.01:
+        raise ValueError("pressure must be above absolute vacuum")
+    p_pa = _barg_to_pa(p_barg)
+    fluid = info.coolprop_fluid
+    try:
+        t_bub = _propsi("T", "P", p_pa, "Q", 0, fluid) - 273.15
+        t_dew = _propsi("T", "P", p_pa, "Q", 1, fluid) - 273.15
+    except Exception as exc:
+        raise ValueError(
+            f"could not evaluate saturation at {p_barg:.3f} barg for {info.label}: "
+            f"{str(exc).split(chr(10))[0][:120]}"
+        ) from exc
+    return t_bub, t_dew
+
+
+def classify_superheat(sh_k: float) -> BandReading:
+    if sh_k < 0:
+        return BandReading(
+            sh_k, "red", "Negative superheat",
+            "Suction temperature is below dew point — check probes, refrigerant, or wet compression.",
+        )
+    if sh_k < SH_FLOODBACK_K:
+        return BandReading(
+            sh_k, "red", "Floodback risk",
+            f"Superheat below {SH_FLOODBACK_K:.0f} K — liquid may reach the compressor.",
+        )
+    if sh_k < SH_LOW_AMBER_K:
+        return BandReading(
+            sh_k, "amber", "Low superheat",
+            f"Below typical {SH_LOW_AMBER_K:.0f} K TXV floor — verify expansion device and charge.",
+        )
+    if sh_k <= SH_HIGH_AMBER_K:
+        return BandReading(
+            sh_k, "green", "Healthy range",
+            f"Within a common {SH_LOW_AMBER_K:.0f}–{SH_HIGH_AMBER_K:.0f} K TXV band (check OEM targets).",
+        )
+    if sh_k <= SH_HIGH_RED_K:
+        return BandReading(
+            sh_k, "amber", "High superheat",
+            "Possible undercharge, restriction, or high evaporator load — confirm against OEM.",
+        )
+    return BandReading(
+        sh_k, "red", "Very high superheat",
+        f"Above {SH_HIGH_RED_K:.0f} K — investigate charge, airflow, and metering device.",
+    )
+
+
+def classify_subcooling(sc_k: float) -> BandReading:
+    if sc_k < 0:
+        return BandReading(
+            sc_k, "red", "Negative subcooling",
+            "Liquid temperature is above bubble point — flash gas likely; check probe and high-side charge.",
+        )
+    if sc_k < SC_LOW_RED_K:
+        return BandReading(
+            sc_k, "red", "Very low subcooling",
+            f"Below {SC_LOW_RED_K:.0f} K — undercharge or flash gas risk in the liquid line.",
+        )
+    if sc_k < SC_LOW_AMBER_K:
+        return BandReading(
+            sc_k, "amber", "Low subcooling",
+            f"Below typical {SC_LOW_AMBER_K:.0f} K — check charge and condenser performance.",
+        )
+    if sc_k <= SC_HIGH_AMBER_K:
+        return BandReading(
+            sc_k, "green", "Healthy range",
+            f"Within a common {SC_LOW_AMBER_K:.0f}–{SC_HIGH_AMBER_K:.0f} K band (check OEM targets).",
+        )
+    if sc_k <= SC_HIGH_RED_K:
+        return BandReading(
+            sc_k, "amber", "High subcooling",
+            "Possible overcharge or liquid-line restriction — confirm against OEM.",
+        )
+    return BandReading(
+        sc_k, "red", "Very high subcooling",
+        f"Above {SC_HIGH_RED_K:.0f} K — investigate overcharge / restriction.",
+    )
+
+
+def diagnose_sh_sc(
+    refrigerant_id: str,
+    *,
+    p_low_barg: float,
+    p_high_barg: float,
+    t_suction_c: float,
+    t_liquid_c: float,
+) -> ShScResult:
+    """Superheat from low-side dew; subcooling from high-side bubble."""
+    info = get_refrigerant(refrigerant_id)
+    _require_available(info)
+    if p_high_barg <= p_low_barg:
+        raise ValueError("high-side pressure must be greater than low-side pressure")
+
+    t_bub_lo, t_dew_lo = saturation_at_pressure_barg(refrigerant_id, p_low_barg)
+    t_bub_hi, t_dew_hi = saturation_at_pressure_barg(refrigerant_id, p_high_barg)
+
+    sh_k = t_suction_c - t_dew_lo
+    sc_k = t_bub_hi - t_liquid_c
+    sh = classify_superheat(sh_k)
+    sc = classify_subcooling(sc_k)
+
+    notes: list[str] = [
+        "Evaporating saturation uses dew point at low-side pressure; "
+        "condensing saturation uses bubble point at high-side pressure "
+        "(zeotrope convention).",
+        "Bands are typical TXV field guidance — always prefer manufacturer targets.",
+    ]
+    glide_evap = abs(t_dew_lo - t_bub_lo)
+    glide_cond = abs(t_dew_hi - t_bub_hi)
+    if glide_evap >= 0.3 or glide_cond >= 0.3:
+        notes.append(
+            f"Notable glide at measured pressures "
+            f"(evap ≈ {glide_evap:.1f} K, cond ≈ {glide_cond:.1f} K)."
+        )
+
+    return ShScResult(
+        refrigerant=info,
+        p_low_barg=p_low_barg,
+        p_high_barg=p_high_barg,
+        t_suction_c=t_suction_c,
+        t_liquid_c=t_liquid_c,
+        t_dew_evap_c=t_dew_lo,
+        t_bubble_cond_c=t_bub_hi,
+        t_bubble_evap_c=t_bub_lo,
+        t_dew_cond_c=t_dew_hi,
+        superheat_k=sh_k,
+        subcooling_k=sc_k,
+        superheat=sh,
+        subcooling=sc,
+        glide_evap_k=glide_evap,
+        glide_cond_k=glide_cond,
+        notes=tuple(notes),
+    )
+
+
 __all__ = [
     "ACR_CATALOGUE",
     "AcrPipeEntry",
     "AcrSizeResult",
+    "BandReading",
     "CoolPropUnavailableError",
     "DEFAULT_DISCHARGE_SUPERHEAT_K",
     "DxPipeSizeResult",
@@ -570,13 +766,27 @@ __all__ = [
     "REFRIGERANTS",
     "REFRIGERANT_GROUP_ORDER",
     "RefrigerantInfo",
+    "SC_HIGH_AMBER_K",
+    "SC_HIGH_RED_K",
+    "SC_LOW_AMBER_K",
+    "SC_LOW_RED_K",
+    "SH_FLOODBACK_K",
+    "SH_HIGH_AMBER_K",
+    "SH_HIGH_RED_K",
+    "SH_LOW_AMBER_K",
     "SUCTION_RISER_MIN_MS",
+    "ShScResult",
     "VELOCITY_BANDS",
     "acr_catalogue",
+    "_bara_to_barg",
+    "classify_subcooling",
+    "classify_superheat",
+    "diagnose_sh_sc",
     "find_acr",
     "get_refrigerant",
     "list_refrigerants",
     "pt_table",
+    "saturation_at_pressure_barg",
     "size_dx_pipe",
     "velocity_limits",
     "velocity_status",

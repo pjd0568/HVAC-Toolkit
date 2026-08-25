@@ -159,13 +159,14 @@ def refrig_pipe_sizer():
 
 
 @bp.get("/refrigeration/diagnostics/")
-@login_required
+@require_module("refrig.diagnostics")
 def refrig_diagnostics():
-    """Coming soon — superheat / subcooling from measured P and T."""
+    state = refrig_mod._compute_diagnostics(request.args)
     return render_template(
         "v2/refrig_diagnostics.html",
         active="refrig_diagnostics",
         nav="refrig",
+        **state,
     )
 
 

@@ -140,6 +140,42 @@ def _compute_pipe(args) -> dict:
     }
 
 
+def _compute_diagnostics(args) -> dict:
+    fields = {
+        "refrigerant": _s(args, "refrigerant", "r32"),
+        "p_unit": _s(args, "p_unit", "barg"),
+        "p_low": _s(args, "p_low", "7.5"),
+        "p_high": _s(args, "p_high", "22"),
+        "t_suction_c": _s(args, "t_suction_c", "5"),
+        "t_liquid_c": _s(args, "t_liquid_c", "35"),
+    }
+    if fields["p_unit"] not in ("barg", "bara"):
+        fields["p_unit"] = "barg"
+    error = None
+    result = None
+    try:
+        p_lo = _f(fields["p_low"], "low-side pressure")
+        p_hi = _f(fields["p_high"], "high-side pressure")
+        if fields["p_unit"] == "bara":
+            p_lo = eng._bara_to_barg(p_lo)
+            p_hi = eng._bara_to_barg(p_hi)
+        result = eng.diagnose_sh_sc(
+            fields["refrigerant"],
+            p_low_barg=p_lo,
+            p_high_barg=p_hi,
+            t_suction_c=_f(fields["t_suction_c"], "suction temperature"),
+            t_liquid_c=_f(fields["t_liquid_c"], "liquid temperature"),
+        )
+    except (ValueError, eng.CoolPropUnavailableError) as exc:
+        error = str(exc)
+    return {
+        "fields": fields,
+        "result": result,
+        "error": error,
+        "refrigerant_groups": _refrigerant_groups(),
+    }
+
+
 @bp.get("/")
 @require_module("refrig.pt_table")
 def index():
@@ -165,7 +201,7 @@ def pipe_sizer_classic():
 
 
 @bp.get("/diagnostics")
-@login_required
+@require_module("refrig.diagnostics")
 def diagnostics_classic():
     from app.ui_prefs import redirect_to_v2
 

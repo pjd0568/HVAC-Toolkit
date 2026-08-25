@@ -8,10 +8,10 @@
   <a href="{{ url_for('v2.refrig_pipe_sizer') }}"
      class="{{ 'active' if tool == 'pipe' }}">DX pipe sizing</a>
   {% endif %}
+  {% if access.can('refrig.diagnostics') %}
   <a href="{{ url_for('v2.refrig_diagnostics') }}"
-     class="{{ 'active' if tool == 'diagnostics' }}">
-    Superheat / subcooling <span class="soon">Soon</span>
-  </a>
+     class="{{ 'active' if tool == 'diagnostics' }}">Superheat / subcooling</a>
+  {% endif %}
   <a href="{{ url_for('v2.refrig_charge') }}"
      class="{{ 'active' if tool == 'charge' }}">
     Charge calculator <span class="soon">Soon</span>

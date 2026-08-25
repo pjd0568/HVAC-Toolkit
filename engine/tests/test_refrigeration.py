@@ -122,3 +122,49 @@ def test_r454b_and_r513a_pt():
 def test_unknown_refrigerant():
     with pytest.raises(ValueError, match="unknown"):
         ref.get_refrigerant("r999")
+
+
+def test_saturation_at_pressure_r134a():
+    # ~1.915 barg ≈ 0 °C for R-134a
+    t_bub, t_dew = ref.saturation_at_pressure_barg("r134a", 1.915)
+    assert abs(t_bub - 0.0) < 0.4
+    assert abs(t_dew - t_bub) < 0.05
+
+
+def test_diagnose_sh_sc_healthy_r32():
+    # Pick pressures near -5 °C dew and 45 °C bubble for R-32, then apply SH/SC.
+    from CoolProp.CoolProp import PropsSI
+
+    fluid = "R32"
+    p_lo = PropsSI("P", "T", (-5.0) + 273.15, "Q", 1, fluid)
+    p_hi = PropsSI("P", "T", 45.0 + 273.15, "Q", 0, fluid)
+    p_lo_barg = p_lo / 1e5 - ref.P_ATM_BAR
+    p_hi_barg = p_hi / 1e5 - ref.P_ATM_BAR
+    result = ref.diagnose_sh_sc(
+        "r32",
+        p_low_barg=p_lo_barg,
+        p_high_barg=p_hi_barg,
+        t_suction_c=-5.0 + 8.0,
+        t_liquid_c=45.0 - 6.0,
+    )
+    assert result.superheat_k == pytest.approx(8.0, abs=0.15)
+    assert result.subcooling_k == pytest.approx(6.0, abs=0.15)
+    assert result.superheat.status == "green"
+    assert result.subcooling.status == "green"
+
+
+def test_classify_floodback_and_high_sc():
+    assert ref.classify_superheat(2.0).status == "red"
+    assert ref.classify_superheat(2.0).headline == "Floodback risk"
+    assert ref.classify_subcooling(20.0).status == "red"
+
+
+def test_diagnose_rejects_inverted_pressures():
+    with pytest.raises(ValueError, match="high-side"):
+        ref.diagnose_sh_sc(
+            "r32",
+            p_low_barg=10.0,
+            p_high_barg=5.0,
+            t_suction_c=10.0,
+            t_liquid_c=20.0,
+        )

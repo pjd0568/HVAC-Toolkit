@@ -38,13 +38,13 @@ SUITE_MODULES: frozenset[str] = frozenset({
     "pipe.system",
     "refrig.pt_table",
     "refrig.pipe_sizer",
+    "refrig.diagnostics",
     "converter",
 })
 
 COMING_SOON_MODULES: frozenset[str] = frozenset({
     "weather",
     "projects",
-    "refrig.diagnostics",
     "refrig.charge",
     "room.load",
     "air.grille_throw",

@@ -30,7 +30,7 @@ saturation-temperature drop). No reference to any prior codebase, including
 | **3** | Web: V2 picker + PT table + pipe sizer pages; access gating; Dockerfile / deps | Done |
 | **4** | Help / methodology; suite nav + Coming Soon placeholders for diagnostics / charge | Done |
 | **5** | Sign-off → push `main` → `Publish` | Done (25 Aug 2026) |
-| **Later** | Superheat & subcooling diagnostics (engine + colour-coded UI) | Roadmap #2 |
+| **Later** | Superheat & subcooling diagnostics (engine + colour-coded UI) | **Done** (main; Promote to Publish when signed off) |
 | **Later** | Refrigerant charge / trim calculator | Roadmap #3 |
 | **Later** | Darcy / equivalent ΔTsat friction check on pipe sizer | Pipe sizer v1.1 |
 | **Later** | Simple vapour-compression state points / P–h overview | Out of v1 |
@@ -307,18 +307,19 @@ size_dx_pipe(...) -> DxPipeSizeResult
 |-----------|--------|
 | `refrig.pt_table` | Refrigeration — PT Table |
 | `refrig.pipe_sizer` | Refrigeration — DX Pipe Sizing |
+| `refrig.diagnostics` | Refrigeration — Superheat & Subcooling |
 
-Add both to `SUITE_MODULES` and `MODULES` in `web/app/access.py`. Gate with
+Add live tools to `SUITE_MODULES` and `MODULES` in `web/app/access.py`. Gate with
 `@require_module(...)`.
 
 ### Routes (proposed)
 
 | Path | Role |
 |------|------|
-| `/v2/refrigeration/` | Picker (PT + pipe sizer) |
+| `/v2/refrigeration/` | Picker (PT + pipe sizer + diagnostics) |
 | `/v2/refrigeration/pt-table/` | PT table form + results |
 | `/v2/refrigeration/pipe-sizer/` | Pipe sizing form + results |
-| Optional JSON | `/v2/refrigeration/api/pt-table`, `.../api/size-pipe` for progressive enhancement — same engine helpers |
+| `/v2/refrigeration/diagnostics/` | Superheat & subcooling from measured P/T |
 
 Classic blueprint prefix `/refrigeration/...` may redirect to V2 like other tools.
 
