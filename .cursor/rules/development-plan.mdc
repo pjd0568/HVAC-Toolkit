@@ -1,0 +1,32 @@
+---
+description: Living product roadmap — progress vs DEVELOPMENT-PLAN.md
+alwaysApply: true
+---
+
+# Development plan tracking
+
+Canonical roadmap: [`specs/DEVELOPMENT-PLAN.md`](specs/DEVELOPMENT-PLAN.md).
+
+Traffic-light side panel (Cursor Canvas):
+[`development-plan.canvas.tsx`](/Users/paul/.cursor/projects/Users-paul-Documents-GitHub-HVAC-Toolkit/canvases/development-plan.canvas.tsx).
+
+## When Paul asks progress
+
+If the user asks *where are we against plan*, *progress against roadmap*, *status of
+epics*, or similar:
+
+1. Read `specs/DEVELOPMENT-PLAN.md` (and skim recent git/spec changes if status may be stale).
+2. Reply with three lists only: **Achieved**, **In progress**, **Future** — concise
+   bullets mapped to plan IDs (REF-03, E3-01, etc.).
+3. Note the suggested next priority from the plan unless they named a different target.
+4. Update the plan’s statuses / change log if work landed this session and was not yet recorded.
+5. Sync the canvas (`ITEMS` / counts / `LAST_REVIEWED`) to match the plan whenever statuses change.
+
+## When implementing roadmap items
+
+- Follow stack conventions in the plan (Flask + Jinja V2 + `hvac_engine`, not React/Vue).
+- Prefer writing/updating `specs/SPEC-*.md` before large engines.
+- After shipping a milestone, mark the item Done/WIP in `DEVELOPMENT-PLAN.md`, refresh the
+  canvas traffic lights, and add a change-log row.
+- Welcome and record agreed scope enhancements under that epic’s “Enhancement ideas” /
+  Scope notes — do not silently expand beyond what was agreed for the current slice.
