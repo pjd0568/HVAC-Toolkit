@@ -29,43 +29,42 @@
 
       {{ site_conditions(form, pressure) }}
 
-      <div class="section-label">Entering air</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("on", "Entering", form, second_properties) }}
-        <div><label>Airflow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
-      </div>
+      {{ state_input("on", "Entering", form, second_properties, flow_name="flow", flow_value=form.flow) }}
 
       <div id="mode-state-fields" {% if form.mode == 'duty' %}style="display:none"{% endif %}>
-        <div class="section-label">Process extent</div>
-        <div class="form-grid psychro-stack">
-          <div>
-            <label>Target</label>
-            <select name="target_kind" id="target_kind">
-              <option value="effectiveness" {{ 'selected' if form.target_kind != 'rh' }}>Media effectiveness ε (%)</option>
-              <option value="rh" {{ 'selected' if form.target_kind == 'rh' }}>Leaving RH (%)</option>
-            </select>
+        <fieldset class="compact-group">
+          <legend>Process extent</legend>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="target_kind">Target</label>
+              <select name="target_kind" id="target_kind">
+                <option value="effectiveness" {{ 'selected' if form.target_kind != 'rh' }}>Media effectiveness ε (%)</option>
+                <option value="rh" {{ 'selected' if form.target_kind == 'rh' }}>Leaving RH (%)</option>
+              </select>
+            </div>
+            <div class="compact-field" id="field-effectiveness" {% if form.target_kind == 'rh' %}style="display:none"{% endif %}>
+              <label for="effectiveness" title="Typical rigid media ~80–90%. ε = 100% reaches the entering wet-bulb.">ε %</label>
+              <input id="effectiveness" name="effectiveness" value="{{ form.effectiveness }}" inputmode="decimal">
+            </div>
+            <div class="compact-field" id="field-rh-out" {% if form.target_kind != 'rh' %}style="display:none"{% endif %}>
+              <label for="rh_out">Leaving RH %</label>
+              <input id="rh_out" name="rh_out" value="{{ form.rh_out }}" inputmode="decimal">
+            </div>
           </div>
-          <div id="field-effectiveness" {% if form.target_kind == 'rh' %}style="display:none"{% endif %}>
-            <label>Saturation Effectiveness ε (%)</label>
-            <input name="effectiveness" value="{{ form.effectiveness }}" inputmode="decimal">
-            <div class="suffix">Typical rigid media ~80–90%. ε = 100% reaches the entering wet-bulb.</div>
-          </div>
-          <div id="field-rh-out" {% if form.target_kind != 'rh' %}style="display:none"{% endif %}>
-            <label>Target Leaving RH (%)</label>
-            <input name="rh_out" value="{{ form.rh_out }}" inputmode="decimal">
-          </div>
-        </div>
+        </fieldset>
       </div>
 
       <div id="mode-duty-fields" {% if form.mode != 'duty' %}style="display:none"{% endif %}>
-        <div class="section-label">Required cooling</div>
-        <div class="form-grid psychro-stack">
-          <div>
-            <label>Sensible Cooling Capacity ({{ U.sym('power') }})</label>
-            <input name="q_sensible" value="{{ form.q_sensible }}">
-            <div class="suffix">Cannot drive leaving dry-bulb below the entering wet-bulb.</div>
+        <fieldset class="compact-group">
+          <legend>Required cooling</legend>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="q_sensible" title="Cannot drive leaving dry-bulb below the entering wet-bulb.">Q_s {{ U.sym('power') }}</label>
+              <input id="q_sensible" name="q_sensible" value="{{ form.q_sensible }}" inputmode="decimal">
+            </div>
+            <div class="compact-field compact-field-empty" aria-hidden="true"></div>
           </div>
-        </div>
+        </fieldset>
       </div>
 
       <div class="psychro-actions">

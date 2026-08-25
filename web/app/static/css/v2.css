@@ -538,7 +538,8 @@ a:hover { color: var(--v2-green-ink); }
   margin: 0 auto;
   padding: 18px 16px 32px;
 }
-/* Interactive psych chart needs full chart width — escape the narrow shell */
+/* Psychro suite: keep chrome width stable when switching tools (chart is wide). */
+.v2-main:has(.suite-tool-nav--psychro),
 .v2-main:has(.ix-layout) {
   max-width: min(1180px, 100%);
 }
@@ -836,6 +837,34 @@ a:hover { color: var(--v2-green-ink); }
   font-weight: 500 !important;
 }
 .suite-tool-nav-short { display: none; }
+
+/* Multi-row strip (psychro): two explicit rows, equal-width pills, no clip scroll */
+.suite-tool-nav--rows {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  overflow: visible;
+  scroll-snap-type: none;
+  gap: 6px;
+  padding-bottom: 2px;
+}
+.suite-tool-nav-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+.suite-tool-nav--rows a {
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.suite-tool-nav--rows .suite-tool-nav-all {
+  margin-left: 0;
+}
+
 @media (max-width: 720px) {
   .suite-tool-nav,
   .refrig-tool-nav {
@@ -859,6 +888,27 @@ a:hover { color: var(--v2-green-ink); }
   .refrig-tool-nav-all {
     margin-left: 6px;
   }
+  .suite-tool-nav--rows {
+    overflow: visible;
+  }
+  .suite-tool-nav--rows a {
+    padding-left: 6px;
+    padding-right: 6px;
+    font-size: 11px;
+  }
+  .suite-tool-nav--rows .suite-tool-nav-all {
+    margin-left: 0;
+  }
+  .suite-tool-nav--rows a .soon {
+    display: none; /* keep 5-up grid readable on narrow phones */
+  }
+}
+
+/* Psychro 5-up rows: use short labels before the grid gets cramped */
+@media (max-width: 980px) {
+  .suite-tool-nav--rows .suite-tool-nav-full { display: none; }
+  .suite-tool-nav--rows .suite-tool-nav-short { display: inline; }
+  .suite-tool-nav--rows a .soon { display: none; }
 }
 .v2-nav-drop-menu a .soon {
   font-size: 10px;
@@ -1048,38 +1098,54 @@ a:hover { color: var(--v2-green-ink); }
   gap: 12px;
   max-width: none;
 }
-/* Compact forms keep multi-column rows on V2 (do not inherit form-grid collapse). */
-.v2-main .compact-form .compact-row {
+/* Compact forms keep multi-column rows on V2 (do not inherit form-grid collapse).
+   Apply to .compact-row anywhere in main — site conditions nest inside psychro forms. */
+.v2-main .compact-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px 12px;
 }
-.v2-main .compact-form .compact-row.cols-2 {
+.v2-main .compact-row.cols-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.v2-main .compact-form .compact-row.cols-4 {
+.v2-main .compact-row.cols-4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-.v2-main .compact-form .compact-field {
+.v2-main .compact-field {
   display: grid;
   grid-template-columns: 7.25rem minmax(0, 1fr);
   gap: 6px 8px;
   align-items: center;
 }
-.v2-main .compact-form .compact-field label {
+.v2-main .compact-field label {
+  display: block;
   margin: 0;
   min-height: 0;
+  padding: 0;
+  font-size: 12px;
   text-align: right;
+  color: var(--v2-ink);
+}
+.v2-main .compact-group legend {
+  color: var(--v2-muted);
+}
+.v2-main .paste-slot-label {
+  color: var(--v2-muted);
+}
+.v2-main .compact-field input,
+.v2-main .compact-field select {
+  min-height: 38px;
+  padding: 6px 8px;
 }
 @media (max-width: 720px) {
-  .v2-main .compact-form .compact-row,
-  .v2-main .compact-form .compact-row.cols-2,
-  .v2-main .compact-form .compact-row.cols-4 {
+  .v2-main .compact-row,
+  .v2-main .compact-row.cols-2,
+  .v2-main .compact-row.cols-4 {
     grid-template-columns: 1fr;
   }
-  .v2-main .compact-form .compact-field,
-  .v2-main .compact-form .compact-field.span-2,
-  .v2-main .compact-form .compact-field.span-3 {
+  .v2-main .compact-field,
+  .v2-main .compact-field.span-2,
+  .v2-main .compact-field.span-3 {
     grid-column: auto;
     grid-template-columns: 6.5rem minmax(0, 1fr);
   }
@@ -1576,6 +1642,7 @@ a:hover { color: var(--v2-green-ink); }
     max-width: 920px;
     padding: 24px 28px 48px;
   }
+  .v2-main:has(.suite-tool-nav--psychro),
   .v2-main:has(.ix-layout) {
     max-width: min(1180px, 100%);
   }

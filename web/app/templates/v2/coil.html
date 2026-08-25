@@ -18,17 +18,21 @@
     <div class="panel-body">
       {{ site_conditions(form, pressure) }}
 
-      <div class="section-label">On-coil</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("on", "On-coil", form, second_properties) }}
-        <div><label>On-coil Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
-      </div>
+      {{ state_input("on", "On-coil", form, second_properties, flow_name="flow", flow_value=form.flow) }}
 
-      <div class="section-label">Coil (ADP &amp; leaving dry bulb)</div>
-      <div class="form-grid psychro-stack">
-        <div><label>Apparatus Dew Point ({{ U.sym('temperature') }})</label><input name="adp_t" value="{{ form.adp_t }}"></div>
-        <div><label>Off-coil Dry Bulb ({{ U.sym('temperature') }})</label><input name="off_t" value="{{ form.off_t }}"></div>
-      </div>
+      <fieldset class="compact-group">
+        <legend>Coil</legend>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="adp_t" title="Apparatus dew point">ADP {{ U.sym('temperature') }}</label>
+            <input id="adp_t" name="adp_t" value="{{ form.adp_t }}" inputmode="decimal">
+          </div>
+          <div class="compact-field">
+            <label for="off_t" title="Off-coil dry bulb">Off Tdb {{ U.sym('temperature') }}</label>
+            <input id="off_t" name="off_t" value="{{ form.off_t }}" inputmode="decimal">
+          </div>
+        </div>
+      </fieldset>
 
       <div class="psychro-actions">
         <button class="btn-accent" type="submit">Calculate</button>

@@ -1,34 +1,31 @@
-{# Shared "Site Conditions" input group: altitude in, barometric pressure derived
-   out (standard atmosphere, ASHRAE HOF Ch.1 eqn 3 — see hvac_engine.psychrometrics.
-   pressure_from_altitude). Always the first group on a psychrometric form, own
-   heading + own row so it never shares a line with an airstream group. Uses the
-   same "form-grid four" template as every airstream group on the page (with the
-   trailing columns left empty) so every group's field columns — and therefore
-   every text box — line up vertically down the form.
-   `pressure` is the SI kPa value the blueprint already resolved for this request
-   (None if the altitude entered failed validation). The readonly pressure field
-   also updates live in the browser as altitude is typed (site_pressure.js). #}
+{# Shared Site Conditions: altitude in, barometric pressure derived out
+   (standard atmosphere, ASHRAE HOF Ch.1 eqn 3 — pressure_from_altitude).
+   Compact one-line row. `pressure` is SI kPa (None if altitude invalid).
+   Live preview via site_pressure.js. #}
 {% macro site_conditions(form, pressure) -%}
-{# data-alt-to-m / data-p-from-kpa: display → SI (m, kPa) factors matching
-   hvac_engine.units (altitude ft→m = 0.3048; pressure inHg←kPa = 1/3.386389). #}
 {% set alt_to_m = 1.0 if U.system == 'SI' else 0.3048 %}
 {% set p_from_kpa = 1.0 if U.system == 'SI' else (1.0 / 3.386389) %}
 {% set p_decimals = 3 if U.system == 'SI' else 2 %}
-<div class="section-label" style="margin-top:0;">Site Conditions</div>
-<div class="form-grid four"
-     data-site-conditions
-     data-alt-to-m="{{ alt_to_m }}"
-     data-p-from-kpa="{{ p_from_kpa }}"
-     data-p-decimals="{{ p_decimals }}">
-  <div>
-    <label>Altitude ({{ U.sym('altitude') }})</label>
-    <input name="altitude" value="{{ form.altitude }}" data-site-altitude inputmode="decimal">
+<fieldset class="compact-group"
+          data-site-conditions
+          data-alt-to-m="{{ alt_to_m }}"
+          data-p-from-kpa="{{ p_from_kpa }}"
+          data-p-decimals="{{ p_decimals }}">
+  <legend>Site</legend>
+  <div class="compact-row cols-2">
+    <div class="compact-field">
+      <label for="site-altitude" title="Site altitude">Alt {{ U.sym('altitude') }}</label>
+      <input id="site-altitude" name="altitude" value="{{ form.altitude }}"
+             data-site-altitude inputmode="decimal">
+    </div>
+    <div class="compact-field">
+      <label for="site-pressure"
+             title="Barometric pressure derived from altitude (standard atmosphere)">Baro {{ U.sym('pressure') }}</label>
+      <input id="site-pressure"
+             value="{% if pressure is not none %}{{ U.fmt('pressure', pressure, p_decimals) }}{% else %}—{% endif %}"
+             readonly data-site-pressure tabindex="-1">
+    </div>
   </div>
-  <div>
-    <label>Barometric Pressure ({{ U.sym('pressure') }}) — derived from altitude</label>
-    <input value="{% if pressure is not none %}{{ U.fmt('pressure', pressure, p_decimals) }}{% else %}—{% endif %}"
-           readonly data-site-pressure tabindex="-1">
-  </div>
-</div>
+</fieldset>
 <script src="{{ url_for('static', filename='js/site_pressure.js') }}?v=steel-4"></script>
 {%- endmacro %}

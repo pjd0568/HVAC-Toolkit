@@ -1,50 +1,54 @@
 {# In-suite switcher. Pass tool=chart|single|mix|coil|desiccant|heat|adiabatic|ahu|co2 #}
-<nav class="suite-tool-nav" aria-label="Psychrometrics tools">
-  <a href="{{ url_for('v2.interactive_chart') }}"
-     class="{{ 'active' if tool == 'chart' }}">
-    <span class="suite-tool-nav-full">Multi-point chart</span>
-    <span class="suite-tool-nav-short">Chart</span>
-  </a>
-  <a href="{{ url_for('v2.single_point') }}"
-     class="{{ 'active' if tool == 'single' }}">
-    <span class="suite-tool-nav-full">Single point</span>
-    <span class="suite-tool-nav-short">Single</span>
-  </a>
-  <a href="{{ url_for('v2.mixed_air') }}"
-     class="{{ 'active' if tool == 'mix' }}">
-    <span class="suite-tool-nav-full">Mixed air</span>
-    <span class="suite-tool-nav-short">Mix</span>
-  </a>
-  <a href="{{ url_for('v2.cooling_coil') }}"
-     class="{{ 'active' if tool == 'coil' }}">
-    <span class="suite-tool-nav-full">Cooling coil</span>
-    <span class="suite-tool-nav-short">Coil</span>
-  </a>
-  <a href="{{ url_for('v2.desiccant') }}"
-     class="{{ 'active' if tool == 'desiccant' }}">
-    <span class="suite-tool-nav-full">Desiccant</span>
-    <span class="suite-tool-nav-short">Desiccant</span>
-  </a>
-  <a href="{{ url_for('v2.heat_humidify') }}"
-     class="{{ 'active' if tool == 'heat' }}">
-    <span class="suite-tool-nav-full">Heat &amp; humidify</span>
-    <span class="suite-tool-nav-short">Heat</span>
-  </a>
-  <a href="{{ url_for('v2.adiabatic_cool') }}"
-     class="{{ 'active' if tool == 'adiabatic' }}">
-    <span class="suite-tool-nav-full">Adiabatic cool</span>
-    <span class="suite-tool-nav-short">Adiabatic</span>
-  </a>
-  <a href="{{ url_for('v2.ahu') }}"
-     class="{{ 'active' if tool == 'ahu' }}">
-    <span class="suite-tool-nav-full">AHU design</span>
-    <span class="suite-tool-nav-short">AHU</span>
-  </a>
-  <a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}"
-     class="{{ 'active' if tool == 'co2' }}">
-    <span class="suite-tool-nav-full">Fresh air &amp; CO₂</span>
-    <span class="suite-tool-nav-short">CO₂</span>
-    <span class="soon">Soon</span>
-  </a>
-  <a href="{{ url_for('v2.psychro_picker') }}" class="suite-tool-nav-all">All</a>
+<nav class="suite-tool-nav suite-tool-nav--psychro suite-tool-nav--rows" aria-label="Psychrometrics tools">
+  <div class="suite-tool-nav-row">
+    <a href="{{ url_for('v2.interactive_chart') }}"
+       class="{{ 'active' if tool == 'chart' }}">
+      <span class="suite-tool-nav-full">Multi-point chart</span>
+      <span class="suite-tool-nav-short">Chart</span>
+    </a>
+    <a href="{{ url_for('v2.single_point') }}"
+       class="{{ 'active' if tool == 'single' }}">
+      <span class="suite-tool-nav-full">Single point</span>
+      <span class="suite-tool-nav-short">Single</span>
+    </a>
+    <a href="{{ url_for('v2.mixed_air') }}"
+       class="{{ 'active' if tool == 'mix' }}">
+      <span class="suite-tool-nav-full">Mixed air</span>
+      <span class="suite-tool-nav-short">Mix</span>
+    </a>
+    <a href="{{ url_for('v2.cooling_coil') }}"
+       class="{{ 'active' if tool == 'coil' }}">
+      <span class="suite-tool-nav-full">Cooling coil</span>
+      <span class="suite-tool-nav-short">Coil</span>
+    </a>
+    <a href="{{ url_for('v2.desiccant') }}"
+       class="{{ 'active' if tool == 'desiccant' }}">
+      <span class="suite-tool-nav-full">Desiccant</span>
+      <span class="suite-tool-nav-short">Desic</span>
+    </a>
+  </div>
+  <div class="suite-tool-nav-row">
+    <a href="{{ url_for('v2.heat_humidify') }}"
+       class="{{ 'active' if tool == 'heat' }}">
+      <span class="suite-tool-nav-full">Heat &amp; humidify</span>
+      <span class="suite-tool-nav-short">Heat</span>
+    </a>
+    <a href="{{ url_for('v2.adiabatic_cool') }}"
+       class="{{ 'active' if tool == 'adiabatic' }}">
+      <span class="suite-tool-nav-full">Adiabatic cool</span>
+      <span class="suite-tool-nav-short">Adiab</span>
+    </a>
+    <a href="{{ url_for('v2.ahu') }}"
+       class="{{ 'active' if tool == 'ahu' }}">
+      <span class="suite-tool-nav-full">AHU design</span>
+      <span class="suite-tool-nav-short">AHU</span>
+    </a>
+    <a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}"
+       class="{{ 'active' if tool == 'co2' }}">
+      <span class="suite-tool-nav-full">Fresh air &amp; CO₂</span>
+      <span class="suite-tool-nav-short">CO₂</span>
+      <span class="soon">Soon</span>
+    </a>
+    <a href="{{ url_for('v2.psychro_picker') }}" class="suite-tool-nav-all">All</a>
+  </div>
 </nav>

@@ -14,32 +14,22 @@
       <div class="panel-body">
         {{ site_conditions(form, pressure) }}
 
-        <div class="section-label">Season</div>
-        <div class="form-grid psychro-stack">
-          <div>
-            <label>Design season</label>
-            <select name="season" id="ahu-season">
-              <option value="summer" {{ 'selected' if form.season != 'winter' }}>Summer — cool / dehumidify / reheat</option>
-              <option value="winter" {{ 'selected' if form.season == 'winter' }}>Winter — heat / humidify</option>
-            </select>
-            <div class="suffix">Switches typical OA / RA / supply defaults. Process path still follows the moisture balance.</div>
+        <fieldset class="compact-group">
+          <legend>Season</legend>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="ahu-season">Design season</label>
+              <select name="season" id="ahu-season">
+                <option value="summer" {{ 'selected' if form.season != 'winter' }}>Summer — cool / dehumidify / reheat</option>
+                <option value="winter" {{ 'selected' if form.season == 'winter' }}>Winter — heat / humidify</option>
+              </select>
+            </div>
+            <div class="compact-field compact-field-empty" aria-hidden="true"></div>
           </div>
-        </div>
+        </fieldset>
 
-        <div class="section-label">Outdoor Air</div>
-        <div class="form-grid psychro-stack">
-          {{ state_input("oa", "Outdoor Air", form, second_properties) }}
-          <div>
-            <label>Outdoor Air Flow ({{ U.sym('vol_flow') }})</label>
-            <input name="oa_flow" value="{{ form.oa_flow }}">
-            <div class="suffix">Fresh-air volume at the outdoor condition. Fraction of supply is derived from dry-air mass flows.</div>
-          </div>
-        </div>
-
-        <div class="section-label">Return Air</div>
-        <div class="form-grid psychro-stack">
-          {{ state_input("ra", "Return Air", form, second_properties) }}
-        </div>
+        {{ state_input("oa", "Outdoor air", form, second_properties, flow_name="oa_flow", flow_value=form.oa_flow, flow_title="Fresh-air volume at the outdoor condition.") }}
+        {{ state_input("ra", "Return air", form, second_properties) }}
       </div>
     </div>
 
@@ -47,10 +37,7 @@
       <div class="panel-head">Air off — required supply</div>
       <div class="panel-body">
         <p class="psychro-hint" style="margin-top:0;">Off-unit condition delivered into the room.</p>
-        <div class="form-grid psychro-stack">
-          {{ state_input("sup", "Supply", form, second_properties) }}
-          <div><label>Supply Flow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
-        </div>
+        {{ state_input("sup", "Supply", form, second_properties, flow_name="flow", flow_value=form.flow) }}
       </div>
     </div>
 
@@ -59,14 +46,16 @@
         {% if form.season == 'winter' %}Heating / humidification &amp; fan{% else %}Cooling coil &amp; fan{% endif %}
       </div>
       <div class="panel-body">
-        <div class="section-label" id="ahu-coil-label" {% if form.season == 'winter' %}hidden{% endif %}>Cooling coil model</div>
-        <div class="form-grid psychro-stack" id="ahu-coil-fields" {% if form.season == 'winter' %}hidden{% endif %}>
-          <div>
-            <label>Off-coil RH target (%)</label>
-            <input name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
-            <div class="suffix">Default 90% — typical wet-coil practice. Use 100% for idealised CF = 1. Used when the supply is drier than on-coil.</div>
+        <fieldset class="compact-group" id="ahu-coil-fields" {% if form.season == 'winter' %}hidden{% endif %}>
+          <legend id="ahu-coil-label">Cooling coil model</legend>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="coil_rh_off" title="Default 90% — typical wet-coil practice.">Off RH %</label>
+              <input id="coil_rh_off" name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
+            </div>
+            <div class="compact-field compact-field-empty" aria-hidden="true"></div>
           </div>
-        </div>
+        </fieldset>
         {% if form.season == 'winter' %}
         <p class="psychro-hint" id="ahu-winter-hint" style="margin-top:0;">
           Winter path: when on-coil air is drier than the supply, the tool sizes a heating coil
@@ -79,19 +68,30 @@
         </p>
         {% endif %}
 
-        <div class="section-label">Supply fan — leave off to ignore fan gain</div>
-        <div class="form-grid psychro-stack">
-          <div>
-            <label>Fan Position</label>
-            <select name="fan_pos">
-              <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
-              <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before coil</option>
-              <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after last stage</option>
-            </select>
+        <fieldset class="compact-group">
+          <legend>Supply fan</legend>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="fan_pos">Fan position</label>
+              <select name="fan_pos" id="fan_pos">
+                <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
+                <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before coil</option>
+                <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after last stage</option>
+              </select>
+            </div>
+            <div class="compact-field">
+              <label for="fan_sfp" title="Specific fan power">SFP W/(l/s)</label>
+              <input id="fan_sfp" name="fan_sfp" value="{{ form.fan_sfp }}" inputmode="decimal">
+            </div>
           </div>
-          <div><label>Fan SFP (W per l/s)</label><input name="fan_sfp" value="{{ form.fan_sfp }}"></div>
-          <div><label>Fan Power (kW) — overrides SFP</label><input name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP"></div>
-        </div>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="fan_kw" title="Overrides SFP when set">Fan kW</label>
+              <input id="fan_kw" name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP" inputmode="decimal">
+            </div>
+            <div class="compact-field compact-field-empty" aria-hidden="true"></div>
+          </div>
+        </fieldset>
 
         <div class="psychro-actions">
           <button class="btn-accent" type="submit">Design</button>

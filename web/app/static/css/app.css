@@ -515,10 +515,28 @@ details.panel-help[open] > summary.panel-head .help-inline-mark {
    below a state_input() group, even when the calling template adds its own
    4th field right after (e.g. Mixed Air's "Stream A Flow"), which needs to
    stay visually in that group's original 4th column, not get bumped by this. */
-.paste-slot-row { grid-column: 1 / -1; order: 999; min-height: 0; }
-.paste-slot-row label { min-height: 0; margin-bottom: 6px; }
+.paste-slot-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  min-height: 0;
+}
+.paste-slot-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
 .paste-slot-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .paste-slot-btn { padding: 6px 12px; font-size: 11.5px; text-decoration: none; display: inline-block; }
+.compact-field-empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+@media (max-width: 720px) {
+  .compact-field-empty { display: none; }
+}
 /* Fixed two-line reserve on every label: a short label ("Altitude (m)") and a
    long one that wraps ("Barometric Pressure (kPa) — derived from altitude")
    sit in the same-height box, so their inputs start at the same y position

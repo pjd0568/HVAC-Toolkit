@@ -14,17 +14,8 @@
     <div class="panel-body">
       {{ site_conditions(form, pressure) }}
 
-      <div class="section-label">Stream A</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("a", "Stream A", form, second_properties) }}
-        <div><label>Stream A Flow ({{ U.sym('vol_flow') }})</label><input name="flow_a" value="{{ form.flow_a }}"></div>
-      </div>
-
-      <div class="section-label">Stream B</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("b", "Stream B", form, second_properties) }}
-        <div><label>Stream B Flow ({{ U.sym('vol_flow') }})</label><input name="flow_b" value="{{ form.flow_b }}"></div>
-      </div>
+      {{ state_input("a", "Stream A", form, second_properties, flow_name="flow_a", flow_value=form.flow_a) }}
+      {{ state_input("b", "Stream B", form, second_properties, flow_name="flow_b", flow_value=form.flow_b) }}
 
       <div class="psychro-actions">
         <button class="btn-accent" type="submit">Calculate</button>

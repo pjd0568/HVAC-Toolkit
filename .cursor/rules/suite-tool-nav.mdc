@@ -24,7 +24,13 @@ Prefer the refrigeration-style **horizontal tool switcher** on every calculator 
 5. Coming-soon tools: same strip + `<span class="soon">Soon</span>`
 6. Trailing **All** link → suite picker
 
-## Mobile
+## Psychro (many tools)
+
+- Use `.suite-tool-nav--psychro.suite-tool-nav--rows` with two `.suite-tool-nav-row` grids (5 + 5).
+- Do **not** horizontal-scroll / clip psychro tabs — two fixed rows.
+- Keep `.v2-main` wide for the whole psychro suite (`:has(.suite-tool-nav--psychro)`) so switching tools does not change chrome width.
+
+## Mobile (short suites: air / hydronics / refrigeration)
 
 - Do **not** wrap pills into many rows on small screens.
 - Horizontal scroll (`overflow-x: auto`, `flex-wrap: nowrap`, touch scrolling).

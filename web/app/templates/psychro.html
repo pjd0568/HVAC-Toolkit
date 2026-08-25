@@ -14,10 +14,7 @@
     <div class="panel-body">
       {{ site_conditions(form, pressure) }}
 
-      <div class="section-label">State</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("s", "State", form, second_properties) }}
-      </div>
+      {{ state_input("s", "State", form, second_properties) }}
 
       <div class="psychro-actions">
         <button class="btn-accent" type="submit" name="action" value="calculate">

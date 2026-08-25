@@ -29,31 +29,26 @@
 
       {{ site_conditions(form, pressure) }}
 
-      <div class="section-label">Entering air (1)</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("on", "Entering", form, second_properties) }}
-        <div><label>Airflow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
-      </div>
+      {{ state_input("on", "Entering", form, second_properties, flow_name="flow", flow_value=form.flow) }}
 
       <div id="mode-state-fields" {% if form.mode == 'duty' %}style="display:none"{% endif %}>
-        <div class="section-label">Leaving target (2)</div>
-        <div class="form-grid psychro-stack">
-          {{ state_input("off", "Leaving", form, second_properties) }}
-        </div>
+        {{ state_input("off", "Leaving target", form, second_properties) }}
       </div>
 
       <div id="mode-duty-fields" {% if form.mode != 'duty' %}style="display:none"{% endif %}>
-        <div class="section-label">Heating &amp; steam duties</div>
-        <div class="form-grid psychro-stack">
-          <div>
-            <label>Sensible Heating Duty ({{ U.sym('power') }})</label>
-            <input name="q_sensible" value="{{ form.q_sensible }}">
+        <fieldset class="compact-group">
+          <legend>Heating &amp; steam duties</legend>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="q_sensible" title="Sensible heating duty">Q_s {{ U.sym('power') }}</label>
+              <input id="q_sensible" name="q_sensible" value="{{ form.q_sensible }}" inputmode="decimal">
+            </div>
+            <div class="compact-field">
+              <label for="steam_rate" title="Steam injection rate">ṁ_steam {{ U.sym('moisture_rate') }}</label>
+              <input id="steam_rate" name="steam_rate" value="{{ form.steam_rate }}" inputmode="decimal">
+            </div>
           </div>
-          <div>
-            <label>Steam Injection Rate ({{ U.sym('moisture_rate') }})</label>
-            <input name="steam_rate" value="{{ form.steam_rate }}">
-          </div>
-        </div>
+        </fieldset>
       </div>
 
       <div class="psychro-actions">

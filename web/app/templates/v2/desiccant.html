@@ -29,47 +29,50 @@
 
       {{ site_conditions(form, pressure) }}
 
-      <div class="section-label">Entering air</div>
-      <div class="form-grid psychro-stack">
-        {{ state_input("on", "Entering", form, second_properties) }}
-        <div><label>Airflow ({{ U.sym('vol_flow') }})</label><input name="flow" value="{{ form.flow }}"></div>
-      </div>
+      {{ state_input("on", "Entering", form, second_properties, flow_name="flow", flow_value=form.flow) }}
 
       <div id="mode-state-fields" {% if form.mode == 'duty' %}style="display:none"{% endif %}>
-        <div class="section-label">Leaving moisture target</div>
-        <div class="form-grid psychro-stack">
-          <div>
-            <label>Target Property</label>
-            <select name="target_prop" id="target_prop">
-              <option value="w" {{ 'selected' if form.target_prop == 'w' }}>Humidity Ratio ({{ U.sym('humidity_ratio') }})</option>
-              <option value="rh" {{ 'selected' if form.target_prop == 'rh' }}>Relative Humidity (%)</option>
-            </select>
+        <fieldset class="compact-group">
+          <legend>Leaving moisture target</legend>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="target_prop">Target prop</label>
+              <select name="target_prop" id="target_prop">
+                <option value="w" {{ 'selected' if form.target_prop == 'w' }}>Humidity Ratio ({{ U.sym('humidity_ratio') }})</option>
+                <option value="rh" {{ 'selected' if form.target_prop == 'rh' }}>Relative Humidity (%)</option>
+              </select>
+            </div>
+            <div class="compact-field">
+              <label for="target_val">Target value</label>
+              <input id="target_val" name="target_val" value="{{ form.target_val }}" inputmode="decimal">
+            </div>
           </div>
-          <div>
-            <label>Target Value</label>
-            <input name="target_val" value="{{ form.target_val }}">
-          </div>
-        </div>
+        </fieldset>
       </div>
 
       <div id="mode-duty-fields" {% if form.mode != 'duty' %}style="display:none"{% endif %}>
-        <div class="section-label">Moisture removal duty</div>
-        <div class="form-grid psychro-stack">
-          <div>
-            <label>Latent Removal ({{ U.sym('moisture_rate') }})</label>
-            <input name="moisture_duty" value="{{ form.moisture_duty }}">
+        <fieldset class="compact-group">
+          <legend>Moisture removal duty</legend>
+          <div class="compact-row cols-2">
+            <div class="compact-field">
+              <label for="moisture_duty" title="Latent moisture removal">ṁ_w {{ U.sym('moisture_rate') }}</label>
+              <input id="moisture_duty" name="moisture_duty" value="{{ form.moisture_duty }}" inputmode="decimal">
+            </div>
+            <div class="compact-field compact-field-empty" aria-hidden="true"></div>
           </div>
-        </div>
+        </fieldset>
       </div>
 
-      <div class="section-label">Wheel / process</div>
-      <div class="form-grid psychro-stack">
-        <div>
-          <label>Desiccant Efficiency η<sub>d</sub> (%)</label>
-          <input name="eta_d" value="{{ form.eta_d }}" inputmode="decimal">
-          <div class="suffix">100% = ideal isenthalpic. Lower values add heat of adsorption above the enthalpy line.</div>
+      <fieldset class="compact-group">
+        <legend>Wheel / process</legend>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="eta_d" title="100% = ideal isenthalpic. Lower values add heat of adsorption.">η<sub>d</sub> %</label>
+            <input id="eta_d" name="eta_d" value="{{ form.eta_d }}" inputmode="decimal">
+          </div>
+          <div class="compact-field compact-field-empty" aria-hidden="true"></div>
         </div>
-      </div>
+      </fieldset>
 
       <div class="psychro-actions">
         <button class="btn-accent" type="submit">Calculate</button>
