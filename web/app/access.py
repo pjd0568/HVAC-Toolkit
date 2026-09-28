@@ -18,7 +18,7 @@ from flask_login import current_user
 TierName = Literal["free", "trial", "pro"]
 
 TRIAL_DAYS = 14
-PRICE_MONTHLY_GBP = "9.50"
+PRICE_MONTHLY_GBP = "4.50"
 
 # Modules that need an active trial or subscription. Always-open pages
 # (dashboard, help, guides, methodology) and Coming Soon placeholders

@@ -208,7 +208,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     @app.cli.command("ensure-stripe-product")
     def ensure_stripe_product_command():
-        """Create the £9.50/month Managed Payments product+price if needed.
+        """Create the £4.50/month Managed Payments product+price if needed.
 
         Prints the Price ID to set as STRIPE_PRICE_ID. Requires STRIPE_SECRET_KEY
         from https://dashboard.stripe.com/test/apikeys

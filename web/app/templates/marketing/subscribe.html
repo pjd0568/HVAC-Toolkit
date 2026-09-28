@@ -1,13 +1,13 @@
 {% extends "marketing/base.html" %}
 {% block title %}Pricing/Subscribe — {{ brand_name }} HVAC psychrometric, duct &amp; pipe calculators{% endblock %}
-{% block meta_description %}{{ brand_name }} pricing: 14-day free trial of HVAC calculators (psychrometrics, duct sizing, pipe sizing), then £9.50/month. Subscribe anytime during trial. Tax at checkout via Stripe.{% endblock %}
+{% block meta_description %}{{ brand_name }} pricing: 14-day free trial of HVAC calculators (psychrometrics, duct sizing, pipe sizing), then £4.50/month. Subscribe anytime during trial. Tax at checkout via Stripe.{% endblock %}
 {% block content %}
 <section class="pricing-hero">
   <h1>Pricing/Subscribe</h1>
   <p class="coming-lead">
     Start with a 14-day free trial of the full HVAC calculator suite —
     psychrometric, duct sizing, and pipe sizing tools included. Subscribe
-    anytime during the trial for £9.50/month. Tax is calculated at checkout
+    anytime during the trial for £4.50/month. Tax is calculated at checkout
     for your location (Stripe Managed Payments).
   </p>
 </section>
@@ -15,7 +15,7 @@
 <section class="pricing-grid pricing-grid-single">
   <article class="pricing-card pricing-card-featured">
     <h2>Full suite</h2>
-    <p class="pricing-amount">£9.50</p>
+    <p class="pricing-amount">£4.50</p>
     <p class="pricing-period">per month</p>
     <p class="pricing-trial">14-day free trial on signup</p>
     <ul>
@@ -36,7 +36,7 @@
       </p>
     {% elif stripe_ready and current_user.is_authenticated %}
       <form method="post" action="{{ url_for('billing.create_checkout_session_route') }}">
-        <button type="submit" class="btn-accent">Subscribe — £9.50/month</button>
+        <button type="submit" class="btn-accent">Subscribe — £4.50/month</button>
       </form>
       <p class="pricing-note">
         Signed in as {{ current_user.email }}.

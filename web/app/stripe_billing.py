@@ -1,6 +1,6 @@
 """Stripe Managed Payments helpers for the full-suite subscription.
 
-Creates / resolves the £9.50 GBP monthly product+price, Checkout Sessions with
+Creates / resolves the £4.50 GBP monthly product+price, Checkout Sessions with
 ``managed_payments[enabled]``, and maps webhook events onto ``User`` rows.
 
 API keys and Price ID come from env (see Config / .env.example). Product creation
@@ -26,8 +26,8 @@ MANAGED_PAYMENTS_TAX_CODE = "txcd_10103100"
 # Preview API version required by the Managed Payments blueprint for product + Checkout.
 STRIPE_MANAGED_PAYMENTS_VERSION = "2026-02-25.preview"
 
-# £9.50 → 950 pence.
-PRICE_UNIT_AMOUNT_PENCE = 950
+# £4.50 → 450 pence.
+PRICE_UNIT_AMOUNT_PENCE = 450
 PRICE_CURRENCY = "gbp"
 
 PRODUCT_NAME = "hvac-calcs.app — Full suite"
