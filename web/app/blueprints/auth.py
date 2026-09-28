@@ -92,8 +92,8 @@ def register():
         flash("Registration is closed while we prepare the launch.", "info")
         return redirect(url_for("main.coming_soon"))
     if current_user.is_authenticated:
-        return redirect(url_for("v2.dashboard"))
-    return _register_template()
+        return redirect(_safe_next(request.args.get("next")))
+    return _register_template(next=request.args.get("next", ""))
 
 
 @bp.post("/register")
@@ -123,7 +123,7 @@ def register_post():
     if errors:
         for msg in errors:
             flash(msg, "error")
-        return _register_template(), 400
+        return _register_template(next=request.form.get("next", "")), 400
 
     user = User(
         email=email,
@@ -140,6 +140,9 @@ def register_post():
     send_trial_started(user)
 
     flash("Account created. Your 14-day free trial has started.", "success")
+    raw_next = (request.form.get("next") or "").strip()
+    if raw_next:
+        return redirect(_safe_next(raw_next))
     # Land on Single Point so the homepage teaser can hand off after signup.
     return redirect(url_for("v2.single_point", from_teaser=1))
 

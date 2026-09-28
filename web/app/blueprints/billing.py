@@ -33,6 +33,13 @@ logger = logging.getLogger(__name__)
 @bp.get("/subscribe")
 def subscribe():
     """Pricing page — CTA starts Checkout when Stripe is configured."""
+    if (
+        request.args.get("checkout") == "1"
+        and current_user.is_authenticated
+        and current_user.subscription_status != "active"
+        and stripe_configured()
+    ):
+        return create_checkout_session_route()
     return render_template(
         "marketing/subscribe.html",
         stripe_ready=checkout_ready() and stripe_configured(),

@@ -1,14 +1,13 @@
 {% extends "marketing/base.html" %}
 {% block title %}Pricing/Subscribe — {{ brand_name }} HVAC psychrometric, duct &amp; pipe calculators{% endblock %}
-{% block meta_description %}{{ brand_name }} pricing: 14-day free trial of HVAC calculators (psychrometrics, duct sizing, pipe sizing), then £4.50/month. Subscribe anytime during trial. Tax at checkout via Stripe.{% endblock %}
+{% block meta_description %}{{ brand_name }} pricing: 14-day free trial of HVAC calculators (psychrometrics, duct sizing, pipe sizing), then £4.50/month. Start a trial or subscribe now.{% endblock %}
 {% block content %}
 <section class="pricing-hero">
   <h1>Pricing/Subscribe</h1>
   <p class="coming-lead">
     Start with a 14-day free trial of the full HVAC calculator suite —
-    psychrometric, duct sizing, and pipe sizing tools included. Subscribe
-    anytime during the trial for £4.50/month. Tax is calculated at checkout
-    for your location (Stripe Managed Payments).
+    psychrometric, duct sizing, and pipe sizing tools included. Or subscribe
+    now for £4.50/month.
   </p>
 </section>
 
@@ -43,9 +42,14 @@
         You can subscribe at any time during your trial — you’ll complete payment on Stripe’s secure checkout.
       </p>
     {% elif stripe_ready and registration_open %}
-      <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
+      <div class="pricing-actions">
+        <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
+        <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for('billing.subscribe', checkout=1)) }}">Subscribe now</a>
+      </div>
       <p class="pricing-note">
-        Create an account for your 14-day trial. You can subscribe from this page whenever you’re ready.
+        Start free trial creates an account and opens the toolkit for 14 days.
+        Subscribe now signs you in, then takes you to payment for £4.50/month.
+        No account yet? Use Create one on the login page.
       </p>
     {% elif stripe_ready %}
       <a class="btn-accent" href="{{ url_for('auth.login', next=url_for('billing.subscribe')) }}">Log in to subscribe</a>

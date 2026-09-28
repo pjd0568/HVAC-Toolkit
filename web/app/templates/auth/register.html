@@ -7,6 +7,7 @@
     Sign up to open the toolkit. New accounts get a 14-day free trial.
   </p>
   <form method="post" action="{{ url_for('auth.register_post') }}" class="auth-form">
+    <input type="hidden" name="next" value="{{ next or '' }}">
     <label>
       Email
       <input type="email" name="email" required autocomplete="username" autofocus>
