@@ -2193,6 +2193,7 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
   font: inherit; font-size: 14px; background: white; color: var(--ink);
 }
 .contact-form textarea { resize: vertical; min-height: 140px; }
+.contact-form .cf-turnstile { margin: 0; }
 .contact-form .btn-accent { justify-self: start; margin-top: 4px; }
 .contact-aside {
   padding: 16px 18px; background: var(--panel);

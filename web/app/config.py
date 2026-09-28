@@ -146,7 +146,14 @@ class Config:
         "STRIPE_MANAGED_PAYMENTS", "true"
     ).lower() in ("1", "true", "yes", "on")
 
-    # Cloudflare Turnstile on /register (both keys required to enforce).
+    # Cloudflare Turnstile on /register and /contact (both keys required to enforce).
     # https://dash.cloudflare.com/ → Turnstile → Add widget
     TURNSTILE_SITE_KEY = os.environ.get("TURNSTILE_SITE_KEY", "")
     TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
+
+    # Contact-form abuse limits. Shared across gunicorn workers via a lock file.
+    # Empty path uses the system temp dir (one file per container).
+    CONTACT_GUARD_PATH = os.environ.get("CONTACT_GUARD_PATH", "")
+    CONTACT_IP_MAX = int(os.environ.get("CONTACT_IP_MAX", "3"))
+    CONTACT_IP_WINDOW_SEC = int(os.environ.get("CONTACT_IP_WINDOW_SEC", "3600"))
+    CONTACT_BODY_WINDOW_SEC = int(os.environ.get("CONTACT_BODY_WINDOW_SEC", "86400"))

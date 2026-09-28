@@ -46,6 +46,9 @@
       <textarea name="message" required rows="8" minlength="5" maxlength="8000"
                 placeholder="Include enough detail for us to help — steps to reproduce for bugs, or the tool and inputs involved.">{{ form.message or '' }}</textarea>
     </label>
+    {% if turnstile_site_key %}
+    <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="light"></div>
+    {% endif %}
     <button type="submit" class="btn-accent" id="contact-submit">Send message</button>
     <p class="muted" id="contact-sending" hidden style="margin:8px 0 0;font-size:13px;">
       Sending… this can take a few seconds.
@@ -70,6 +73,9 @@
   </aside>
 </section>
 
+{% if turnstile_site_key %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}
 <script>
 (function () {
   var form = document.getElementById("contact-form");
