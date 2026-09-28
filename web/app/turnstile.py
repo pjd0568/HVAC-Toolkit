@@ -1,8 +1,9 @@
-"""Cloudflare Turnstile helpers for registration bot protection.
+"""Cloudflare Turnstile helpers for registration and contact bot protection.
 
 When ``TURNSTILE_SITE_KEY`` and ``TURNSTILE_SECRET_KEY`` are both set, the
-register form shows the widget and POSTs must pass siteverify. When unset
-(local/dev), verification is skipped so signup still works without Cloudflare.
+register and contact forms show the widget and POSTs must pass siteverify.
+When unset (local/dev), verification is skipped so those forms still work
+without Cloudflare.
 """
 
 from __future__ import annotations

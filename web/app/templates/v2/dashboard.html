@@ -3,7 +3,25 @@
 {% block content %}
 
 <div class="v2-greeting">Welcome</div>
-<div class="v2-greeting-sub">Full suite of design tools for HVAC professionals</div>
+<div class="v2-greeting-sub v2-home-intro">
+  <p>
+    HVAC-calcs is a browser-based toolkit for day-to-day HVAC design and site work —
+    psychrometrics, air and water distribution, refrigeration diagnostics, and reference
+    utilities. Calculations run from clear engineering methods (see Methodology); SI and
+    imperial units switch anywhere in the app.
+  </p>
+  <p>
+    Suites keep each tool’s inputs in this browser tab so you can jump between related
+    calculators without starting again. Add the site to your phone home screen for a
+    quick site-day launcher.
+  </p>
+  <p>
+    More modules are on the roadmap — room loads, grille throw, expansion vessels,
+    buffer tanks, fresh-air / CO₂ modelling, acoustics, and further refrigeration tools.
+    If something is missing for your workflow, request it on the
+    <a href="{{ url_for('pages.contact') }}">Contact us</a> page.
+  </p>
+</div>
 
 {% if access.tier != 'pro' %}
 <div class="v2-subscribe-banner">
@@ -17,71 +35,121 @@
 
 <div class="v2-section-label">Design suites</div>
 
-<article class="v2-card">
-  <h2>Psychrometrics</h2>
-  <p>States, mixing, coils, desiccant, heat &amp; humidify, evaporative cooling, and AHU design.</p>
-  <ul class="v2-card-links">
-    <li><a href="{{ url_for('v2.psychro_picker') }}">Open psychrometrics</a></li>
-  </ul>
-</article>
+<div class="v2-home-grid">
 
-<article class="v2-card">
-  <h2>Air distribution</h2>
-  <p>Duct sizing by shape, plus a separate index-leg pressure-drop builder.</p>
-  <ul class="v2-card-links">
-    <li><a href="{{ url_for('v2.air_picker') }}">Open air tools</a></li>
-  </ul>
-</article>
+  <article class="v2-card v2-home-tile">
+    <h2>Psychrometrics</h2>
+    <p>Air states on the chart, mixing, coils, desiccant and steam humidification, evaporative cooling, and stepped AHU design. Fresh-air / CO₂ modelling is coming next in this suite.</p>
+    <ul class="v2-card-links">
+      <li><a href="{{ url_for('v2.interactive_chart') }}">Multi-point chart</a></li>
+      <li><a href="{{ url_for('v2.single_point') }}">Single point</a></li>
+      <li><a href="{{ url_for('v2.mixed_air') }}">Mixed air</a></li>
+      <li><a href="{{ url_for('v2.cooling_coil') }}">Cooling coil</a></li>
+      <li><a href="{{ url_for('v2.desiccant') }}">Desiccant</a></li>
+      <li><a href="{{ url_for('v2.heat_humidify') }}">Heat &amp; humidify</a></li>
+      <li><a href="{{ url_for('v2.adiabatic_cool') }}">Adiabatic cool</a></li>
+      <li><a href="{{ url_for('v2.ahu') }}">AHU design</a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}">Fresh air &amp; CO₂ <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.psychro_picker') }}">All psychro tools</a></li>
+    </ul>
+  </article>
 
-<article class="v2-card">
-  <h2>Hydronics</h2>
-  <p>Pipe DN / flow sizing, plus a separate system pressure-drop builder with pump head.</p>
-  <ul class="v2-card-links">
-    <li><a href="{{ url_for('v2.water_picker') }}">Open hydronics tools</a></li>
-  </ul>
-</article>
+  <article class="v2-card v2-home-tile">
+    <h2>Air distribution</h2>
+    <p>Size circular, rectangular, and flat-oval duct by velocity or friction rate, then build an index-leg pressure-drop path. Room load and grille throw are planned for this suite.</p>
+    <ul class="v2-card-links">
+      {% if access.can('duct.sizer') %}
+      <li><a href="{{ url_for('v2.duct') }}">Duct sizing</a></li>
+      {% endif %}
+      {% if access.can('duct.index_leg') %}
+      <li><a href="{{ url_for('v2.duct_index_leg') }}">Index leg — ΔP</a></li>
+      {% endif %}
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}">Room load <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}">Grille throw <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.air_picker') }}">All air tools</a></li>
+    </ul>
+  </article>
 
-<article class="v2-card">
-  <h2>Refrigeration</h2>
-  <p>Sub-critical DX — PT table, pipe sizing, and upcoming site diagnostics / charge tools.</p>
-  <ul class="v2-card-links">
-    <li><a href="{{ url_for('v2.refrig_picker') }}">Open refrigeration tools</a></li>
-    {% if access.can('refrig.pipe_sizer') %}
-    <li><a href="{{ url_for('v2.refrig_pipe_sizer') }}">DX pipe sizing</a></li>
-    {% endif %}
-    {% if access.can('refrig.pt_table') %}
-    <li><a href="{{ url_for('v2.refrig_pt_table') }}">PT table</a></li>
-    {% endif %}
-  </ul>
-</article>
+  <article class="v2-card v2-home-tile">
+    <h2>Hydronics</h2>
+    <p>Catalogue DN / flow sizing with design-limit traffic lights, plus a circuit pressure-drop schedule and pump head (open or pressurised). Expansion vessel and buffer tank sizing are on the roadmap.</p>
+    <ul class="v2-card-links">
+      {% if access.can('pipe.sizer') %}
+      <li><a href="{{ url_for('v2.pipe') }}">Pipe sizing</a></li>
+      {% endif %}
+      {% if access.can('pipe.system') %}
+      <li><a href="{{ url_for('v2.pipe_system') }}">System — pressure drop</a></li>
+      {% endif %}
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='expansion-vessel') }}">Expansion vessel <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='buffer-tank') }}">Buffer tank <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.water_picker') }}">All hydronics tools</a></li>
+    </ul>
+  </article>
 
-<article class="v2-card">
-  <h2>Acoustics</h2>
-  <p>Duct path NR and outdoor barrier screening — coming soon.</p>
-  <ul class="v2-card-links">
-    <li><a href="{{ url_for('v2.acoustics_picker') }}">Open acoustics tools</a></li>
-  </ul>
-</article>
+  <article class="v2-card v2-home-tile">
+    <h2>Refrigeration</h2>
+    <p>Sub-critical DX tools: PT tables, velocity-based ACR pipe sizing, and superheat / subcooling diagnostics. A charge calculator is next; R-744 and P–h charts are planned later.</p>
+    <ul class="v2-card-links">
+      {% if access.can('refrig.pt_table') %}
+      <li><a href="{{ url_for('v2.refrig_pt_table') }}">PT table</a></li>
+      {% endif %}
+      {% if access.can('refrig.pipe_sizer') %}
+      <li><a href="{{ url_for('v2.refrig_pipe_sizer') }}">DX pipe sizing</a></li>
+      {% endif %}
+      {% if access.can('refrig.diagnostics') %}
+      <li><a href="{{ url_for('v2.refrig_diagnostics') }}">Superheat / subcooling</a></li>
+      {% endif %}
+      <li><a href="{{ url_for('v2.refrig_charge') }}">Charge calculator <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.refrig_picker') }}">All refrigeration tools</a></li>
+    </ul>
+  </article>
 
-<article class="v2-card">
-  <h2>Utilities</h2>
-  <p>Unit conversion across SI and imperial.</p>
-  <ul class="v2-card-links">
-    <li><a href="{{ url_for('v2.converter') }}">Unit converter</a></li>
-  </ul>
-</article>
+  <article class="v2-card v2-home-tile">
+    <h2>Acoustics</h2>
+    <p>Coming soon — duct path attenuation to room NR, and outdoor barrier screening (Maekawa). Open the suite to see planned inputs.</p>
+    <ul class="v2-card-links">
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='duct-nr') }}">Duct NR <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.coming_soon_tool', slug='barrier') }}">Acoustic barrier <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.acoustics_picker') }}">All acoustics tools</a></li>
+    </ul>
+  </article>
 
-<div class="v2-section-label">Reference</div>
-<article class="v2-card">
-  <ul class="v2-card-links">
-    {% if access.tier != 'pro' %}
-    <li><a href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a></li>
-    {% endif %}
-    <li><a href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">Add to mobile homescreen</a></li>
-    <li><a href="{{ url_for('guides.index') }}">Design guides</a></li>
-    <li><a href="{{ url_for('methodology.index') }}">Methodology &amp; limitations</a></li>
-    <li><a href="{{ url_for('help.index') }}">Help</a></li>
-  </ul>
-</article>
+  <article class="v2-card v2-home-tile">
+    <h2>Utilities</h2>
+    <p>Quick SI ↔ imperial conversion for common HVAC quantities while you work in other tools.</p>
+    <ul class="v2-card-links">
+      <li><a href="{{ url_for('v2.converter') }}">Unit converter</a></li>
+      <li><a href="{{ url_for('v2.more') }}">More / account</a></li>
+    </ul>
+  </article>
+
+</div>
+
+<div class="v2-section-label">Reference &amp; support</div>
+
+<div class="v2-home-grid">
+  <article class="v2-card v2-home-tile">
+    <h2>Learn &amp; verify</h2>
+    <p>Design notes, calculation methods, and how to install the app on a phone.</p>
+    <ul class="v2-card-links">
+      <li><a href="{{ url_for('guides.index') }}">Design guides</a></li>
+      <li><a href="{{ url_for('methodology.index') }}">Methodology &amp; limitations</a></li>
+      <li><a href="{{ url_for('help.index') }}">Help</a></li>
+      <li><a href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">Add to mobile homescreen</a></li>
+    </ul>
+  </article>
+
+  <article class="v2-card v2-home-tile">
+    <h2>Account &amp; feedback</h2>
+    <p>Subscribe when ready, or tell us what to build next — feature requests go through Contact us.</p>
+    <ul class="v2-card-links">
+      {% if access.tier != 'pro' %}
+      <li><a href="{{ url_for('billing.subscribe') }}">Pricing / Subscribe</a></li>
+      {% endif %}
+      <li><a href="{{ url_for('pages.contact') }}">Contact us</a></li>
+      <li><a href="{{ url_for('v2.more') }}">More menu</a></li>
+    </ul>
+  </article>
+</div>
 
 {% endblock %}

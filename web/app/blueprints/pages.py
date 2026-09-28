@@ -13,7 +13,9 @@ from flask import (
 )
 from flask_login import current_user
 
+from app.contact_guard import client_ip, release, reserve
 from app.mail import mail_configured, send_email
+from app.turnstile import turnstile_configured, turnstile_site_key, verify_turnstile_response
 
 bp = Blueprint("pages", __name__)
 
@@ -79,17 +81,25 @@ def privacy():
     )
 
 
+def _render_contact(subjects, form, errors, status: int = 200):
+    rendered = render_template(
+        "marketing/contact.html",
+        subjects=subjects,
+        contact_email=current_app.config["CONTACT_EMAIL"],
+        form=form,
+        errors=errors,
+        turnstile_site_key=turnstile_site_key() if turnstile_configured() else "",
+    )
+    if status == 200:
+        return rendered
+    return rendered, status
+
+
 @bp.route("/contact", methods=["GET", "POST"])
 def contact():
     subjects = CONTACT_SUBJECTS
     if request.method == "GET":
-        return render_template(
-            "marketing/contact.html",
-            subjects=subjects,
-            contact_email=current_app.config["CONTACT_EMAIL"],
-            form={},
-            errors=[],
-        )
+        return _render_contact(subjects, {}, [])
 
     name = (request.form.get("name") or "").strip()
     email = (request.form.get("email") or "").strip()
@@ -109,15 +119,39 @@ def contact():
         errors.append("Please enter a longer message (at least 5 characters).")
     if len(message) > 8000:
         errors.append("Message is too long.")
+    if turnstile_configured() and not verify_turnstile_response(
+        request.form.get("cf-turnstile-response")
+    ):
+        errors.append("Please complete the human check and try again.")
 
     if errors:
-        return render_template(
-            "marketing/contact.html",
-            subjects=subjects,
-            contact_email=current_app.config["CONTACT_EMAIL"],
-            form=form,
-            errors=errors,
-        ), 400
+        return _render_contact(subjects, form, errors, 400)
+
+    to_addr = current_app.config["CONTACT_EMAIL"]
+    ip = client_ip()
+    reason, stamp = reserve(ip, message)
+    if reason == "rate":
+        current_app.logger.info("contact rate-limited ip=%s", ip)
+        return _render_contact(
+            subjects,
+            form,
+            [
+                "Too many messages from this connection. Please wait an hour, "
+                f"or email us directly at {to_addr}."
+            ],
+            429,
+        )
+    if reason == "duplicate":
+        current_app.logger.info("contact duplicate dropped ip=%s", ip)
+        return _render_contact(
+            subjects,
+            form,
+            [
+                "We already received this message recently. If you need to add "
+                f"something, change the wording or email us directly at {to_addr}."
+            ],
+            400,
+        )
 
     prefix, label = topic_map[topic]
     subject = f"{prefix} {name} via {current_app.config['BRAND_NAME']}"
@@ -130,7 +164,6 @@ def contact():
     body_lines.extend(["", message, "", f"— Sent from {request.host_url.rstrip('/')}/contact"])
     body = "\n".join(body_lines)
 
-    to_addr = current_app.config["CONTACT_EMAIL"]
     if mail_configured():
         ok = send_email(to=to_addr, subject=subject, body=body, reply_to=email)
         if ok:
@@ -139,16 +172,17 @@ def contact():
                 "success",
             )
             return redirect(url_for("pages.contact"))
-        return render_template(
-            "marketing/contact.html",
-            subjects=subjects,
-            contact_email=to_addr,
-            form=form,
-            errors=[
+        if stamp is not None:
+            release(ip, message, stamp)
+        return _render_contact(
+            subjects,
+            form,
+            [
                 f"We couldn’t send your message just now. Please email us directly "
                 f"at {to_addr} (use subject starting with {prefix})."
             ],
-        ), 503
+            503,
+        )
 
     # No SMTP yet: keep the form usable by handing off to the user’s mail client.
     from urllib.parse import quote

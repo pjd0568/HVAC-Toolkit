@@ -731,6 +731,48 @@ a:hover { color: var(--v2-green-ink); }
   font-size: 14.5px;
   max-width: 36em;
 }
+.v2-home-intro {
+  max-width: 48em;
+  line-height: 1.55;
+}
+.v2-home-intro p {
+  margin: 0 0 10px;
+}
+.v2-home-intro p:last-child { margin-bottom: 0; }
+.v2-home-intro a {
+  font-weight: 600;
+  color: var(--v2-green-ink);
+}
+.v2-home-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+@media (min-width: 720px) {
+  .v2-home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+.v2-home-tile {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  align-self: start;
+}
+.v2-home-tile .v2-card-links a {
+  padding: 9px 12px;
+  min-height: 40px;
+  font-size: 13px;
+}
+.v2-card-links a .soon {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--v2-muted);
+  margin-left: 6px;
+}
 .v2-section-label {
   font-size: 11px;
   text-transform: uppercase;

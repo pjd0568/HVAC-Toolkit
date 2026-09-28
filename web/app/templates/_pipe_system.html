@@ -166,7 +166,7 @@
 
     <div class="pipe-sys-section-head">
       <div class="pipe-sys-section-label">Components — pressure drop</div>
-      {% if U.system == 'SI' %}
+      {% if system.velocity_pressure_sym == 'Pa' %}
       <div class="pipe-pd-unit-toggle" role="group" aria-label="Pressure drop units">
         <button type="button" class="pipe-pd-unit-btn on" data-pd-unit="Pa" id="sys-pd-unit-pa">Pa</button>
         <button type="button" class="pipe-pd-unit-btn" data-pd-unit="kPa" id="sys-pd-unit-kpa">kPa</button>
