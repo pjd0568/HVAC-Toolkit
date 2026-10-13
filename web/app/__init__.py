@@ -105,6 +105,7 @@ def create_app(config_class: type = Config) -> Flask:
         except Exception:
             app.logger.exception("Database migration failed at startup")
 
+    from app.blueprints.analytics_admin import bp as analytics_admin_bp
     from app.blueprints.auth import bp as auth_bp
     from app.blueprints.billing import bp as billing_bp
     from app.blueprints.converter import bp as converter_bp
@@ -123,6 +124,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.register_blueprint(main_bp)
     app.register_blueprint(pages_bp)
+    app.register_blueprint(analytics_admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(billing_bp)
     app.register_blueprint(weather_bp, url_prefix="/weather")
@@ -145,6 +147,12 @@ def create_app(config_class: type = Config) -> Flask:
         if current_user.is_authenticated:
             return None
         return redirect(url_for("auth.login", next=request.full_path))
+
+    @app.before_request
+    def capture_analytics_campaign():
+        from app.analytics import capture_campaign
+
+        capture_campaign()
 
     @app.context_processor
     def inject_brand():
@@ -220,10 +228,17 @@ def create_app(config_class: type = Config) -> Flask:
                 return {"label": "Try Pro free", "href": href}
             return {"label": "Explore Pro", "href": url_for("billing.subscribe")}
 
+        from app.analytics import resolve_tool, tool_for_endpoint
+
+        def analytics_tool(value: str) -> str:
+            return resolve_tool(value) or ""
+
         return {
             "public_embed": bool(getattr(g, "public_embed", False)),
             "public_landing": landing,
             "pro_cta": pro_cta,
+            "analytics_tool": analytics_tool,
+            "page_tool": tool_for_endpoint(request.endpoint),
         }
 
     @app.context_processor
@@ -282,6 +297,22 @@ def create_app(config_class: type = Config) -> Flask:
             return f"{flask_request.path}?{urlencode(args)}"
 
         return {"paste_url": paste_url}
+
+    @app.cli.command("analytics-weekly-report")
+    def analytics_weekly_report_command():
+        """Send the previous London week once, then prune old analytics events."""
+        from app.analytics_report import prune_analytics_events, send_weekly_analytics_report
+
+        result = send_weekly_analytics_report()
+        removed = prune_analytics_events()
+        print(f"weekly={result} pruned={removed}")
+
+    @app.cli.command("analytics-prune")
+    def analytics_prune_command():
+        """Delete analytics events older than ANALYTICS_RETENTION_DAYS."""
+        from app.analytics_report import prune_analytics_events
+
+        print(f"pruned={prune_analytics_events()}")
 
     @app.cli.command("ensure-stripe-product")
     def ensure_stripe_product_command():

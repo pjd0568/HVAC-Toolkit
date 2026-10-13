@@ -86,6 +86,9 @@ def login_post():
         return render_template("auth/login.html", next=request.form.get("next", "")), 401
 
     login_user(user, remember=bool(request.form.get("remember")))
+    from app.analytics import track
+
+    track("login", route="/login")
     return redirect(nxt)
 
 

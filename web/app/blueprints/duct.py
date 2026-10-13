@@ -901,6 +901,10 @@ def api_state():
     re-derives the leg."""
     U = current_view()
     fields, circular, rectangular, flat_oval, error = _compute_state(request.args, U)
+    if request.args.get("intent") == "calculate" and not error:
+        from app.analytics import note_calculator_complete
+
+        note_calculator_complete("duct_sizing")
     return jsonify({
         "fields": fields,
         "circular": circular,
@@ -917,6 +921,14 @@ def api_leg_state():
     never touches or recomputes the 3-column state above it."""
     U = current_view()
     leg = _compute_leg_state(request.args, U)
+    try:
+        row_count = int(request.args.get("leg_row_count") or "0")
+    except (TypeError, ValueError):
+        row_count = 0
+    if row_count > 0:
+        from app.analytics import note_pro_tool_use
+
+        note_pro_tool_use("duct_index_leg")
     return jsonify(leg)
 
 

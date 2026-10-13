@@ -92,6 +92,10 @@ def converter():
             for g in cv.GROUP_ORDER
         ]
         grouped = [row for row in grouped if row[2]]
+    if request.args.get("value") and result is not None and not error:
+        from app.analytics import note_calculator_complete
+
+        note_calculator_complete("unit_converter")
     unit_groups = [
         (
             {"Metric": "Metric (SI)", "Imperial": "Imperial / US", "Other": "Other", "Common": "Common"}.get(g, g),
@@ -134,6 +138,10 @@ def refrig_picker():
 @require_module("refrig.pt_table")
 def refrig_pt_table():
     state = refrig_mod._compute_pt(request.args)
+    if request.args and state.get("result") and not state.get("error"):
+        from app.analytics import note_calculator_complete
+
+        note_calculator_complete("refrigerant_pt")
     return render_template(
         "v2/refrig_pt_table.html",
         active="refrig_pt",
@@ -146,6 +154,10 @@ def refrig_pt_table():
 @require_module("refrig.pipe_sizer")
 def refrig_pipe_sizer():
     state = refrig_mod._compute_pipe(request.args)
+    if request.args and state.get("result") and not state.get("error"):
+        from app.analytics import note_pro_tool_use
+
+        note_pro_tool_use("dx_pipe_sizing")
     return render_template(
         "v2/refrig_pipe_sizer.html",
         active="refrig_pipe",
@@ -158,6 +170,10 @@ def refrig_pipe_sizer():
 @require_module("refrig.diagnostics")
 def refrig_diagnostics():
     state = refrig_mod._compute_diagnostics(request.args)
+    if request.args and state.get("result") and not state.get("error"):
+        from app.analytics import note_calculator_complete
+
+        note_calculator_complete("superheat_subcooling")
     return render_template(
         "v2/refrig_diagnostics.html",
         active="refrig_diagnostics",
@@ -258,6 +274,10 @@ def duct_index_leg():
 def pipe():
     U = current_view()
     state = pipe_mod._compute_state(request.args, U)
+    if request.args and not state.get("error"):
+        from app.analytics import note_calculator_complete
+
+        note_calculator_complete("pipe_sizing")
     report_fields = pipe_mod._report_fields_for_sizer(state["fields"]) if not state["error"] else None
     return render_template(
         "v2/pipe.html",
@@ -360,6 +380,9 @@ def single_point():
                 else:
                     psy_mod._set_saved_points([entry])
             saved = psy_mod._get_saved_points()
+            from app.analytics import note_calculator_complete
+
+            note_calculator_complete("psychrometric_single")
         except ValueError as exc:
             error = str(exc)
             try:
@@ -408,6 +431,7 @@ def _psychro_simple_post(
     paste_prefixes,
     run_fn,
     unpack,
+    tool: str | None = None,
 ):
     """Shared GET/POST pattern for single-form psychro process tools."""
     U = current_view()
@@ -429,6 +453,10 @@ def _psychro_simple_post(
         try:
             packed = run_fn(form, U)
             pressure, points, segments, result, extra = unpack(packed)
+            if tool and result is not None:
+                from app.analytics import note_pro_tool_use
+
+                note_pro_tool_use(tool)
         except ValueError as exc:
             error = str(exc)
             try:
@@ -452,6 +480,7 @@ def mixed_air():
         ("a", "b"),
         psy_mod._run_mixed_air,
         unpack,
+        tool="mixed_air",
     )
     return render_template(
         "v2/mixed_air.html",
@@ -480,6 +509,7 @@ def cooling_coil():
         ("on",),
         psy_mod._run_cooling_coil,
         unpack,
+        tool="cooling_coil",
     )
     return render_template(
         "v2/coil.html",
@@ -509,6 +539,7 @@ def desiccant():
         ("on",),
         psy_mod._run_desiccant,
         unpack,
+        tool="desiccant",
     )
     return render_template(
         "v2/desiccant.html",
@@ -538,6 +569,7 @@ def heat_humidify():
         ("on", "off"),
         psy_mod._run_heat_humidify,
         unpack,
+        tool="heat_humidify",
     )
     return render_template(
         "v2/heat_humidify.html",
@@ -567,6 +599,7 @@ def adiabatic_cool():
         ("on",),
         psy_mod._run_adiabatic_cool,
         unpack,
+        tool="adiabatic",
     )
     return render_template(
         "v2/adiabatic_cool.html",
@@ -612,6 +645,10 @@ def ahu():
         try:
             pressure, m_da, result, pts, segs, oa_frac = psy_mod._run_ahu(form, U)
             initial_step = 6
+            if result is not None:
+                from app.analytics import note_pro_tool_use
+
+                note_pro_tool_use("ahu_design")
         except ValueError as exc:
             result = None
             error = str(exc)

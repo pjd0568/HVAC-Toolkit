@@ -243,6 +243,7 @@ def robots_txt():
         "Disallow: /register",
         "Disallow: /preferences/",
         "Disallow: /create-checkout-session",
+        "Disallow: /admin/",
         "",
         f"Sitemap: {base}/sitemap.xml",
         "",

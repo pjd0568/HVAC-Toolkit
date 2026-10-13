@@ -71,16 +71,17 @@ def send_email(
     subject: str,
     body: str,
     reply_to: str | None = None,
+    html: str | None = None,
 ) -> bool:
-    """Send a plain-text email. Returns True on success."""
+    """Send an email. Returns True on success. ``html`` is optional."""
     backend = mail_backend()
     if backend == "none":
         log.warning("Mail not configured; skipped send: %s", subject)
         return False
 
     if backend == "resend":
-        return _send_via_resend(to=to, subject=subject, body=body, reply_to=reply_to)
-    return _send_via_smtp(to=to, subject=subject, body=body, reply_to=reply_to)
+        return _send_via_resend(to=to, subject=subject, body=body, reply_to=reply_to, html=html)
+    return _send_via_smtp(to=to, subject=subject, body=body, reply_to=reply_to, html=html)
 
 
 def _send_via_resend(
@@ -89,6 +90,7 @@ def _send_via_resend(
     subject: str,
     body: str,
     reply_to: str | None,
+    html: str | None = None,
 ) -> bool:
     api_key = _resend_api_key()
     payload: dict = {
@@ -97,6 +99,8 @@ def _send_via_resend(
         "subject": subject,
         "text": body,
     }
+    if html:
+        payload["html"] = html
     if reply_to:
         payload["reply_to"] = reply_to
 
@@ -131,6 +135,7 @@ def _send_via_smtp(
     subject: str,
     body: str,
     reply_to: str | None,
+    html: str | None = None,
 ) -> bool:
     cfg = current_app.config
     msg = EmailMessage()
@@ -140,6 +145,8 @@ def _send_via_smtp(
     if reply_to:
         msg["Reply-To"] = reply_to
     msg.set_content(body)
+    if html:
+        msg.add_alternative(html, subtype="html")
 
     host = (cfg["MAIL_SERVER"] or "").strip()
     port = int(cfg.get("MAIL_PORT") or 587)

@@ -1,0 +1,177 @@
+{% extends "marketing/base.html" %}
+{% block title %}Product Analytics — HVAC-CALCS{% endblock %}
+{% block content %}
+<article class="analytics-dash">
+  <header class="analytics-head">
+    <h1>Product Analytics</h1>
+    <p>{{ report.start.isoformat() }} to {{ report.end.isoformat() }}</p>
+  </header>
+
+  <nav class="analytics-ranges" aria-label="Date range">
+    <a href="{{ url_for('analytics_admin.dashboard', days=7) }}" {% if days == 7 %}aria-current="page"{% endif %}>7 days</a>
+    <a href="{{ url_for('analytics_admin.dashboard', days=30) }}" {% if days == 30 %}aria-current="page"{% endif %}>30 days</a>
+    <a href="{{ url_for('analytics_admin.dashboard', days=90) }}" {% if days == 90 %}aria-current="page"{% endif %}>90 days</a>
+    <form method="get" action="{{ url_for('analytics_admin.dashboard') }}">
+      <label>Custom <input type="date" name="start" value="{{ report.start.isoformat() }}" required></label>
+      <label>to <input type="date" name="end" value="{{ report.end.isoformat() }}" required></label>
+      <button type="submit" class="btn-ghost">Apply</button>
+    </form>
+  </nav>
+
+  <section class="analytics-kpis">
+    <article><span>Calculations completed</span><strong>{{ report.completions }}</strong></article>
+    <article><span>Pro CTA clicks</span><strong>{{ report.cta_clicks }}</strong></article>
+    <article><span>Registrations</span><strong>{{ report.registrations }}</strong></article>
+    <article><span>Pro tool uses</span><strong>{{ report.pro_uses }}</strong></article>
+    <article><span>Checkout starts</span><strong>{{ report.checkouts }}</strong></article>
+    <article><span>New paid subscriptions</span><strong>{{ report.subscriptions }}</strong></article>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Conversion funnel</h2>
+    <p class="analytics-note">Counts below the arrows are unique journeys where a session or account can be tied together. A percentage is omitted when that denominator is zero.</p>
+    <ol class="analytics-funnel">
+      <li><span>Free calculations completed</span><strong>{{ report.completions }}</strong><small>{{ report.unique_free_journeys }} journeys</small></li>
+      <li><span>Pro CTA clicked</span><strong>{{ report.cta_clicks }}</strong><small>{{ report.calc_to_cta or "—" }} of calculation journeys</small></li>
+      <li><span>Registration completed</span><strong>{{ report.registrations }}</strong><small>{{ report.cta_to_registration or "—" }} of CTA journeys</small></li>
+      <li><span>Pro tool used</span><strong>{{ report.pro_uses }}</strong><small>{{ report.registration_to_pro or "—" }} of new accounts</small></li>
+      <li><span>Checkout started</span><strong>{{ report.checkouts }}</strong><small>{{ report.pro_to_checkout or "—" }} of Pro-use journeys</small></li>
+      <li><span>Subscription active</span><strong>{{ report.subscriptions }}</strong><small>{{ report.checkout_to_paid or "—" }} of checkout journeys</small></li>
+    </ol>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Daily trend</h2>
+    <svg class="analytics-chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="Daily completions, registrations, Pro uses and subscriptions">
+      <polyline points="{{ chart.completions }}" fill="none" stroke="#00A99D" stroke-width="2"></polyline>
+      <polyline points="{{ chart.registrations }}" fill="none" stroke="#1A4F7A" stroke-width="2"></polyline>
+      <polyline points="{{ chart.pro_uses }}" fill="none" stroke="#0E1116" stroke-width="2"></polyline>
+      <polyline points="{{ chart.subscriptions }}" fill="none" stroke="#8A9A96" stroke-width="2"></polyline>
+    </svg>
+    <p class="analytics-legend"><i class="c1"></i> Completions <i class="c2"></i> Registrations <i class="c3"></i> Pro uses <i class="c4"></i> Subscriptions</p>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Calculator performance</h2>
+    <table class="analytics-table">
+      <thead><tr><th>Calculator</th><th>Starts</th><th>Completions</th><th>Completion rate</th><th>Pro clicks</th><th>Registrations</th></tr></thead>
+      <tbody>
+        {% for row in report.calculators %}
+        <tr>
+          <td>{{ row.tool }}</td><td>{{ row.starts }}</td><td>{{ row.completions }}</td>
+          <td>{{ row.completion_rate }}</td><td>{{ row.pro_clicks }}</td><td>{{ row.registrations }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No free-calculator events in this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Free → Pro upgrade paths</h2>
+    <table class="analytics-table">
+      <thead><tr><th>Free calculator</th><th>Target Pro tool</th><th>CTA views</th><th>CTA clicks</th><th>Registrations</th><th>Pro uses</th><th>Paid</th></tr></thead>
+      <tbody>
+        {% for row in report.paths %}
+        <tr>
+          <td>{{ row.source }}</td><td>{{ row.target }}</td><td>{{ row.views }}</td><td>{{ row.clicks }}</td>
+          <td>{{ row.registrations }}</td><td>{{ row.pro_uses }}</td><td>{{ row.paid }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">No free-to-Pro paths in this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Pro tool usage</h2>
+    <table class="analytics-table">
+      <thead><tr><th>Pro tool</th><th>Successful uses</th></tr></thead>
+      <tbody>
+        {% for name, count in report.pro_tools %}
+        <tr><td>{{ name }}</td><td>{{ count }}</td></tr>
+        {% else %}
+        <tr><td colspan="2">No successful Pro-tool uses in this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Unit system</h2>
+    <p>SI {{ report.units.SI }} · Imperial {{ report.units.IP }}</p>
+    <p class="analytics-note">This is the unit setting on completed calculations. It is not a country.</p>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Campaigns</h2>
+    <table class="analytics-table">
+      <thead><tr><th>Campaign</th><th>Source</th><th>Calculations</th><th>Pro clicks</th><th>Registrations</th><th>Pro uses</th><th>Paid</th></tr></thead>
+      <tbody>
+        {% for row in report.campaigns %}
+        <tr>
+          <td>{{ row.campaign }}</td><td>{{ row.source }}</td><td>{{ row.calculations }}</td>
+          <td>{{ row.pro_clicks }}</td><td>{{ row.registrations }}</td><td>{{ row.pro_uses }}</td><td>{{ row.paid }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">No campaign-attributed events in this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Report</h2>
+    <p class="analytics-note">Send Report Now emails this period ({{ report.start.isoformat() }} to {{ report.end.isoformat() }}) to the configured report address.</p>
+    <div class="analytics-actions">
+      <button type="button" class="btn-accent" id="copy-analytics-report">Copy AI Report</button>
+      <a class="btn-ghost" href="{{ url_for('analytics_admin.download', days=days, start=report.start.isoformat(), end=report.end.isoformat()) }}">Download Markdown</a>
+      <form method="post" action="{{ url_for('analytics_admin.send') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="start" value="{{ report.start.isoformat() }}">
+        <input type="hidden" name="end" value="{{ report.end.isoformat() }}">
+        {% if days %}<input type="hidden" name="days" value="{{ days }}">{% endif %}
+        <button type="submit" class="btn-ghost">Send Report Now</button>
+      </form>
+    </div>
+    <textarea id="analytics-markdown" class="analytics-markdown" readonly>{{ markdown }}</textarea>
+  </section>
+
+  <section class="analytics-panel">
+    <h2>Counting</h2>
+    <ul class="coming-list">
+      {% for note in report.notes %}
+      <li>{{ note }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="analytics-health">
+    <h2>Analytics health</h2>
+    <p>Events received today: {{ events_today }}</p>
+    <p>Last analytics event: {{ last_event_at.isoformat() if last_event_at else "none" }}</p>
+    <p>Last weekly report sent: {{ weekly.sent_at.isoformat() if weekly and weekly.sent_at else "none" }}</p>
+    <p>Weekly report status: {{ weekly.status if weekly else "not sent" }}</p>
+  </section>
+</article>
+<script>
+(function () {
+  var button = document.getElementById("copy-analytics-report");
+  var box = document.getElementById("analytics-markdown");
+  if (!button || !box) return;
+  button.addEventListener("click", function () {
+    var text = box.value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        button.textContent = "Copied";
+      }).catch(function () { box.focus(); box.select(); });
+      return;
+    }
+    box.focus();
+    box.select();
+  });
+})();
+</script>
+{% endblock %}

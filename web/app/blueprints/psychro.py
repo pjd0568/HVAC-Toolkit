@@ -1328,6 +1328,9 @@ def interactive_process():
                 "moisture_abs_kg_h": f"{abs(result.moisture_kg_h):.3f}",
             }
 
+        from app.analytics import note_pro_tool_use
+
+        note_pro_tool_use("interactive_chart")
         return jsonify({
             "ok": True,
             "from_letter": from_letter,

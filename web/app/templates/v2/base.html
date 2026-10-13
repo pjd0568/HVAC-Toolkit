@@ -205,7 +205,7 @@
   </div>
 </div>
 
-<main class="v2-main">
+<main class="v2-main" {% if page_tool %}data-calculator="{{ page_tool }}"{% endif %}>
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
   <div class="v2-flash-stack">

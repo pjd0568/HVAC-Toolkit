@@ -6,7 +6,7 @@ from functools import wraps
 
 from flask import jsonify, render_template, request
 
-from app.access import PUBLIC_MODULES, can_access, deny_upgrade_context, get_entitlement
+from app.access import can_access, deny_upgrade_context, get_entitlement
 
 
 def _deny(module_id: str):
@@ -38,16 +38,6 @@ def require_module(module_id: str):
         @wraps(view)
         def wrapped(*args, **kwargs):
             if can_access(module_id):
-                if (
-                    module_id not in PUBLIC_MODULES
-                    and request.method == "GET"
-                    and request.accept_mimetypes.accept_html
-                    and not request.path.endswith(".csv")
-                    and "/api/" not in request.path
-                ):
-                    from app.analytics import track
-
-                    track("pro_tool_use", calculator=module_id)
                 return view(*args, **kwargs)
             return _deny(module_id)
 

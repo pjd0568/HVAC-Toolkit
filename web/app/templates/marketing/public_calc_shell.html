@@ -35,7 +35,7 @@
     <button type="submit" name="system" value="IP" class="unit-pill {{ 'on' if units == 'IP' }}">IP</button>
   </form>
 
-  <div class="public-calc-surface v2-main" data-calculator="{{ public_landing.slug }}">
+  <div class="public-calc-surface v2-main" data-calculator="{{ analytics_tool(public_landing.slug) }}">
     {% block tool_body %}{% endblock %}
   </div>
   {% if self.calc_complete()|trim %}
@@ -43,10 +43,10 @@
   {% endif %}
 
   {% if public_landing.pro_next and not access.has_suite_access %}
-  <aside class="pro-next" data-pro-cta="{{ public_landing.slug }}">
+  <aside class="pro-next" data-pro-cta data-cta-source="{{ analytics_tool(public_landing.slug) }}" data-cta-target="{{ analytics_tool(public_landing.pro_endpoint) }}">
     <p>{{ public_landing.pro_next }}</p>
     {% set cta = pro_cta(url_for(public_landing.pro_endpoint) if public_landing.pro_endpoint else none) %}
-    <a class="btn-accent" data-pro-cta="{{ public_landing.slug }}" href="{{ cta.href }}">{{ cta.label }}</a>
+    <a class="btn-accent" href="{{ cta.href }}">{{ cta.label }}</a>
   </aside>
   {% endif %}
 

@@ -4,7 +4,7 @@
 {% block content %}
 <article class="legal-doc">
   <h1>Privacy Policy</h1>
-  <p class="legal-meta">Effective date: 26 July 2026 · Controller: {{ legal_entity }}</p>
+  <p class="legal-meta">Effective date: 13 October 2026 · Controller: {{ legal_entity }}</p>
 
   <p>
     This Privacy Policy explains how <strong>{{ legal_entity }}</strong> (“we”,
@@ -46,12 +46,21 @@
   <p>
     We use essential cookies and similar storage for signed-in sessions, the
     unit preference and security. These are required for the Service to work.
-    We also record first-party product events (page, calculator name, whether
-    you are signed in, access state, and SI or Imperial). Those events are sent
-    to our own server and written to operational logs. They do not include
-    calculation inputs or project names, and they do not set an analytics cookie.
-    We do not use advertising cookies or a third-party analytics service.
-    This description is not a statement that consent is unnecessary.
+    We also record limited first-party product-usage events so we can see which
+    calculators are used and whether people continue into Pro. Examples are a
+    successful calculator completion, a Pro-feature click, registration, and
+    an active subscription. The engineering values you type — flows, sizes,
+    temperatures, pressures and similar results — are not stored as product
+    analytics. Anonymous journeys use a random identifier in the existing
+    session. It is not an email address and not an IP address. If you have an
+    account, the same kind of event may be linked to that account’s internal
+    id. These events are kept for {{ config.ANALYTICS_RETENTION_DAYS }} days
+    and then deleted. They do not set a separate analytics cookie.
+    Site traffic and search performance may also be measured by our hosting
+    provider and by search-engine webmaster tools. That measurement is separate
+    from these product-usage events. We do not use advertising cookies.
+    This description is not a statement that consent is unnecessary, and it is
+    not a claim that the Service is compliant merely because the events are limited.
   </p>
 
   <h2>5. Sharing</h2>
@@ -81,6 +90,7 @@
     <li>Support emails — typically up to 24 months, unless needed longer for an ongoing matter.</li>
     <li>Billing records — as required for tax and accounting (often six years in the UK).</li>
     <li>Security logs — for a limited period appropriate to detecting abuse.</li>
+    <li>Product-usage events — {{ config.ANALYTICS_RETENTION_DAYS }} days, then deleted. This does not delete your account or billing records.</li>
   </ul>
 
   <h2>8. Security</h2>

@@ -373,6 +373,7 @@
     if (overrides) {
       Object.keys(overrides).forEach(function (k) { params.set(k, overrides[k]); });
     }
+    if (opts && opts.intent) params.set("intent", opts.intent);
     if (!quiet) setLoading(true);
     return fetch(API_STATE_URL + "?" + params.toString(), { headers: { "Accept": "application/json" } })
       .then(function (resp) { return resp.json(); })
@@ -435,7 +436,7 @@
     }
     // A locked side's hidden field is left untouched -- buildBaseParams()
     // already picks up the persisted value, so no override is needed.
-    fetchState(overrides);
+    fetchState(overrides, { intent: "calculate" });
   }
 
   var debouncedLivePrimaryChange = debounce(onLivePrimaryChange, 250);

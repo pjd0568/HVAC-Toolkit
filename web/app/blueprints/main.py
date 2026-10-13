@@ -62,6 +62,9 @@ def psychro_teaser_calculate():
 
     payload = teaser_payload(state, U, prop=prop, val=val)
     payload["ok"] = True
+    from app.analytics import note_calculator_complete
+
+    note_calculator_complete("psychrometric_single")
     payload["defaults"] = {
         "pressure_sea_level": {
             "SI": P_ATM,
@@ -74,15 +77,12 @@ def psychro_teaser_calculate():
 @bp.post("/e")
 def track_event():
     """First-party product event. Drops unknown names and any calculation inputs."""
-    from app.analytics import track
+    from app.analytics import record_client_event
 
     data = request.get_json(silent=True) or {}
     event = data.get("event") if isinstance(data, dict) else None
     props = data.get("props") if isinstance(data, dict) else None
-    if isinstance(event, str) and isinstance(props, dict):
-        track(event, **{k: v for k, v in props.items() if isinstance(k, str)})
-    elif isinstance(event, str):
-        track(event)
+    record_client_event(event, props)
     return "", 204
 
 

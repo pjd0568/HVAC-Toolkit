@@ -3075,3 +3075,34 @@ a.tool-card:hover { border-color: var(--accent); }
   .marketing-header { flex-direction: column; align-items: flex-start; }
 }
 
+.analytics-dash { max-width: 980px; }
+.analytics-head h1 { margin-bottom: 4px; }
+.analytics-head p, .analytics-note { color: var(--muted); font-size: 13px; }
+.analytics-ranges { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin: 12px 0 18px; }
+.analytics-ranges a { color: var(--ink); text-decoration: none; border-bottom: 2px solid transparent; padding-bottom: 2px; }
+.analytics-ranges a[aria-current="page"] { border-color: var(--accent); }
+.analytics-ranges form { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.analytics-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.analytics-kpis article { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.analytics-kpis span { display: block; color: var(--muted); font-size: 12px; }
+.analytics-kpis strong { font-size: 28px; color: var(--ink); }
+.analytics-panel, .analytics-health { margin: 16px 0; }
+.analytics-funnel { list-style: none; padding: 0; margin: 0; }
+.analytics-funnel li { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.analytics-funnel small { grid-column: 1 / -1; color: var(--muted); }
+.analytics-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.analytics-table th, .analytics-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.analytics-chart { width: 100%; height: 160px; background: var(--panel); border-radius: 8px; }
+.analytics-legend { font-size: 12px; color: var(--muted); }
+.analytics-legend i { display: inline-block; width: 12px; height: 3px; margin: 0 4px 0 10px; vertical-align: middle; }
+.analytics-legend .c1 { background: #00A99D; }
+.analytics-legend .c2 { background: #1A4F7A; }
+.analytics-legend .c3 { background: #0E1116; }
+.analytics-legend .c4 { background: #8A9A96; }
+.analytics-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.analytics-markdown { width: 100%; min-height: 180px; margin-top: 10px; font-family: ui-monospace, monospace; font-size: 12px; }
+.analytics-health { color: var(--muted); font-size: 13px; }
+@media (max-width: 720px) {
+  .analytics-kpis { grid-template-columns: 1fr 1fr; }
+}
+

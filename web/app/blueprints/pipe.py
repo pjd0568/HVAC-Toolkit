@@ -840,6 +840,14 @@ def system_index():
 def api_system_state():
     U = current_view()
     system = _compute_system_state(request.args, U)
+    try:
+        row_count = int(request.args.get("sys_row_count") or "0")
+    except (TypeError, ValueError):
+        row_count = 0
+    if row_count > 0:
+        from app.analytics import note_pro_tool_use
+
+        note_pro_tool_use("pipe_system")
     return jsonify(system)
 
 

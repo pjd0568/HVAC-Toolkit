@@ -157,3 +157,13 @@ class Config:
     CONTACT_IP_MAX = int(os.environ.get("CONTACT_IP_MAX", "3"))
     CONTACT_IP_WINDOW_SEC = int(os.environ.get("CONTACT_IP_WINDOW_SEC", "3600"))
     CONTACT_BODY_WINDOW_SEC = int(os.environ.get("CONTACT_BODY_WINDOW_SEC", "86400"))
+
+    # Owner-only product analytics. Comma-separated emails. Not a subscriber role.
+    ANALYTICS_ADMIN_EMAILS = os.environ.get("ANALYTICS_ADMIN_EMAILS", "")
+    ANALYTICS_REPORT_EMAIL = os.environ.get("ANALYTICS_REPORT_EMAIL", "")
+    ANALYTICS_WEEKLY_REPORT_ENABLED = os.environ.get(
+        "ANALYTICS_WEEKLY_REPORT_ENABLED", "false"
+    ).lower() in ("1", "true", "yes", "on")
+    # Default is 365 days so year-on-year comparison is possible.
+    # Review this before treating production retention as final.
+    ANALYTICS_RETENTION_DAYS = int(os.environ.get("ANALYTICS_RETENTION_DAYS", "365") or "365")

@@ -20,7 +20,7 @@
     {% endif %}
     <div class="access-gate-actions">
       {% set cta = pro_cta(request.path) %}
-      <a class="btn-accent" data-pro-cta="{{ module_id }}" href="{{ cta.href }}">{{ cta.label }}</a>
+      <a class="btn-accent" data-pro-cta data-cta-source="{{ analytics_tool(module_id) }}" data-cta-target="{{ analytics_tool(module_id) }}" href="{{ cta.href }}">{{ cta.label }}</a>
       <a class="btn-ghost" href="{{ url_for('pages.tools_index') if not current_user.is_authenticated else url_for('v2.dashboard') }}">Back</a>
     </div>
   </div>
