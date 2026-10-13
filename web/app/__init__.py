@@ -6,12 +6,15 @@ import click
 from app.config import Config
 from app.extensions import db, login_manager, migrate
 
-# Paths that stay public while the calculator shell requires login.
+# Marketing and account endpoints that stay public.
 _PUBLIC_ENDPOINTS = frozenset(
     {
         "main.coming_soon",
         "main.health",
         "main.psychro_teaser_calculate",
+        "main.track_event",
+        "main.set_units",
+        "main.set_flow_unit_pref",
         "auth.login",
         "auth.login_post",
         "auth.register",
@@ -21,6 +24,8 @@ _PUBLIC_ENDPOINTS = frozenset(
         "pages.terms",
         "pages.privacy",
         "pages.contact",
+        "pages.about",
+        "pages.methods",
         "pages.robots_txt",
         "pages.sitemap_xml",
         "pages.bing_site_auth",
@@ -29,6 +34,37 @@ _PUBLIC_ENDPOINTS = frozenset(
         "static",
     }
 )
+
+# App shell pages that still require a signed-in user.
+_LOGIN_ONLY_ENDPOINTS = frozenset(
+    {
+        "main.dashboard",
+        "v2.dashboard",
+        "v2.more",
+        "v2.use_mobile",
+        "v2.use_classic",
+    }
+)
+
+# Calculators, guides and methodology render their own upgrade panel when gated.
+_ANON_APP_PREFIXES = (
+    "v2.",
+    "psychro.",
+    "duct.",
+    "pipe.",
+    "refrigeration.",
+    "converter.",
+    "guides.",
+    "methodology.",
+)
+
+
+def _endpoint_is_public(endpoint: str | None) -> bool:
+    if endpoint is None or endpoint == "static" or endpoint in _PUBLIC_ENDPOINTS:
+        return True
+    if endpoint in _LOGIN_ONLY_ENDPOINTS:
+        return False
+    return endpoint.startswith(_ANON_APP_PREFIXES)
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -104,7 +140,7 @@ def create_app(config_class: type = Config) -> Flask:
     @app.before_request
     def require_login_for_app():
         endpoint = request.endpoint
-        if endpoint is None or endpoint in _PUBLIC_ENDPOINTS:
+        if _endpoint_is_public(endpoint):
             return None
         if current_user.is_authenticated:
             return None
@@ -127,10 +163,11 @@ def create_app(config_class: type = Config) -> Flask:
             return f"{url_for('static', filename=filename)}?v={v}"
 
         base = app.config.get("PUBLIC_BASE_URL", "https://hvac-calcs.app").rstrip("/")
-        apple_path = url_for("static", filename=apple)
+        og_path = url_for("static", filename="images/product/mixed-air-desktop.png")
 
         return {
             "brand_name": app.config["BRAND_NAME"],
+            "brand_public": "HVAC-CALCS",
             "brand_tag": app.config["BRAND_TAG"],
             "registration_open": app.config.get("REGISTRATION_OPEN", False),
             "brand_mark_url": _brand_url(mark),
@@ -138,7 +175,7 @@ def create_app(config_class: type = Config) -> Flask:
             "brand_hero_url": _brand_url(hero),
             "brand_favicon_url": _brand_url(favicon),
             "brand_apple_touch_url": _brand_url(apple),
-            "brand_og_image_url": f"{base}{apple_path}",
+            "brand_og_image_url": f"{base}{og_path}",
             "public_base_url": base,
             "legal_entity": app.config.get("LEGAL_ENTITY", "PJD IT Systems"),
             "contact_email": app.config.get("CONTACT_EMAIL", "info@hvac-calcs.app"),
@@ -147,6 +184,46 @@ def create_app(config_class: type = Config) -> Flask:
                 "psychrometric, duct sizing, and pipe sizing tools. "
                 "SI and imperial. 14-day free trial."
             ),
+        }
+
+    @app.context_processor
+    def inject_public_tools():
+        from flask import g, request, url_for
+
+        from app.seo_tools import get_landing
+
+        endpoint_slugs = {
+            "v2.single_point": "psychrometric-calculator",
+            "v2.duct": "duct-sizing-calculator",
+            "v2.pipe": "chilled-water-pipe-sizing",
+            "v2.refrig_pt_table": "refrigerant-pt-table",
+            "v2.refrig_diagnostics": "superheat-subcooling",
+            "v2.converter": "unit-converter",
+        }
+        landing = getattr(g, "public_landing", None)
+        if landing is None:
+            slug = endpoint_slugs.get(request.endpoint or "")
+            landing = get_landing(slug) if slug else None
+
+        def pro_cta(next_path: str | None = None) -> dict[str, str]:
+            if current_user.is_authenticated:
+                return {
+                    "label": "Subscribe",
+                    "href": url_for("billing.subscribe"),
+                }
+            if app.config.get("REGISTRATION_OPEN"):
+                href = (
+                    url_for("auth.register", next=next_path)
+                    if next_path
+                    else url_for("auth.register")
+                )
+                return {"label": "Try Pro free", "href": href}
+            return {"label": "Explore Pro", "href": url_for("billing.subscribe")}
+
+        return {
+            "public_embed": bool(getattr(g, "public_embed", False)),
+            "public_landing": landing,
+            "pro_cta": pro_cta,
         }
 
     @app.context_processor
@@ -208,7 +285,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     @app.cli.command("ensure-stripe-product")
     def ensure_stripe_product_command():
-        """Create the £9.50/month Managed Payments product+price if needed.
+        """Create the monthly Managed Payments product+price if needed.
 
         Prints the Price ID to set as STRIPE_PRICE_ID. Requires STRIPE_SECRET_KEY
         from https://dashboard.stripe.com/test/apikeys

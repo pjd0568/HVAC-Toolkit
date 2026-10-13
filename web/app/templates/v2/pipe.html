@@ -1,8 +1,8 @@
-{% extends "v2/base.html" %}
+{% extends "marketing/public_calc_shell.html" if public_embed else "v2/base.html" %}
 {% from "_report_form.html" import report_form %}
 {% from "_pipe_duty.html" import pipe_duty_form, pipe_duty_scripts, pipe_sizer_help %}
 {% block page_title %}Pipe Sizing{% endblock %}
-{% block content %}
+{% block tool_body %}
 
 {% with tool='pipe' %}
 {% include "_hydronics_tool_nav.html" %}
@@ -138,11 +138,12 @@
   {% endif %}
 </div>
 
-{% if report_fields %}
+{% if report_fields and access.has_suite_access %}
 {{ report_form(url_for('pipe.report'), report_fields, panel_class='tile-water-border') }}
 {% endif %}
 
 {% endblock %}
+{% block calc_complete %}{% if not error %}1{% endif %}{% endblock %}
 
 {% block extra_scripts %}
 <script>window.PIPE_API_BASE = {{ url_for('pipe.index')|tojson }};</script>

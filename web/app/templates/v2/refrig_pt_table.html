@@ -1,6 +1,6 @@
-{% extends "v2/base.html" %}
+{% extends "marketing/public_calc_shell.html" if public_embed else "v2/base.html" %}
 {% block page_title %}Refrigeration — PT Table{% endblock %}
-{% block content %}
+{% block tool_body %}
 
 {% with tool='pt' %}
 {% include "_refrig_tool_nav.html" %}
@@ -172,6 +172,7 @@
 {% endif %}
 
 {% endblock %}
+{% block calc_complete %}{% if result %}1{% endif %}{% endblock %}
 
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/refrig_pt.js') }}?v=4"></script>

@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Take payment for the £9.50/month full-suite plan via Stripe **Managed Payments**
+Take payment for the £4.50/month full-suite plan via Stripe **Managed Payments**
 (Stripe as merchant of record; tax calculated at checkout) and flip
 `User.subscription_status` so `access.py` unlocks the suite.
 
@@ -17,7 +17,7 @@ Take payment for the £9.50/month full-suite plan via Stripe **Managed Payments*
 | `STRIPE_SECRET_KEY` | [API keys](https://dashboard.stripe.com/test/apikeys) (`sk_test_…`) |
 | `STRIPE_PUBLISHABLE_KEY` | Same page (`pk_test_…`) — reserved for future client use |
 | `STRIPE_WEBHOOK_SECRET` | Webhook endpoint signing secret (`whsec_…`) |
-| `STRIPE_PRICE_ID` | Price for £9.50/month GBP (`price_…`) |
+| `STRIPE_PRICE_ID` | Price for £4.50/month GBP (`price_…`). Display amount is `PRICE_MONTHLY_GBP`. |
 | `STRIPE_MANAGED_PAYMENTS` | Default `true` |
 
 Before first Checkout: accept Managed Payments terms at

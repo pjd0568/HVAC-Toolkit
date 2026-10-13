@@ -1,0 +1,100 @@
+{% extends "marketing/base.html" %}
+{% block title %}{{ public_landing.title }}{% endblock %}
+{% block meta_description %}{{ public_landing.meta_description }}{% endblock %}
+{% block body_class %}public-calc-page{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-32">
+<meta name="robots" content="index,follow">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": {{ public_landing.h1|tojson }},
+  "url": {{ (public_base_url ~ request.path)|tojson }},
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "isAccessibleForFree": true,
+  "description": {{ public_landing.meta_description|tojson }},
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "GBP"
+  }
+}
+</script>
+{% endblock %}
+{% block content %}
+<article class="public-tool">
+  <p class="coming-eyebrow">{{ public_landing.eyebrow }}</p>
+  <h1 class="coming-title">{{ public_landing.h1 }}</h1>
+  <p class="public-tool-lead">{{ public_landing.lead }}</p>
+  <form method="post" action="{{ url_for('main.set_units') }}" class="public-unit-toggle">
+    <input type="hidden" name="next" value="{{ request.full_path }}">
+    <span>Units</span>
+    <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}">SI</button>
+    <button type="submit" name="system" value="IP" class="unit-pill {{ 'on' if units == 'IP' }}">IP</button>
+  </form>
+
+  <div class="public-calc-surface v2-main" data-calculator="{{ public_landing.slug }}">
+    {% block tool_body %}{% endblock %}
+  </div>
+  {% if self.calc_complete()|trim %}
+  <div data-calc-complete="{{ public_landing.slug }}" hidden></div>
+  {% endif %}
+
+  {% if public_landing.pro_next and not access.has_suite_access %}
+  <aside class="pro-next" data-pro-cta="{{ public_landing.slug }}">
+    <p>{{ public_landing.pro_next }}</p>
+    {% set cta = pro_cta(url_for(public_landing.pro_endpoint) if public_landing.pro_endpoint else none) %}
+    <a class="btn-accent" data-pro-cta="{{ public_landing.slug }}" href="{{ cta.href }}">{{ cta.label }}</a>
+  </aside>
+  {% endif %}
+
+  <section class="coming-section">
+    <h2>{{ public_landing.how_heading }}</h2>
+    <p>{{ public_landing.how_body }}</p>
+  </section>
+  <section class="coming-section">
+    <h2>{{ public_landing.concept_heading }}</h2>
+    <p>{{ public_landing.concept_body }}</p>
+  </section>
+  <section class="coming-section">
+    <h2>{{ public_landing.formulas_heading }}</h2>
+    <ul class="coming-list">
+      {% for line in public_landing.formulas %}
+      <li>{{ line }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% if public_landing.example %}
+  <section class="coming-section">
+    <h2>Worked example</h2>
+    <p>{{ public_landing.example }}</p>
+  </section>
+  {% endif %}
+  {% if public_landing.faqs %}
+  <section class="coming-section">
+    <h2>Questions</h2>
+    {% for q, a in public_landing.faqs %}
+    <h3>{{ q }}</h3>
+    <p>{{ a }}</p>
+    {% endfor %}
+  </section>
+  {% endif %}
+  {% if public_landing.related_slugs %}
+  <section class="coming-section">
+    <h2>Related tools</h2>
+    <ul class="coming-list">
+      {% for slug in public_landing.related_slugs %}
+      <li><a href="{{ url_for('pages.tool_landing', slug=slug) }}">{{ slug|replace('-', ' ') }}</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  <p class="public-disclaimer">
+    Results are a design aid. Apply professional judgement and verify against
+    codes, manufacturer data and the project specification.
+    <a href="{{ url_for('pages.methods') }}">Calculation methods</a>.
+  </p>
+</article>
+{% endblock %}

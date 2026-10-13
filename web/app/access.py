@@ -18,14 +18,31 @@ from flask_login import current_user
 TierName = Literal["free", "trial", "pro"]
 
 TRIAL_DAYS = 14
-PRICE_MONTHLY_GBP = "9.50"
+# Display price for the full suite. Stripe Price ID stays in the environment.
+PRICE_MONTHLY_GBP = "4.50"
+
+
+def price_unit_amount_pence() -> int:
+    """GBP minor units for the display price. 4.50 → 450."""
+    return int(round(float(PRICE_MONTHLY_GBP) * 100))
 
 # Modules that need an active trial or subscription. Always-open pages
 # (dashboard, help, guides, methodology) and Coming Soon placeholders
 # (weather, projects) are omitted — they stay reachable after trial expiry
 # so users can still reach pricing and reference material.
+# Standalone calculations an anonymous visitor can run. Exports stay gated.
+PUBLIC_MODULES: frozenset[str] = frozenset({
+    "psychro.single_point",
+    "duct.sizer",
+    "pipe.sizer",
+    "refrig.pt_table",
+    "refrig.diagnostics",
+    "converter",
+})
+
 SUITE_MODULES: frozenset[str] = frozenset({
     "psychro.single_point",
+    "psychro.interactive_chart",
     "psychro.mixed_air",
     "psychro.cooling_coil",
     "psychro.desiccant",
@@ -61,6 +78,7 @@ MODULES: dict[str, dict[str, str]] = {
     "help": {"label": "Help"},
     "guides": {"label": "Design Guides"},
     "psychro.single_point": {"label": "Psychrometrics — Single Point"},
+    "psychro.interactive_chart": {"label": "Psychrometrics — Multi-point chart"},
     "psychro.mixed_air": {"label": "Psychrometrics — Mixed Air"},
     "psychro.cooling_coil": {"label": "Psychrometrics — Cooling Coil"},
     "psychro.desiccant": {"label": "Psychrometrics — Desiccant Dehumidification"},
@@ -159,6 +177,8 @@ def is_coming_soon(module_id: str) -> bool:
 
 def requires_suite(module_id: str) -> bool:
     """True if this module needs an active trial or subscription."""
+    if module_id in PUBLIC_MODULES:
+        return False
     if module_id in SUITE_MODULES:
         return True
     # Unknown calculator modules default to gated so new tools don't ship open.
@@ -232,7 +252,9 @@ __all__ = [
     "COMING_SOON_MODULES",
     "MODULES",
     "PRICE_MONTHLY_GBP",
+    "PUBLIC_MODULES",
     "SUITE_MODULES",
+    "price_unit_amount_pence",
     "TRIAL_DAYS",
     "AccessView",
     "Entitlement",

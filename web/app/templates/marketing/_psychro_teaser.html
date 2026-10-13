@@ -6,7 +6,7 @@
   itemtype="https://schema.org/WebApplication"
   aria-labelledby="teaser-heading"
   data-teaser-api="{{ url_for('main.psychro_teaser_calculate') }}"
-  data-register-url="{% if current_user.is_authenticated %}{{ url_for('v2.single_point') }}{% elif registration_open %}{{ url_for('auth.register') }}{% else %}{{ url_for('billing.subscribe') }}{% endif %}"
+  data-register-url="{% if current_user.is_authenticated %}{{ url_for('v2.interactive_chart') }}{% elif registration_open %}{{ url_for('auth.register', next=url_for('v2.interactive_chart')) }}{% else %}{{ url_for('billing.subscribe') }}{% endif %}"
   data-registration-open="{{ '1' if registration_open else '0' }}"
   data-authenticated="{{ '1' if current_user.is_authenticated else '0' }}"
   data-storage-key="hvac_teaser_state"
@@ -20,8 +20,8 @@
     <h2 id="teaser-heading" class="teaser-title" itemprop="name">Free psychrometric calculator</h2>
     <p class="teaser-lead" itemprop="description">
       Resolve dew point, wet bulb, enthalpy, and specific volume from dry bulb and
-      humidity — instantly, in SI or IP. Unlock charts, process lines, and PDF
-      reports with a 14-day free trial.
+      humidity — in SI or IP, with no account.
+      {% if registration_open %}Pro adds process lines, the multi-point chart and PDF reports on a 14-day trial.{% else %}Process lines, the multi-point chart and PDF reports are Pro workflows.{% endif %}
     </p>
   </div>
 
@@ -167,13 +167,12 @@
         </div>
 
         <div class="teaser-cta-row">
-          {% if current_user.is_authenticated %}
-          <a class="btn-accent" href="{{ url_for('v2.single_point') }}">Open full psychrometric suite</a>
+          {% if current_user.is_authenticated and access.has_suite_access %}
+          <a class="btn-accent" href="{{ url_for('v2.interactive_chart') }}">Open the multi-point chart</a>
+          {% elif registration_open %}
+          <button type="button" class="btn-accent" data-teaser-cta>Try Pro free</button>
           {% else %}
-          <button type="button" class="btn-accent" data-teaser-cta>
-            Start 14-day free trial
-          </button>
-          <p class="teaser-cta-note">No credit card required</p>
+          <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">Explore Pro</a>
           {% endif %}
         </div>
       </div>
@@ -195,19 +194,20 @@
       {% if current_user.is_authenticated %}
       <h3 id="teaser-modal-title">Open the full psychrometric suite</h3>
       <p id="teaser-modal-sub" class="teaser-modal-sub">
-        Interactive charts, process paths, duct/pipe sizing, saved projects, and PDF reports
-        are available in the toolkit.
+        Process lines, the multi-point chart and PDF reports are in Pro.
       </p>
       <a class="btn-accent" href="{{ url_for('v2.single_point') }}">Go to Single Point</a>
       {% else %}
-      <h3 id="teaser-modal-title">Unlock Full Psychrometric Analysis &amp; Field Tools</h3>
+      <h3 id="teaser-modal-title">Continue in Pro</h3>
       <p id="teaser-modal-sub" class="teaser-modal-sub">
-        Plot dynamic process paths, size ducting/pipe index legs, save project files,
-        and export client-ready PDF reports.
+        Process lines, AHU analysis, the multi-point chart and PDF reports are Pro workflows.
+        This single-point result stays available without an account.
       </p>
-      <button type="button" class="btn-accent" data-teaser-cta>
-        Start 14-Day Free Trial (No Credit Card Required)
-      </button>
+      {% if registration_open %}
+      <button type="button" class="btn-accent" data-teaser-cta>Try Pro free</button>
+      {% else %}
+      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">Explore Pro</a>
+      {% endif %}
       {% endif %}
     </div>
   </div>

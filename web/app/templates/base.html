@@ -142,7 +142,7 @@
       {% elif access.tier == 'pro' %}
       <span class="trial-pill pro-on" title="Subscribed">Subscribed</span>
       {% endif %}
-      <a class="help-btn" href="{{ url_for('billing.subscribe') }}" title="Pricing/Subscribe">Pricing/Subscribe</a>
+      <a class="help-btn" href="{{ url_for('billing.subscribe') }}" title="Pricing">Pricing</a>
       <form method="post" action="{{ url_for('main.set_units') }}" class="unit-toggle" title="Units — applies across every tool">
         <input type="hidden" name="next" value="{{ request.path }}">
         <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}">SI · Metric</button>

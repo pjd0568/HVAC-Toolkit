@@ -1,8 +1,8 @@
-{% extends "v2/base.html" %}
+{% extends "marketing/public_calc_shell.html" if public_embed else "v2/base.html" %}
 {% from "_duct_shared.html" import status_dot, status_legend with context %}
 {% from "_report_form.html" import report_form %}
 {% block page_title %}Duct Sizing{% endblock %}
-{% block content %}
+{% block tool_body %}
 
 {% with tool='duct' %}
 {% include "_air_tool_nav.html" %}
@@ -251,11 +251,12 @@
 
 </div>
 
-{% if report_fields %}
+{% if report_fields and access.has_suite_access %}
 {{ report_form(url_for('duct.report'), report_fields) }}
 {% endif %}
 
 {% endblock %}
+{% block calc_complete %}{% if not error %}1{% endif %}{% endblock %}
 
 {% block extra_scripts %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>

@@ -26,7 +26,6 @@ def dashboard():
 
 
 @bp.post("/preferences/units")
-@login_required
 def set_units():
     """Flip the active unit system (SI/IP) and return to the page in use."""
     set_unit_system(request.form.get("system", ""))
@@ -34,7 +33,6 @@ def set_units():
 
 
 @bp.post("/preferences/flow-unit")
-@login_required
 def set_flow_unit_pref():
     """Flip the airflow display unit (m³/h vs m³/s) and return to the page in use."""
     set_flow_unit(request.form.get("unit", ""))
@@ -71,6 +69,21 @@ def psychro_teaser_calculate():
         }
     }
     return jsonify(payload)
+
+
+@bp.post("/e")
+def track_event():
+    """First-party product event. Drops unknown names and any calculation inputs."""
+    from app.analytics import track
+
+    data = request.get_json(silent=True) or {}
+    event = data.get("event") if isinstance(data, dict) else None
+    props = data.get("props") if isinstance(data, dict) else None
+    if isinstance(event, str) and isinstance(props, dict):
+        track(event, **{k: v for k, v in props.items() if isinstance(k, str)})
+    elif isinstance(event, str):
+        track(event)
+    return "", 204
 
 
 @bp.get("/health")

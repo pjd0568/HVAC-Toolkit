@@ -107,7 +107,7 @@ railway service source connect --repo pjd0568/HVAC-Toolkit --branch Publish --se
 ## Auth & billing (current)
 
 - Email/password accounts in Postgres (`specs/SPEC-auth.md`).
-- 14-day free trial starts on register; full suite then £9.50/month
+- 14-day free trial starts on register; full suite then £4.50/month
   (`specs/SPEC-access.md`). Weather and Projects are Coming Soon.
 - Stripe Managed Payments Checkout + webhooks (`specs/SPEC-billing-stripe.md`).
   Set keys in Railway from the Stripe Dashboard. Cancel / invoices via Stripe /

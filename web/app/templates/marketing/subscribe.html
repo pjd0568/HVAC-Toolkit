@@ -1,63 +1,73 @@
 {% extends "marketing/base.html" %}
-{% block title %}Pricing/Subscribe — {{ brand_name }} HVAC psychrometric, duct &amp; pipe calculators{% endblock %}
-{% block meta_description %}{{ brand_name }} pricing: 14-day free trial of HVAC calculators (psychrometrics, duct sizing, pipe sizing), then £9.50/month. Subscribe anytime during trial. Tax at checkout via Stripe.{% endblock %}
+{% block title %}Pricing — HVAC-CALCS{% endblock %}
+{% block meta_description %}HVAC-CALCS pricing. Free standalone calculators with no account. Pro is £{{ access.price_monthly }}/month for complete engineering workflows.{% endblock %}
 {% block content %}
 <section class="pricing-hero">
-  <h1>Pricing/Subscribe</h1>
+  <h1>Pricing</h1>
   <p class="coming-lead">
-    Start with a 14-day free trial of the full HVAC calculator suite —
-    psychrometric, duct sizing, and pipe sizing tools included. Subscribe
-    anytime during the trial for £9.50/month. Tax is calculated at checkout
-    for your location (Stripe Managed Payments).
+    Use the free calculators with no account. Pro is the current launch price of
+    £{{ access.price_monthly }}/month for complete workflows and exports.
+    {% if registration_open %}New accounts include a 14-day Pro trial.{% endif %}
   </p>
 </section>
 
-<section class="pricing-grid pricing-grid-single">
-  <article class="pricing-card pricing-card-featured">
-    <h2>Full suite</h2>
-    <p class="pricing-amount">£9.50</p>
-    <p class="pricing-period">per month</p>
-    <p class="pricing-trial">14-day free trial on signup</p>
+<section class="compare-grid">
+  <article class="compare-card">
+    <h2>Free</h2>
+    <p>Quick standalone HVAC calculations</p>
+    <p class="pricing-amount">£0</p>
     <ul>
-      <li>Psychrometrics — Multi-Point Interactive Chart, Single Point, Mixed Air, Cooling Coil, Desiccant Dehumidification, Heat &amp; Humidify, Adiabatic Cool, AHU Design</li>
-      <li>Duct Sizing &amp; Index Leg</li>
-      <li>Pipe Sizing &amp; Pipe System</li>
-      <li>Unit Converter, Design Guides &amp; PDF reports</li>
-      <li>Weather &amp; design conditions — coming soon</li>
-      <li>Projects — coming soon</li>
+      <li>Psychrometric single point</li>
+      <li>Duct sizing, one section</li>
+      <li>Hydronic pipe sizing, one section</li>
+      <li>Refrigerant PT table</li>
+      <li>Superheat and subcooling</li>
+      <li>Unit converter</li>
+      <li>SI and Imperial, with the methods written down</li>
+    </ul>
+    <a class="btn-ghost" href="{{ url_for('pages.tools_index') }}">Try calculators free</a>
+  </article>
+
+  <article class="compare-card featured">
+    <h2>Pro</h2>
+    <p>Complete engineering workflows</p>
+    <p class="pricing-amount">£{{ access.price_monthly }}</p>
+    <p class="pricing-period">per month</p>
+    {% if registration_open %}
+    <p class="pricing-trial">14-day trial on a new account</p>
+    {% endif %}
+    <ul>
+      <li>Advanced psychrometric and AHU analyses, including the multi-point chart</li>
+      <li>Duct index-leg workflow</li>
+      <li>Hydronic system and pump-head workflow</li>
+      <li>DX pipe sizing</li>
+      <li>Professional PDF, CSV and chart exports</li>
     </ul>
 
     {% if current_user.is_authenticated and current_user.subscription_status == 'active' %}
       <a class="btn-accent" href="{{ url_for('v2.dashboard') }}">Open toolkit</a>
-      <p class="pricing-note">
-        Your subscription is active. Receipts, card updates and cancellation are
-        handled via Stripe / Link emails —
-        see <a href="{{ url_for('help.index', _anchor='account-billing') }}">Help → Account, billing &amp; cancel</a>.
-      </p>
+      <p class="pricing-note">Your subscription is active. Receipts and cancellation are handled by Stripe.</p>
     {% elif stripe_ready and current_user.is_authenticated %}
       <form method="post" action="{{ url_for('billing.create_checkout_session_route') }}">
-        <button type="submit" class="btn-accent">Subscribe — £9.50/month</button>
+        <button type="submit" class="btn-accent">Subscribe — £{{ access.price_monthly }}/month</button>
       </form>
-      <p class="pricing-note">
-        Signed in as {{ current_user.email }}.
-        You can subscribe at any time during your trial — you’ll complete payment on Stripe’s secure checkout.
-      </p>
+      <p class="pricing-note">Signed in as {{ current_user.email }}. Payment continues on Stripe’s checkout.</p>
     {% elif stripe_ready and registration_open %}
-      <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
-      <p class="pricing-note">
-        Create an account for your 14-day trial. You can subscribe from this page whenever you’re ready.
-      </p>
+      {% set cta = pro_cta(url_for('billing.subscribe')) %}
+      <a class="btn-accent" data-pro-cta="pricing" href="{{ cta.href }}">{{ cta.label }}</a>
+      <p class="pricing-note">Creating an account starts the 14-day trial. You can subscribe from this page when you are ready.</p>
     {% elif stripe_ready %}
       <a class="btn-accent" href="{{ url_for('auth.login', next=url_for('billing.subscribe')) }}">Log in to subscribe</a>
     {% else %}
-      <button type="button" class="btn-accent" disabled title="Add Stripe keys to enable checkout">
-        Checkout coming soon
-      </button>
-      <p class="pricing-note">
-        Stripe keys not configured yet. Add <code>STRIPE_SECRET_KEY</code> from the
-        <a href="https://dashboard.stripe.com/test/apikeys" rel="noopener" target="_blank">Dashboard (Test mode)</a>.
-      </p>
+      <button type="button" class="btn-accent" disabled>Checkout unavailable</button>
+      <p class="pricing-note">Online checkout is temporarily unavailable. Please contact us.</p>
     {% endif %}
   </article>
 </section>
+
+<p class="public-disclaimer">
+  £{{ access.price_monthly }}/month is the current launch price. It is not a lifetime lock.
+  Tax is calculated at checkout. Weather lookup, saved projects, charge, room load,
+  grille throw, expansion vessels, buffer tanks and acoustics are not included because they are not available.
+</p>
 {% endblock %}

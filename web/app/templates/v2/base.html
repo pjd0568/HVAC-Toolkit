@@ -19,9 +19,9 @@
 <body class="v2-body">
 
 <header class="v2-topbar">
-  <a class="v2-topbar-brand" href="{{ url_for('v2.dashboard') }}" title="{{ brand_name }}">
+  <a class="v2-topbar-brand" href="{{ url_for('v2.dashboard') if current_user.is_authenticated else url_for('main.coming_soon') }}" title="{{ brand_public }}">
     <img src="{{ brand_mark_url }}" alt="" width="28" height="28">
-    <span class="v2-brand-text">{{ brand_name }}</span>
+    <span class="v2-brand-text">{{ brand_public }}</span>
   </a>
   <nav class="v2-suite-nav" aria-label="Suites">
     <a href="{{ url_for('v2.dashboard') }}" class="{{ 'active' if nav == 'home' }}">Home</a>
@@ -37,7 +37,6 @@
         <a href="{{ url_for('v2.heat_humidify') }}" role="menuitem" class="{{ 'active' if active == 'psychro_heat_humidify' }}">Heat &amp; humidify</a>
         <a href="{{ url_for('v2.adiabatic_cool') }}" role="menuitem" class="{{ 'active' if active == 'psychro_adiabatic_cool' }}">Adiabatic cool</a>
         <a href="{{ url_for('v2.ahu') }}" role="menuitem" class="{{ 'active' if active == 'psychro_ahu' }}">AHU design</a>
-        <a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}" role="menuitem" class="{{ 'active' if active == 'iaq_co2' }}">Fresh air &amp; CO₂ <span class="soon">Soon</span></a>
         <a href="{{ url_for('v2.psychro_picker') }}" role="menuitem" class="v2-nav-drop-all">All psychro tools</a>
       </div>
     </div>
@@ -51,8 +50,6 @@
         {% if access.can('duct.index_leg') %}
         <a href="{{ url_for('v2.duct_index_leg') }}" role="menuitem" class="{{ 'active' if active == 'duct_index_leg' }}">Index leg — pressure drop</a>
         {% endif %}
-        <a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}" role="menuitem" class="{{ 'active' if active == 'room_load' }}">Room load <span class="soon">Soon</span></a>
-        <a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}" role="menuitem" class="{{ 'active' if active == 'grille_throw' }}">Grille throw <span class="soon">Soon</span></a>
         <a href="{{ url_for('v2.air_picker') }}" role="menuitem" class="v2-nav-drop-all">All air tools</a>
       </div>
     </div>
@@ -66,8 +63,6 @@
         {% if access.can('pipe.system') %}
         <a href="{{ url_for('v2.pipe_system') }}" role="menuitem" class="{{ 'active' if active == 'pipe_system' }}">System — pressure drop</a>
         {% endif %}
-        <a href="{{ url_for('v2.coming_soon_tool', slug='expansion-vessel') }}" role="menuitem" class="{{ 'active' if active == 'expansion_vessel' }}">Expansion vessel <span class="soon">Soon</span></a>
-        <a href="{{ url_for('v2.coming_soon_tool', slug='buffer-tank') }}" role="menuitem" class="{{ 'active' if active == 'buffer_tank' }}">Buffer tank <span class="soon">Soon</span></a>
         <a href="{{ url_for('v2.water_picker') }}" role="menuitem" class="v2-nav-drop-all">All hydronics tools</a>
       </div>
     </div>
@@ -81,18 +76,10 @@
         {% if access.can('refrig.pt_table') %}
         <a href="{{ url_for('v2.refrig_pt_table') }}" role="menuitem" class="{{ 'active' if active == 'refrig_pt' }}">PT table</a>
         {% endif %}
+        {% if access.can('refrig.diagnostics') %}
         <a href="{{ url_for('v2.refrig_diagnostics') }}" role="menuitem" class="{{ 'active' if active == 'refrig_diagnostics' }}">Superheat &amp; subcooling</a>
-        <a href="{{ url_for('v2.refrig_charge') }}" role="menuitem" class="{{ 'active' if active == 'refrig_charge' }}">Charge calculator <span class="soon">Soon</span></a>
+        {% endif %}
         <a href="{{ url_for('v2.refrig_picker') }}" role="menuitem" class="v2-nav-drop-all">All refrigeration tools</a>
-      </div>
-    </div>
-
-    <div class="v2-nav-drop {{ 'active' if nav == 'acoustics' }}">
-      <button type="button" class="v2-nav-drop-btn" aria-expanded="false" aria-haspopup="true">Acoustics</button>
-      <div class="v2-nav-drop-menu" role="menu">
-        <a href="{{ url_for('v2.coming_soon_tool', slug='duct-nr') }}" role="menuitem" class="{{ 'active' if active == 'acoustics_duct_nr' }}">Duct attenuation &amp; NR <span class="soon">Soon</span></a>
-        <a href="{{ url_for('v2.coming_soon_tool', slug='barrier') }}" role="menuitem" class="{{ 'active' if active == 'acoustics_barrier' }}">Barrier screening <span class="soon">Soon</span></a>
-        <a href="{{ url_for('v2.acoustics_picker') }}" role="menuitem" class="v2-nav-drop-all">All acoustics tools</a>
       </div>
     </div>
 
@@ -143,9 +130,9 @@
       {% elif access.tier == 'pro' %}
       <li><span class="v2-menu-status">Subscribed</span></li>
       {% endif %}
-      <li><a href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a></li>
+      <li><a href="{{ url_for('billing.subscribe') }}">Pricing</a></li>
       {% if access.tier != 'pro' %}
-      <li><a class="v2-menu-subscribe" href="{{ url_for('billing.subscribe') }}">Subscribe — £9.50/month</a></li>
+      <li><a class="v2-menu-subscribe" href="{{ url_for('billing.subscribe') }}">Pro — £{{ access.price_monthly }}/month</a></li>
       {% endif %}
       <li>
         <a class="v2-menu-install" href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">
@@ -229,7 +216,9 @@
   {% endif %}
   {% endwith %}
 
-  {% block content %}{% endblock %}
+  {% block content %}
+  {% block tool_body %}{% endblock %}
+  {% endblock %}
 </main>
 
 <nav class="v2-bottom-nav" aria-label="Primary">
@@ -241,7 +230,7 @@
     <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 12h16M4 16h16"/><path d="M8 6v4M16 10v4M10 14v4"/></svg></span>
     <span class="v2-dock-label">Air</span>
   </a>
-  <a href="{{ url_for('v2.dashboard') }}" class="v2-dock-home {{ 'active' if nav == 'home' }}" aria-label="Home">
+  <a href="{{ url_for('v2.dashboard') if current_user.is_authenticated else url_for('main.coming_soon') }}" class="v2-dock-home {{ 'active' if nav == 'home' }}" aria-label="Home">
     <span class="v2-dock-home-btn" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg>
     </span>
@@ -266,5 +255,6 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 {% block extra_scripts %}{% endblock %}
+<script src="{{ url_for('static', filename='js/analytics.js') }}?v=1" defer></script>
 </body>
 </html>

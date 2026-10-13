@@ -14,17 +14,5 @@
     <span class="suite-tool-nav-short">System</span>
   </a>
   {% endif %}
-  <a href="{{ url_for('v2.coming_soon_tool', slug='expansion-vessel') }}"
-     class="{{ 'active' if tool == 'vessel' }}">
-    <span class="suite-tool-nav-full">Expansion vessel</span>
-    <span class="suite-tool-nav-short">Vessel</span>
-    <span class="soon">Soon</span>
-  </a>
-  <a href="{{ url_for('v2.coming_soon_tool', slug='buffer-tank') }}"
-     class="{{ 'active' if tool == 'buffer' }}">
-    <span class="suite-tool-nav-full">Buffer tank</span>
-    <span class="suite-tool-nav-short">Buffer</span>
-    <span class="soon">Soon</span>
-  </a>
   <a href="{{ url_for('v2.water_picker') }}" class="suite-tool-nav-all">All</a>
 </nav>

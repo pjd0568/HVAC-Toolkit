@@ -55,9 +55,9 @@ def checkout_success():
 def create_checkout_session_route():
     """Create a Managed Payments Checkout Session and redirect to Stripe."""
     if not stripe_configured():
+        logger.error("Checkout requested but Stripe is not configured")
         flash(
-            "Checkout isn’t configured yet. Add STRIPE_SECRET_KEY (and "
-            "STRIPE_PRICE_ID) from the Stripe Dashboard.",
+            "Online checkout is temporarily unavailable. Please contact us.",
             "error",
         )
         return redirect(url_for("billing.subscribe"))
@@ -75,8 +75,12 @@ def create_checkout_session_route():
             success_url=success_url,
             cancel_url=cancel_url,
         )
-    except StripeNotConfiguredError as exc:
-        flash(str(exc), "error")
+    except StripeNotConfiguredError:
+        logger.exception("Checkout not configured")
+        flash(
+            "Online checkout is temporarily unavailable. Please contact us.",
+            "error",
+        )
         return redirect(url_for("billing.subscribe"))
     except stripe.StripeError:
         logger.exception("Stripe Checkout Session create failed")
@@ -87,6 +91,9 @@ def create_checkout_session_route():
         )
         return redirect(url_for("billing.subscribe"))
 
+    from app.analytics import track
+
+    track("checkout_start", route="/create-checkout-session")
     return redirect(checkout_url, code=303)
 
 

@@ -32,10 +32,13 @@ def _registration_open() -> bool:
     return bool(current_app.config.get("REGISTRATION_OPEN"))
 
 
-def _safe_next(raw: str | None) -> str:
-    """Only honour same-app relative paths."""
-    if not raw or not raw.startswith("/") or raw.startswith("//"):
-        return url_for("v2.dashboard")
+def _safe_next(raw: str | None, default: str | None = None) -> str:
+    """Only honour same-app relative paths. Never an open redirect."""
+    fallback = default or url_for("v2.dashboard")
+    if not raw or not raw.startswith("/") or raw.startswith("//") or "\\" in raw:
+        return fallback
+    if "://" in raw or raw.startswith("/\\"):
+        return fallback
     return raw
 
 
@@ -92,8 +95,8 @@ def register():
         flash("Registration is closed while we prepare the launch.", "info")
         return redirect(url_for("main.coming_soon"))
     if current_user.is_authenticated:
-        return redirect(url_for("v2.dashboard"))
-    return _register_template()
+        return redirect(_safe_next(request.args.get("next")))
+    return _register_template(next=request.args.get("next", ""))
 
 
 @bp.post("/register")
@@ -120,10 +123,11 @@ def register_post():
     if email and User.query.filter_by(email=email).first():
         errors.append("An account with that email already exists.")
 
+    nxt = request.form.get("next", "")
     if errors:
         for msg in errors:
             flash(msg, "error")
-        return _register_template(), 400
+        return _register_template(next=nxt), 400
 
     user = User(
         email=email,
@@ -139,8 +143,14 @@ def register_post():
 
     send_trial_started(user)
 
+    from app.analytics import track
+
+    track("registration_complete", route="/register")
     flash("Account created. Your 14-day free trial has started.", "success")
-    # Land on Single Point so the homepage teaser can hand off after signup.
+    # Honour a validated next path (the Pro workflow that prompted signup).
+    # Otherwise land on Single Point so the homepage teaser can hand off.
+    if (nxt or "").strip():
+        return redirect(_safe_next(nxt, default=url_for("v2.single_point", from_teaser=1)))
     return redirect(url_for("v2.single_point", from_teaser=1))
 
 

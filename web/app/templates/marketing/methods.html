@@ -1,0 +1,40 @@
+{% extends "marketing/base.html" %}
+{% block title %}Calculation methods — HVAC-CALCS{% endblock %}
+{% block meta_description %}Equations, assumptions, unit conventions and limits for HVAC-CALCS psychrometric, duct, hydronic and refrigeration calculations.{% endblock %}
+{% block content %}
+<article class="legal-doc">
+  <h1>Calculation methods</h1>
+  <p>
+    This page records how the current calculators are derived. It is a description
+    of the software, not a certificate of compliance with ASHRAE, CIBSE or any other body.
+  </p>
+
+  <h2>Psychrometrics and AHU processes</h2>
+  <p>Moist-air properties follow ASHRAE Handbook — Fundamentals Chapter 1 relations (saturation pressure, humidity ratio, enthalpy, wet-bulb).</p>
+  <p><strong>Assumptions.</strong> Cooling-coil results use the on-coil and off-coil states you enter. A wet coil is often taken near 90–95% RH leaving; that is a design assumption, not a solved coil geometry. AHU design chooses the process from the moisture balance (cool/dehumidify/reheat, heat then humidify, or sensible-only). Outdoor air is entered as a volume flow; the fresh-air fraction is derived from dry-air mass.</p>
+  <p><strong>Units.</strong> The engine is SI. The SI/IP control converts the values you see and type.</p>
+  <p><strong>Limits.</strong> These tools do not size coil rows, face velocity or condensate drainage.</p>
+
+  <h2>Duct sizing</h2>
+  <p>Friction uses Darcy–Weisbach with the Swamee–Jain explicit Colebrook–White equation. Rectangular equivalent diameter uses Huebscher (ASHRAE Fundamentals Ch. 21). Flat oval uses Heyt &amp; Diaz (1975): De = 1.55·A<sup>0.625</sup>/P<sup>0.25</sup>.</p>
+  <p><strong>Limits.</strong> Index-leg fitting K-values and the ×1.5 flexible-duct friction factor are indicative planning figures, not the full geometry-dependent tables in ASHRAE Chapter 32 or CIBSE Guide C. Check critical runs against manufacturer or primary data. The free page sizes one section. The index run is a Pro workflow.</p>
+
+  <h2>Hydronic pipe</h2>
+  <p>Friction uses Darcy–Weisbach / Colebrook–White, in the form used with CIBSE Guide C. Catalogue dimensions follow BS EN 10255, BS EN 1057 and DIN 11850.</p>
+  <p>Water properties follow published CIBSE/ASHRAE tables. Ethylene and propylene glycol use ASHRAE secondary-coolant correlations. Hydratech Coolflow DTX, IGE and NTP use the manufacturer’s published data sheets.</p>
+  <p><strong>Limits.</strong> Velocity bands are per nominal size (DN 50 and below capped at 1.5 m/s, in line with the intent of CIBSE Guide C Table 2.2). A pressure gradient around 200–300 Pa/m is a lifecycle-cost framing, not a named code limit. Fitting K-values are indicative. The free page is one pipe. Pump head for a circuit is the Pro system workflow.</p>
+
+  <h2>Refrigeration</h2>
+  <p>Saturation and single-phase properties come from CoolProp (HEOS). The PT table reports bubble (quality 0) and dew (quality 1) pressures as barg relative to 1.01325 bar absolute. Zeotropic blends show glide.</p>
+  <p>Evaporating temperature is paired with dew pressure. Condensing temperature is paired with bubble pressure. Mass flow for line sizing is capacity divided by evaporator enthalpy change.</p>
+  <p>ACR copper sizes follow BS EN 12735-1. The DX sizer checks velocity bands (suction about 8–15 m/s, liquid about 0.5–1.5 m/s, discharge about 10–18 m/s) and warns on low suction velocity for oil return. It does not yet check equivalent saturation-temperature pressure drop. Transcritical R-744 is out of scope.</p>
+  <p><strong>Superheat and subcooling.</strong> SH = T<sub>suction</sub> − T<sub>dew</sub>(P<sub>low</sub>). SC = T<sub>bubble</sub>(P<sub>high</sub>) − T<sub>liquid</sub>. Colour bands are typical field guidance, not a manufacturer target. This is not a charge calculation. The charge calculator is not available.</p>
+
+  <h2>Weather</h2>
+  <p>In-app weather and design-condition lookup is not available. Where a future lookup uses reanalysis, it will be a grid average, not a licensed ASHRAE or CIBSE station table, and it will be labelled as such.</p>
+
+  <h2>Disclaimer</h2>
+  <p>Results are a design aid for preliminary checks. They are not a substitute for professional judgement, manufacturer selection software, or the standards and regulations that apply to a particular project.</p>
+  <p><a href="{{ url_for('guides.index') }}">Design guides</a> · <a href="{{ url_for('pages.tools_index') }}">Calculators</a></p>
+</article>
+{% endblock %}

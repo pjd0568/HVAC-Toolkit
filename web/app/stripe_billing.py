@@ -1,6 +1,6 @@
 """Stripe Managed Payments helpers for the full-suite subscription.
 
-Creates / resolves the £9.50 GBP monthly product+price, Checkout Sessions with
+Creates / resolves the GBP monthly product+price, Checkout Sessions with
 ``managed_payments[enabled]``, and maps webhook events onto ``User`` rows.
 
 API keys and Price ID come from env (see Config / .env.example). Product creation
@@ -15,7 +15,7 @@ from typing import Any
 import stripe
 from flask import current_app
 
-from app.access import PRICE_MONTHLY_GBP, TRIAL_DAYS
+from app.access import PRICE_MONTHLY_GBP, TRIAL_DAYS, price_unit_amount_pence
 from app.extensions import db
 from app.models import User
 
@@ -26,8 +26,8 @@ MANAGED_PAYMENTS_TAX_CODE = "txcd_10103100"
 # Preview API version required by the Managed Payments blueprint for product + Checkout.
 STRIPE_MANAGED_PAYMENTS_VERSION = "2026-02-25.preview"
 
-# £9.50 → 950 pence.
-PRICE_UNIT_AMOUNT_PENCE = 950
+# Minor units follow the display price (4.50 → 450). Checkout still uses STRIPE_PRICE_ID when set.
+PRICE_UNIT_AMOUNT_PENCE = price_unit_amount_pence()
 PRICE_CURRENCY = "gbp"
 
 PRODUCT_NAME = "hvac-calcs.app — Full suite"
@@ -93,10 +93,8 @@ def checkout_ready() -> bool:
 def _client() -> stripe.StripeClient:
     key = current_app.config.get("STRIPE_SECRET_KEY") or ""
     if not key:
-        raise StripeNotConfiguredError(
-            "STRIPE_SECRET_KEY is not set. Copy it from the Stripe Dashboard "
-            "(Test mode → Developers → API keys)."
-        )
+        current_app.logger.error("Stripe secret key is not configured")
+        raise StripeNotConfiguredError("Online checkout is temporarily unavailable.")
     # Leave api_version unset on the client; Managed Payments calls pass the
     # blueprint version per-request.
     return stripe.StripeClient(key)
@@ -263,6 +261,10 @@ def handle_checkout_session_completed(session: Any) -> None:
 
     db.session.commit()
     notify_subscription_status_change(user, previous_status)
+    if user.subscription_status == "active" and previous_status != "active":
+        from app.analytics import track
+
+        track("subscription_active", route="/webhooks/stripe")
     logger.info(
         "Unlocked suite for user %s (status=%s, sub=%s)",
         user.id,
@@ -296,6 +298,10 @@ def handle_subscription_event(subscription: Any) -> None:
     _apply_subscription_to_user(user, subscription)
     db.session.commit()
     notify_subscription_status_change(user, previous_status)
+    if user.subscription_status == "active" and previous_status != "active":
+        from app.analytics import track
+
+        track("subscription_active", route="/webhooks/stripe")
 
 
 def construct_webhook_event(payload: bytes, sig_header: str | None) -> stripe.Event:

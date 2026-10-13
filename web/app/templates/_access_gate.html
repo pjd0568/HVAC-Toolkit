@@ -1,24 +1,27 @@
 {# Shared trial-ended / subscribe panel. Expects module_label, entitlement,
    trial_expired, price_monthly. #}
 <div class="panel tile-util-border access-gate-panel">
-  <div class="panel-head">Subscription required</div>
+  <div class="panel-head">Pro workflow</div>
   <div class="panel-body">
     <p class="access-gate-lead">
-      <strong>{{ module_label }}</strong> is part of the full toolkit suite.
+      <strong>{{ module_label }}</strong> is part of HVAC-CALCS Pro.
     </p>
     {% if trial_expired %}
-    <p>Your 14-day free trial has ended. Subscribe for
-      <strong>£{{ price_monthly }}/month</strong> to keep full access to every
-      calculator.</p>
-    {% elif entitlement.tier == 'free' %}
-    <p>Create an account to start a 14-day free trial of the full suite, then
-      continue with a subscription at <strong>£{{ price_monthly }}/month</strong>.</p>
+    <p>Your 14-day trial has ended. Pro is
+      <strong>£{{ price_monthly }}/month</strong>.</p>
+    {% elif current_user.is_authenticated %}
+    <p>This workflow needs an active trial or subscription
+      (<strong>£{{ price_monthly }}/month</strong>).</p>
+    {% elif registration_open %}
+    <p>The free calculators stay available without an account. A new account
+      includes 14 days of Pro, then <strong>£{{ price_monthly }}/month</strong>.</p>
     {% else %}
-    <p>Something went wrong resolving access. Try refreshing the page.</p>
+    <p>This workflow is part of Pro at <strong>£{{ price_monthly }}/month</strong>.</p>
     {% endif %}
     <div class="access-gate-actions">
-      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">Subscribe</a>
-      <a class="btn-ghost" href="{{ url_for('v2.dashboard') }}">Back to Dashboard</a>
+      {% set cta = pro_cta(request.path) %}
+      <a class="btn-accent" data-pro-cta="{{ module_id }}" href="{{ cta.href }}">{{ cta.label }}</a>
+      <a class="btn-ghost" href="{{ url_for('pages.tools_index') if not current_user.is_authenticated else url_for('v2.dashboard') }}">Back</a>
     </div>
   </div>
 </div>

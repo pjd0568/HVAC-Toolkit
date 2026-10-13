@@ -138,7 +138,7 @@ class Config:
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
     STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
     STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-    # Price ID for the £9.50/month full-suite plan (price_…). Optional if you
+    # Price ID for the monthly full-suite plan (price_…). Optional if you
     # run `flask ensure-stripe-product` once to create product + price.
     STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
     # When true (default), Checkout Sessions use Managed Payments (Stripe MoR + tax).

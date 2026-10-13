@@ -1,6 +1,6 @@
-{% extends "v2/base.html" %}
+{% extends "marketing/public_calc_shell.html" if public_embed else "v2/base.html" %}
 {% block page_title %}Superheat &amp; Subcooling{% endblock %}
-{% block content %}
+{% block tool_body %}
 
 {% with tool='diagnostics' %}
 {% include "_refrig_tool_nav.html" %}
@@ -126,3 +126,4 @@
 {% endif %}
 
 {% endblock %}
+{% block calc_complete %}{% if result %}1{% endif %}{% endblock %}

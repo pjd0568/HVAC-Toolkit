@@ -14,7 +14,7 @@ from hvac_engine import processes as proc
 from hvac_engine import psychrometrics as psy
 from hvac_engine.ahu_design import design_ahu_to_supply
 
-from app.access_gate import require_module
+from app.access_gate import require_module, require_suite_access
 from app.chart import chart_payload
 from app.climate_slots import get_slots
 from app.reports.builder import build_pdf
@@ -310,7 +310,7 @@ def single_point():
 
 
 @bp.route("/report", methods=["POST"])
-@require_module("psychro.single_point")
+@require_suite_access("psychro.single_point")
 def single_point_report():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}
@@ -344,7 +344,7 @@ def single_point_report():
 
 
 @bp.route("/chart.png", methods=["POST"])
-@require_module("psychro.single_point")
+@require_suite_access("psychro.single_point")
 def single_point_chart_png():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _SINGLE_POINT_DEFAULTS.items()}
@@ -1197,7 +1197,7 @@ def _state_from_si_dict(si: dict) -> psy.PsychroState:
 
 
 @bp.post("/interactive/resolve")
-@require_module("psychro.single_point")
+@require_module("psychro.interactive_chart")
 def interactive_resolve():
     """Resolve one psychrometric state for the multi-point interactive chart."""
     U = current_view()
@@ -1218,7 +1218,7 @@ def interactive_resolve():
 
 
 @bp.post("/interactive/chart")
-@require_module("psychro.single_point")
+@require_module("psychro.interactive_chart")
 def interactive_chart_payload():
     """Rebuild chart geometry for the current set of points + optional segment."""
     U = current_view()
@@ -1249,7 +1249,7 @@ def interactive_chart_payload():
 
 
 @bp.post("/interactive/process")
-@require_module("psychro.single_point")
+@require_module("psychro.interactive_chart")
 def interactive_process():
     """Map heat/cool + humidify/dehumidify between two saved points."""
     U = current_view()

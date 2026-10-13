@@ -17,7 +17,7 @@ from hvac_engine import pipe as eng
 from hvac_engine import pipe_fittings as pfit
 from hvac_engine import units as eng_units
 
-from app.access_gate import require_module
+from app.access_gate import require_module, require_suite_access
 from app.reports.builder import build_pdf
 from app.reports.helpers import pdf_response, report_meta_from_form
 from app.units import current_view
@@ -962,7 +962,7 @@ def _report_rows_for_system(system: dict, U) -> tuple[list, list]:
 
 
 @bp.route("/report", methods=["POST"])
-@require_module("pipe.sizer")
+@require_suite_access("pipe.sizer")
 def report():
     U = current_view()
     state = _compute_state(request.form, U)

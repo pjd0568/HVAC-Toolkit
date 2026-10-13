@@ -78,7 +78,7 @@ from flask import Blueprint, Response, jsonify, render_template, request
 from hvac_engine import duct as eng
 from hvac_engine import fittings as fit
 
-from app.access_gate import require_module
+from app.access_gate import require_module, require_suite_access
 from app.reports.builder import build_pdf
 from app.reports.helpers import pdf_response, report_meta_from_form
 from app.units import current_view
@@ -860,7 +860,7 @@ def index_leg():
 
 
 @bp.route("/report", methods=["POST"])
-@require_module("duct.sizer")
+@require_suite_access("duct.sizer")
 def report():
     """Download PDF Report for the 3-column duct sizer only."""
     U = current_view()

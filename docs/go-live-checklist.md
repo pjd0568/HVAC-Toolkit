@@ -71,7 +71,7 @@ Use a work email you actually read. Prefer production once mail + webhooks are w
 Only after B1 is clean:
 
 - [ ] Live keys on Railway (section A)
-- [ ] Subscribe with a real card → £9.50 charged → active + receipt
+- [ ] Subscribe with a real card → £4.50 charged → active + receipt
 - [ ] Cancel immediately via Stripe / Link → suite locks + emails
 - [ ] Optional: refund from Stripe Dashboard; confirm it matches Terms wording
 

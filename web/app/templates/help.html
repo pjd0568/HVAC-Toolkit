@@ -47,8 +47,8 @@
       <h3 class="help-sub">Memory Slots — carry a condition between tools</h3>
       <p>The three <strong>Memory Slots</strong> (climate button in the top bar) are available on every page. When the weather lookup ships, you will be able to copy a design condition into a slot from that tool. Until then, you can still paste a slot into any psychrometric tool’s airstream if a slot is filled — Clear a slot from the climate sheet.</p>
 
-      <h3 class="help-sub">Every result is a shareable link</h3>
-      <p>Tool results live in the page's web address. Copy the URL after a calculation and it reopens with the same inputs and answer — handy for saving a case, sending it to a colleague, or bookmarking a standard scenario.</p>
+      <h3 class="help-sub">Some tools keep the case in the address</h3>
+      <p>Duct sizing, pipe sizing, the PT table, superheat/subcooling and the converter rebuild from the page address, so that URL can be copied. Psychrometric process tools keep the latest case in the browser session instead. There is no saved-project store.</p>
 
       <h3 class="help-sub">PDF report &amp; PNG chart export</h3>
       <p>Once a psychrometric or duct calculation succeeds, a <strong>Download PDF Report</strong> panel appears under the results. Fill in the Project / System / Revision / Author fields and download a formatted report with the inputs, results and chart. Where there's a chart, an <strong>Export Chart (PNG)</strong> button gives you just the image. Reports are generated from the same calculation as the screen, so they can never disagree with it.</p>
@@ -85,12 +85,12 @@
     <section class="help-section" id="account-billing" data-help-section
              data-keywords="account billing subscription subscribe cancel unsubscribe trial invoice receipt stripe link payment refund support contact pricing">
       <h2 class="help-h">Account, billing &amp; cancel</h2>
-      <p class="help-lead">How trials, the £9.50/month subscription, invoices, and cancellation work — without a separate billing portal inside the app.</p>
+      <p class="help-lead">How trials, the £{{ access.price_monthly }}/month subscription, invoices, and cancellation work — without a separate billing portal inside the app.</p>
 
       <h3 class="help-sub">Trial and subscribe</h3>
       <ol class="help-steps">
         <li>New accounts get a <strong>14-day free trial</strong> of the full calculator suite.</li>
-        <li>When you’re ready to continue (anytime during the trial), open <a href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a> and complete Stripe’s secure checkout (card; tax for your location is calculated there).</li>
+        <li>When you’re ready to continue (anytime during the trial), open <a href="{{ url_for('billing.subscribe') }}">Pricing</a> and complete Stripe’s secure checkout (card; tax for your location is calculated there).</li>
         <li>After payment, suite access stays unlocked. You’ll also get a confirmation email from us when the subscription becomes active.</li>
       </ol>
 

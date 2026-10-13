@@ -26,6 +26,12 @@ class ToolLanding:
     cta_app_endpoint: str  # flask endpoint after login
     cta_label: str
     related_slugs: tuple[str, ...] = ()
+    # When set, /tools/<slug> renders this view with no login (same engine path).
+    free_view: str = ""
+    faqs: tuple[tuple[str, str], ...] = ()
+    example: str = ""
+    pro_next: str = ""
+    pro_endpoint: str = ""
 
 
 LANDINGS: dict[str, ToolLanding] = {
@@ -71,10 +77,33 @@ LANDINGS: dict[str, ToolLanding] = {
         cta_app_endpoint="v2.single_point",
         cta_label="Open single-point tool",
         related_slugs=("mixed-air-calculator", "duct-sizing-calculator"),
+        free_view="v2.single_point",
+        pro_endpoint="v2.interactive_chart",
+        example=(
+            "At sea-level pressure, 24 °C dry-bulb and 50% RH resolves to about "
+            "17.1 °C wet-bulb, 12.9 °C dew point, 9.3 g/kg humidity ratio and "
+            "47.8 kJ/kg enthalpy."
+        ),
+        pro_next=(
+            "Need process lines, AHU analysis, charts and reports? "
+            "Explore the full Psychrometric suite in Pro."
+        ),
+        faqs=(
+            (
+                "Which two inputs does a state need?",
+                "Dry-bulb plus one of relative humidity, wet-bulb, dew point or humidity ratio. "
+                "The page solves the rest at the stated barometric pressure.",
+            ),
+            (
+                "Does this replace a printed chart?",
+                "It is the same style of moist-air state check engineers do on a chart. "
+                "Coil geometry, fan heat and control strategy are separate design steps.",
+            ),
+        ),
     ),
     "mixed-air-calculator": ToolLanding(
         slug="mixed-air-calculator",
-        title="Free Psychrometric Mixed Air Calculator | HVAC-calcs.app",
+        title="Psychrometric Mixed Air Calculator | HVAC-CALCS",
         meta_description=(
             "Online mixed-air psychrometric calculator for HVAC design. Blend outdoor and "
             "return airflows, get mixed dry-bulb, humidity and enthalpy. SI and imperial. "
@@ -151,6 +180,24 @@ LANDINGS: dict[str, ToolLanding] = {
         cta_app_endpoint="v2.duct",
         cta_label="Open duct sizing tool",
         related_slugs=("chilled-water-pipe-sizing", "mixed-air-calculator"),
+        free_view="v2.duct",
+        pro_endpoint="v2.duct_index_leg",
+        pro_next=(
+            "Need the pressure drop for the complete run including fittings and equipment? "
+            "Build the Index Leg in Pro."
+        ),
+        faqs=(
+            (
+                "What does one section include?",
+                "Airflow and a size (or a velocity / friction target) for a single duct. "
+                "Fittings, equipment and the index run are the Pro index-leg tool.",
+            ),
+            (
+                "Which friction method is used?",
+                "Darcy–Weisbach with an explicit Colebrook–White friction factor. "
+                "See Methods for the equivalent-diameter rules and their limits.",
+            ),
+        ),
     ),
     "chilled-water-pipe-sizing": ToolLanding(
         slug="chilled-water-pipe-sizing",
@@ -190,6 +237,24 @@ LANDINGS: dict[str, ToolLanding] = {
         cta_app_endpoint="v2.pipe",
         cta_label="Open pipe sizing tool",
         related_slugs=("lthw-pipe-pressure-drop", "duct-sizing-calculator"),
+        free_view="v2.pipe",
+        pro_endpoint="v2.pipe_system",
+        pro_next=(
+            "Need total circuit resistance and pump head? "
+            "Build the complete Pipe System in Pro."
+        ),
+        faqs=(
+            (
+                "Is this the pump head?",
+                "No. This page sizes one pipe from flow and checks velocity and pressure gradient. "
+                "Circuit fittings, devices and pump head are the Pipe System workflow.",
+            ),
+            (
+                "Which fluids are included?",
+                "Water and the glycol mixtures implemented in the engine, at the mean temperature you enter. "
+                "Property sources are listed on the Methods page.",
+            ),
+        ),
     ),
     "lthw-pipe-pressure-drop": ToolLanding(
         slug="lthw-pipe-pressure-drop",
@@ -230,6 +295,151 @@ LANDINGS: dict[str, ToolLanding] = {
         cta_app_endpoint="v2.pipe_system",
         cta_label="Open system pressure-drop tool",
         related_slugs=("chilled-water-pipe-sizing", "duct-sizing-calculator"),
+        pro_next=(
+            "Pipe system pressure drop and pump head are part of HVAC-CALCS Pro."
+        ),
+    ),
+    "refrigerant-pt-table": ToolLanding(
+        slug="refrigerant-pt-table",
+        title="Refrigerant PT Table | HVAC-CALCS",
+        meta_description=(
+            "Refrigerant pressure-temperature table for HVAC engineers. Bubble and dew "
+            "pressures from CoolProp, in barg, for common refrigerants. No account required."
+        ),
+        h1="Refrigerant PT table",
+        eyebrow="Refrigeration",
+        lead=(
+            "Look up bubble and dew pressure against temperature for a chosen refrigerant. "
+            "Zeotropic blends show glide. Pressures are gauge (barg) relative to 1.01325 bar absolute."
+        ),
+        how_heading="How to use this PT table",
+        how_body=(
+            "Choose a refrigerant. The table lists saturation pressures across a fixed "
+            "temperature range. Use dew pressure with evaporating temperature and bubble "
+            "pressure with condensing temperature when you move on to line sizing."
+        ),
+        concept_heading="What is a refrigerant PT table?",
+        concept_body=(
+            "A pressure-temperature table is the saturation relationship technicians and "
+            "designers use to relate gauge readings to evaporating and condensing temperatures."
+        ),
+        formulas_heading="Saturation basis",
+        formulas=(
+            "Bubble pressure is the saturated liquid pressure (quality 0).",
+            "Dew pressure is the saturated vapour pressure (quality 1).",
+            "Glide is the temperature difference between dew and bubble at the same pressure.",
+            "Properties come from CoolProp HEOS. R-744 transcritical behaviour is out of scope.",
+        ),
+        cta_app_endpoint="v2.refrig_pt_table",
+        cta_label="Open PT table",
+        related_slugs=("superheat-subcooling", "duct-sizing-calculator"),
+        free_view="v2.refrig_pt_table",
+        pro_endpoint="v2.refrig_pipe_sizer",
+        pro_next=(
+            "Need suction, liquid or discharge line sizes? DX pipe sizing is in Pro."
+        ),
+        faqs=(
+            (
+                "Why do bubble and dew differ?",
+                "Zeotropic blends boil across a glide, so liquid and vapour saturation "
+                "pressures are not the same at one temperature.",
+            ),
+            (
+                "Is CO₂ included?",
+                "Transcritical R-744 logic is not part of this table.",
+            ),
+        ),
+    ),
+    "superheat-subcooling": ToolLanding(
+        slug="superheat-subcooling",
+        title="Superheat and Subcooling Calculator | HVAC-CALCS",
+        meta_description=(
+            "DX superheat and subcooling check from suction and liquid pressures and "
+            "pipe temperatures. CoolProp saturation temperatures. No account required."
+        ),
+        h1="Superheat and subcooling",
+        eyebrow="Refrigeration",
+        lead=(
+            "Enter low-side and high-side pressures with suction and liquid line temperatures. "
+            "The tool reports superheat and subcooling against dew and bubble temperatures."
+        ),
+        how_heading="How to use this diagnostic",
+        how_body=(
+            "Select the refrigerant and whether pressures are barg or bara. Enter the gauge "
+            "readings and the measured pipe temperatures. Superheat is suction temperature "
+            "minus dew temperature at the low-side pressure. Subcooling is bubble temperature "
+            "at the high-side pressure minus liquid temperature."
+        ),
+        concept_heading="What do superheat and subcooling tell you?",
+        concept_body=(
+            "Superheat shows how far the suction vapour is above saturation. Subcooling shows "
+            "how far the liquid is below saturation. Both are field checks against the "
+            "equipment maker’s targets, not a charge calculator."
+        ),
+        formulas_heading="Definitions used here",
+        formulas=(
+            "SH = T_suction − T_dew(P_low).",
+            "SC = T_bubble(P_high) − T_liquid.",
+            "Colour bands are typical TXV field guidance, not a manufacturer specification.",
+            "The charge calculator is not available.",
+        ),
+        cta_app_endpoint="v2.refrig_diagnostics",
+        cta_label="Open superheat tool",
+        related_slugs=("refrigerant-pt-table",),
+        free_view="v2.refrig_diagnostics",
+        pro_endpoint="v2.refrig_pipe_sizer",
+        pro_next="DX pipe sizing for the circuit is in Pro.",
+        faqs=(
+            (
+                "Does this calculate refrigerant charge?",
+                "No. It compares measured pressures and temperatures with saturation state. "
+                "A system charge calculator is not available.",
+            ),
+            (
+                "Which pressure unit should I use?",
+                "Match the manifold. Barg is gauge; bara is absolute. The tool converts bara "
+                "to gauge before the saturation lookup.",
+            ),
+        ),
+    ),
+    "unit-converter": ToolLanding(
+        slug="unit-converter",
+        title="HVAC Unit Converter | HVAC-CALCS",
+        meta_description=(
+            "Convert HVAC units for length, flow, pressure, power and more. SI and imperial. "
+            "No account required on HVAC-CALCS."
+        ),
+        h1="Unit converter",
+        eyebrow="Utilities",
+        lead=(
+            "Convert a single value across the units used on HVAC drawings and data sheets. "
+            "The same conversion factors back the calculator displays."
+        ),
+        how_heading="How to use the converter",
+        how_body=(
+            "Pick a category, enter a value and the unit you have. Every other unit in that "
+            "category is shown from the same canonical conversion."
+        ),
+        concept_heading="Why a dedicated converter?",
+        concept_body=(
+            "Mixed SI and imperial schedules are still common. Converting in the same place "
+            "as the design tools avoids a second spreadsheet with a different factor."
+        ),
+        formulas_heading="Conversion basis",
+        formulas=(
+            "Each category converts through one canonical SI quantity.",
+            "Display rounding follows the unit, not a second formula.",
+        ),
+        cta_app_endpoint="v2.converter",
+        cta_label="Open converter",
+        related_slugs=("duct-sizing-calculator", "chilled-water-pipe-sizing"),
+        free_view="v2.converter",
+        faqs=(
+            (
+                "Are these the same factors as the calculators?",
+                "Yes. The converter and the calculator displays share the engine unit module.",
+            ),
+        ),
     ),
 }
 

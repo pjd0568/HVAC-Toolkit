@@ -53,15 +53,23 @@ def tools_index():
     )
 
 
-@bp.get("/tools/<slug>")
+@bp.route("/tools/<slug>", methods=["GET", "POST"])
 def tool_landing(slug: str):
-    from flask import abort
+    from flask import abort, g
 
     from app.seo_tools import get_landing
 
     landing = get_landing(slug)
     if landing is None:
         abort(404)
+    if landing.free_view:
+        # Same server-side calculation as the signed-in tool. No second formula path.
+        g.public_embed = True
+        g.public_landing = landing
+        view = current_app.view_functions.get(landing.free_view)
+        if view is None:
+            abort(404)
+        return view()
     related = [get_landing(s) for s in landing.related_slugs]
     related = [r for r in related if r is not None]
     return render_template(
@@ -69,6 +77,16 @@ def tool_landing(slug: str):
         landing=landing,
         related=related,
     )
+
+
+@bp.get("/about")
+def about():
+    return render_template("marketing/about.html")
+
+
+@bp.get("/methods")
+def methods():
+    return render_template("marketing/methods.html")
 
 
 @bp.get("/privacy")
@@ -206,18 +224,25 @@ def robots_txt():
     lines = [
         "User-agent: *",
         "Allow: /",
+        "Allow: /tools/",
+        "Allow: /methods",
+        "Allow: /about",
+        "Allow: /reference",
+        "Allow: /methodology",
         "Disallow: /app",
+        "Disallow: /v2/",
         "Disallow: /weather",
         "Disallow: /psychrometrics",
         "Disallow: /duct-sizing",
         "Disallow: /pipe-sizing",
+        "Disallow: /refrigeration",
         "Disallow: /converter",
         "Disallow: /projects",
-        "Disallow: /reference",
         "Disallow: /help",
         "Disallow: /login",
         "Disallow: /register",
         "Disallow: /preferences/",
+        "Disallow: /create-checkout-session",
         "",
         f"Sitemap: {base}/sitemap.xml",
         "",
@@ -247,6 +272,9 @@ def sitemap_xml():
     paths = [
         ("/", "weekly", "1.0"),
         ("/tools/", "weekly", "0.9"),
+        ("/methods", "monthly", "0.7"),
+        ("/about", "monthly", "0.5"),
+        ("/reference/", "monthly", "0.6"),
         ("/subscribe", "weekly", "0.8"),
         ("/contact", "monthly", "0.6"),
         ("/terms", "yearly", "0.3"),

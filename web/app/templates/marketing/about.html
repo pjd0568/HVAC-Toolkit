@@ -1,0 +1,23 @@
+{% extends "marketing/base.html" %}
+{% block title %}About — HVAC-CALCS{% endblock %}
+{% block meta_description %}HVAC-CALCS is an independent {{ legal_entity }} product for everyday HVAC design and site calculations.{% endblock %}
+{% block content %}
+<article class="legal-doc">
+  <h1>About</h1>
+  <p>
+    HVAC-CALCS is an independent {{ legal_entity }} product, created around real
+    HVAC design and site workflows. The calculators cover the checks engineers
+    repeat: moist-air state, a duct or pipe section, a refrigerant saturation
+    lookup, and the longer workflows that follow when a single number is not enough.
+  </p>
+  <p>
+    Methods, assumptions and limits are published so a result can be reviewed
+    before anyone creates an account. A cited standard is a reference for the
+    method, not a certification or a claim that a project complies with that standard.
+  </p>
+  <p>
+    <a href="{{ url_for('pages.methods') }}">Calculation methods</a>
+    · <a href="{{ url_for('pages.contact') }}">Contact</a>
+  </p>
+</article>
+{% endblock %}

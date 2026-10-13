@@ -1,70 +1,124 @@
 {% extends "marketing/base.html" %}
-{% block title %}Free Psychrometric, Duct &amp; Pipe Sizing Calculators | HVAC-calcs.app{% endblock %}
-{% block meta_description %}Online HVAC calculators for engineers: free psychrometric calculator, mixed air, duct sizing, chilled water pipe sizing and pressure drop. SI and imperial. 14-day free trial, then £9.50/month.{% endblock %}
+{% block title %}HVAC calculations without the spreadsheet | HVAC-CALCS{% endblock %}
+{% block meta_description %}Practical psychrometrics, ductwork, hydronics and refrigeration tools for working HVAC engineers. Free standalone calculations, with Pro workflows when you need them.{% endblock %}
 {% block body_class %}marketing-home{% endblock %}
 {% block content %}
-<section class="coming-hero">
-  <h1 class="coming-title">HVAC calculators for day-to-day design</h1>
-  <p class="coming-lead">
-    Professional tools for engineers, designers and contractors —
-    <strong>psychrometrics</strong>, <strong>duct sizing</strong>, and
-    <strong>pipe sizing</strong>. SI and imperial. Built for clean, repeatable
-    HVAC design work. Active development is underway for project-based data
-    storage and accurate ASHRAE weather data analysis in the app.
-  </p>
-  <div class="coming-actions">
-    {% if current_user.is_authenticated %}
-      <a class="btn-accent" href="{{ url_for('v2.dashboard') }}">Open toolkit</a>
-      <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
-    {% elif registration_open %}
-      <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
-      <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
-      <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
-    {% else %}
-      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a>
-      <a class="btn-ghost" href="#psychro-teaser">Try free calculator</a>
-      <a class="btn-ghost" href="{{ url_for('auth.login') }}">Log in</a>
-    {% endif %}
-    {% if current_user.is_authenticated or registration_open %}
-    <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">Pricing/Subscribe</a>
-    {% endif %}
-    <a class="btn-ghost" href="{{ url_for('pages.tools_index') }}">Calculator guides</a>
+<section class="home-hero">
+  <div>
+    <h1>HVAC calculations without the spreadsheet</h1>
+    <p class="home-lead">
+      Practical psychrometrics, ductwork, hydronics and refrigeration tools built for
+      working HVAC engineers. Run everyday calculations in the browser in SI or
+      Imperial units, with transparent engineering methods and professional workflows
+      when you need them.
+    </p>
+    <div class="coming-actions">
+      <a class="btn-accent" href="{{ url_for('pages.tools_index') }}">Try calculators free</a>
+      <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">Explore Pro</a>
+    </div>
+    <p class="home-micro">No account required for free tools · Pro launch price £{{ access.price_monthly }}/month</p>
+  </div>
+  <figure class="home-proof">
+    <img src="{{ url_for('static', filename='images/product/mixed-air-desktop.png') }}" alt="Mixed air psychrometric result with chart in HVAC-CALCS" width="1440" height="900">
+    <figcaption>Mixed-air state and chart from the psychrometric suite.</figcaption>
+  </figure>
+</section>
+
+<section class="home-section" id="calculators">
+  <h2>Try a calculator</h2>
+  <div class="tool-cards">
+    <a class="tool-card" href="{{ url_for('pages.tool_landing', slug='psychrometric-calculator') }}"><strong>Psychrometric state</strong><span>Dry-bulb and humidity to wet-bulb, dew point and enthalpy.</span></a>
+    <a class="tool-card" href="{{ url_for('pages.tool_landing', slug='duct-sizing-calculator') }}"><strong>Duct sizing</strong><span>One section: velocity or friction, circular, rectangular or flat oval.</span></a>
+    <a class="tool-card" href="{{ url_for('pages.tool_landing', slug='chilled-water-pipe-sizing') }}"><strong>Pipe sizing</strong><span>One hydronic section with velocity and pressure-gradient checks.</span></a>
+    <a class="tool-card" href="{{ url_for('pages.tool_landing', slug='refrigerant-pt-table') }}"><strong>Refrigerant PT</strong><span>Bubble and dew pressures for the refrigerant you select.</span></a>
+    <a class="tool-card" href="{{ url_for('pages.tool_landing', slug='superheat-subcooling') }}"><strong>Superheat / subcooling</strong><span>Field check from manifold pressures and pipe temperatures.</span></a>
+    <a class="tool-card" href="{{ url_for('pages.tool_landing', slug='unit-converter') }}"><strong>Unit converter</strong><span>SI and imperial conversions used by the calculators.</span></a>
   </div>
 </section>
 
 {% include "marketing/_psychro_teaser.html" %}
 
-<section class="coming-section">
-  <h2>Psychrometric, duct and pipe sizing calculators</h2>
-  <p class="coming-section-lead">
-    A focused suite of HVAC engineering calculators. Start with a
-    <strong>14-day free trial</strong>, then continue for
-    <strong>£9.50/month</strong> for full suite access. Read the public
-    <a href="{{ url_for('pages.tools_index') }}">calculator guides</a> for methods
-    and formulas before you open the app.
-  </p>
-  <ul class="coming-list">
-    <li><a href="{{ url_for('pages.tool_landing', slug='psychrometric-calculator') }}"><strong>Psychrometric calculator</strong></a> — free single-point teaser, plus multi-point chart, mixed air, cooling coil, desiccant, heat &amp; humidify, adiabatic cool, AHU design</li>
-    <li><a href="{{ url_for('pages.tool_landing', slug='mixed-air-calculator') }}"><strong>Mixed air calculator</strong></a> — outdoor + return blend for AHU entering conditions</li>
-    <li><a href="{{ url_for('pages.tool_landing', slug='duct-sizing-calculator') }}"><strong>Duct sizing calculator</strong></a> and <a href="{{ url_for('pages.tool_landing', slug='lthw-pipe-pressure-drop') }}"><strong>pipe pressure-drop</strong></a> workflows</li>
-    <li><a href="{{ url_for('pages.tool_landing', slug='chilled-water-pipe-sizing') }}"><strong>Chilled water pipe sizing</strong></a> with velocity and pressure-gradient checks</li>
-    <li><strong>Coming next</strong> — project-based data storage and ASHRAE weather data analysis</li>
-    <li>HVAC unit converter, design guides, and PDF reports</li>
-  </ul>
+<section class="home-section">
+  <h2>Four disciplines</h2>
+  <div class="discipline-grid">
+    <article class="tool-card"><strong>Psychrometrics</strong><span>States, mixing, coils, heat and humidity, adiabatic cooling and AHU paths.</span></article>
+    <article class="tool-card"><strong>Air distribution</strong><span>Duct sizing now. Index-leg pressure drop with fittings in Pro.</span></article>
+    <article class="tool-card"><strong>Hydronics</strong><span>Pipe sizing now. Circuit resistance and pump head in Pro.</span></article>
+    <article class="tool-card"><strong>Refrigeration</strong><span>PT table and superheat/subcooling now. DX line sizing in Pro.</span></article>
+  </div>
 </section>
 
-<section class="coming-section">
-  <h2>Built for practising engineers</h2>
-  <p class="coming-section-lead">
-    Use SI (metric) or IP (imperial) units across every tool. Results are a design
-    aid — always apply professional judgement and verify against codes and
-    manufacturer data.
+<section class="home-section">
+  <h2>Go further with HVAC-CALCS Pro</h2>
+  <ul class="coming-list">
+    <li>Advanced psychrometric and AHU analyses, including the multi-point chart</li>
+    <li>Duct index-leg workflow with fittings and equipment</li>
+    <li>Hydronic system and pump-head workflow</li>
+    <li>DX pipe sizing</li>
+    <li>Professional PDF, CSV and chart exports</li>
+  </ul>
+  {% set cta = pro_cta() %}
+  <p><a class="btn-accent" data-pro-cta="home" href="{{ cta.href }}">{{ cta.label }}</a></p>
+</section>
+
+<section class="home-section">
+  <h2>Built from real HVAC engineering experience</h2>
+  <p class="home-lead">
+    HVAC-CALCS is an independent {{ legal_entity }} product, shaped around design
+    and site calculations engineers repeat every week. The methods are written
+    down so you can see the equations, assumptions and limits before you rely on a number.
   </p>
+  <p><a href="{{ url_for('pages.methods') }}">Read the calculation methods</a> · <a href="{{ url_for('pages.about') }}">About</a></p>
+</section>
+
+<section class="home-section">
+  <h2>Methods and limits</h2>
   <p>
-    Questions? <a href="{{ url_for('pages.contact') }}">Contact us</a>
-    · <a href="{{ url_for('pages.terms') }}">Terms</a>
-    · <a href="{{ url_for('pages.privacy') }}">Privacy</a>
+    Moist air follows ASHRAE Fundamentals-style relations. Duct friction is
+    Darcy–Weisbach. Pipe friction follows the same family of equations with
+    catalogue bores. Refrigerant saturation properties come from CoolProp.
+    Citing a reference is not a claim of certification or code compliance.
   </p>
+  <p class="public-disclaimer">Results are a design aid. Verify critical selections against licensed data, manufacturer information and the project specification.</p>
+</section>
+
+<section class="home-section" id="compare">
+  <h2>Free and Pro</h2>
+  <div class="compare-grid">
+    <article class="compare-card">
+      <h3>Free</h3>
+      <p>Quick standalone HVAC calculations</p>
+      <ul>
+        <li>Selected single calculations</li>
+        <li>No account required</li>
+        <li>SI and Imperial</li>
+        <li>Transparent methods</li>
+        <li>Useful results without a trial countdown</li>
+      </ul>
+    </article>
+    <article class="compare-card featured">
+      <h3>Pro</h3>
+      <p>Complete engineering workflows</p>
+      <p class="pricing-amount">£{{ access.price_monthly }}<span>/month</span></p>
+      <ul>
+        <li>Psychrometric processes, AHU analysis and the multi-point chart</li>
+        <li>Duct index leg and hydronic pump-head workflows</li>
+        <li>DX pipe sizing</li>
+        <li>PDF, CSV and chart exports</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section class="home-section">
+  <h2>Pricing</h2>
+  <p>Pro is £{{ access.price_monthly }}/month{% if registration_open %}, with a 14-day trial when you create an account{% endif %}. The launch price is the current price. It is not a promise that the amount never changes.</p>
+  <p><a class="btn-accent" href="{{ url_for('billing.subscribe') }}">See pricing</a></p>
+</section>
+
+<section class="home-section home-roadmap">
+  <h2>Not in the app yet</h2>
+  <p>Weather and design-condition lookup, project storage, refrigerant charge, room load, grille throw, expansion vessels, buffer tanks, fresh-air CO₂ and acoustics are not available. They are not part of Free or Pro today.</p>
 </section>
 {% endblock %}
 
@@ -73,25 +127,16 @@
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "{{ brand_name }} Free Psychrometric Calculator",
-  "url": "{{ public_base_url }}/#psychro-teaser",
+  "name": "HVAC-CALCS free psychrometric calculator",
+  "url": {{ (public_base_url ~ '/#psychro-teaser')|tojson }},
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "GBP",
-    "description": "Free single-point psychrometric calculator with 14-day full-suite trial"
-  },
-  "featureList": [
-    "Dry bulb and relative humidity or wet bulb inputs",
-    "Dew point, wet bulb, enthalpy, and specific volume outputs",
-    "SI and IP unit systems"
-  ]
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" }
 }
 </script>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{{ url_for('static', filename='js/psychro_teaser.js') }}?v=teaser-3" defer></script>
+<script src="{{ url_for('static', filename='js/psychro_teaser.js') }}?v=teaser-4" defer></script>
 {% endblock %}

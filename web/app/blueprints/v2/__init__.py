@@ -53,7 +53,6 @@ def more():
 
 
 @bp.get("/psychrometrics/")
-@login_required
 def psychro_picker():
     return render_template("v2/psychro_picker.html", active="psychro", nav="psychro")
 
@@ -117,19 +116,16 @@ def converter():
 
 
 @bp.get("/air/")
-@login_required
 def air_picker():
     return render_template("v2/air_picker.html", active="duct", nav="duct")
 
 
 @bp.get("/water/")
-@login_required
 def water_picker():
     return render_template("v2/water_picker.html", active="pipe", nav="pipe")
 
 
 @bp.get("/refrigeration/")
-@login_required
 def refrig_picker():
     return render_template("v2/refrig_picker.html", active="refrig", nav="refrig")
 
@@ -171,7 +167,6 @@ def refrig_diagnostics():
 
 
 @bp.get("/refrigeration/charge/")
-@login_required
 def refrig_charge():
     """Coming soon — trim charge and total system charge."""
     return render_template(
@@ -182,7 +177,6 @@ def refrig_charge():
 
 
 @bp.get("/acoustics/")
-@login_required
 def acoustics_picker():
     from app.coming_soon_tools import tools_for_suite
 
@@ -195,7 +189,6 @@ def acoustics_picker():
 
 
 @bp.get("/coming-soon/<slug>/")
-@login_required
 def coming_soon_tool(slug: str):
     """Generic Coming Soon placeholder for roadmap modules."""
     from flask import abort
@@ -310,7 +303,7 @@ def pipe_system():
 
 
 @bp.route("/psychrometrics/interactive-chart", methods=["GET"])
-@require_module("psychro.single_point")
+@require_module("psychro.interactive_chart")
 def interactive_chart():
     """Multi-Point Interactive Chart — place A–D and map a process between any two."""
     U = current_view()

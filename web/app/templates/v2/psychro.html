@@ -1,9 +1,9 @@
-{% extends "v2/base.html" %}
+{% extends "marketing/public_calc_shell.html" if public_embed else "v2/base.html" %}
 {% from "_state_input.html" import state_input with context %}
 {% from "_site_conditions.html" import site_conditions with context %}
 {% from "_report_form.html" import report_form with context %}
 {% block page_title %}Psychrometrics - Single Point{% endblock %}
-{% block content %}
+{% block tool_body %}
 
 {% with tool='single' %}
 {% include "_psychro_tool_nav.html" %}
@@ -72,11 +72,12 @@
   </div>
 </div>
 
-{% if saved_points %}
+{% if saved_points and access.has_suite_access %}
 {{ report_form(url_for('psychro.single_point_report'), form, url_for('psychro.single_point_chart_png')) }}
 {% endif %}
 
 {% endblock %}
+{% block calc_complete %}{% if saved_points %}1{% endif %}{% endblock %}
 
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/psychro_teaser_hydrate.js') }}?v=teaser-1" defer></script>

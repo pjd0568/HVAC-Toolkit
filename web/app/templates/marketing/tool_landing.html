@@ -9,18 +9,11 @@
   <p class="coming-lead">{{ landing.lead }}</p>
 
   <div class="coming-actions">
-    {% if current_user.is_authenticated %}
+    {% if access.has_suite_access %}
       <a class="btn-accent" href="{{ url_for(landing.cta_app_endpoint) }}">{{ landing.cta_label }}</a>
-      <a class="btn-ghost" href="{{ url_for('v2.dashboard') }}">Open toolkit</a>
-    {% elif registration_open %}
-      <a class="btn-accent" href="{{ url_for('auth.register') }}">Start free trial</a>
-      <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for(landing.cta_app_endpoint)) }}">Log in</a>
     {% else %}
-      <a class="btn-accent" href="{{ url_for('billing.subscribe') }}">Pricing / Subscribe</a>
-      <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for(landing.cta_app_endpoint)) }}">Log in</a>
-    {% endif %}
-    {% if landing.slug == 'psychrometric-calculator' %}
-      <a class="btn-ghost" href="{{ url_for('main.coming_soon') }}#psychro-teaser">Try free calculator</a>
+      {% set cta = pro_cta(url_for(landing.cta_app_endpoint)) %}
+      <a class="btn-accent" data-pro-cta="{{ landing.slug }}" href="{{ cta.href }}">{{ cta.label }}</a>
     {% endif %}
   </div>
 
@@ -79,11 +72,12 @@
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "description": {{ landing.meta_description|tojson }},
+  "isAccessibleForFree": false,
   "offers": {
     "@type": "Offer",
-    "price": "9.50",
+    "price": "{{ access.price_monthly }}",
     "priceCurrency": "GBP",
-    "description": "Full suite after 14-day free trial"
+    "description": "Pro subscription for this workflow"
   },
   "provider": {
     "@type": "Organization",

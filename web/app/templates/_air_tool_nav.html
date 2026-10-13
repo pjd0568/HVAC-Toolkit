@@ -14,17 +14,5 @@
     <span class="suite-tool-nav-short">Index</span>
   </a>
   {% endif %}
-  <a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}"
-     class="{{ 'active' if tool == 'room' }}">
-    <span class="suite-tool-nav-full">Room load</span>
-    <span class="suite-tool-nav-short">Load</span>
-    <span class="soon">Soon</span>
-  </a>
-  <a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}"
-     class="{{ 'active' if tool == 'grille' }}">
-    <span class="suite-tool-nav-full">Grille throw</span>
-    <span class="suite-tool-nav-short">Grille</span>
-    <span class="soon">Soon</span>
-  </a>
   <a href="{{ url_for('v2.air_picker') }}" class="suite-tool-nav-all">All</a>
 </nav>
