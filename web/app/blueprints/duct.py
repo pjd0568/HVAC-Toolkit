@@ -73,7 +73,7 @@ from __future__ import annotations
 import csv
 import io
 
-from flask import Blueprint, Response, jsonify, render_template, request
+from flask import Blueprint, Response, has_request_context, jsonify, render_template, request, session
 
 from hvac_engine import duct as eng
 from hvac_engine import fittings as fit
@@ -163,6 +163,55 @@ def _round25(value_m, on):
     return eng.round_to_increment(value_m, 25.0) if on else value_m
 
 
+# SI volume display for the sizer only. Canonical engine flow stays m³/h.
+# A bare volume in the query string (no duct_flow_unit) stays m³/s so older
+# links keep the same airflow.
+DUCT_FLOW_UNITS = ("ls", "m3h", "m3s")
+_DUCT_FLOW_SYMBOL = {"ls": "l/s", "m3h": "m³/h", "m3s": "m³/s"}
+_DUCT_FLOW_FROM_M3H = {"ls": 1.0 / 3.6, "m3h": 1.0, "m3s": 1.0 / 3600.0}
+_DUCT_FLOW_DP = {"ls": 1, "m3h": 1, "m3s": 3}
+_DEFAULT_DUCT_VOLUME_M3H = 1800.0
+
+
+def _duct_flow_unit(args, U) -> str:
+    """Active sizer volume unit. IP ignores this and stays on CFM."""
+    if U.system != "SI":
+        return "m3s"
+    raw = (args.get("duct_flow_unit") or "").strip()
+    if raw in DUCT_FLOW_UNITS:
+        if has_request_context():
+            session["duct_flow_unit"] = raw
+        return raw
+    if args.get("volume") not in (None, ""):
+        return "m3s"
+    if has_request_context():
+        saved = session.get("duct_flow_unit")
+        if saved in DUCT_FLOW_UNITS:
+            return saved
+    return "m3s"
+
+
+def duct_flow_symbol(unit: str, U) -> str:
+    if U.system != "SI":
+        return U.sym("duct_flow")
+    return _DUCT_FLOW_SYMBOL.get(unit, "m³/s")
+
+
+def fmt_duct_volume(m3h: float, unit: str, U) -> str:
+    if U.system != "SI":
+        return U.fmt("duct_flow", m3h)
+    factor = _DUCT_FLOW_FROM_M3H.get(unit, _DUCT_FLOW_FROM_M3H["m3s"])
+    dp = _DUCT_FLOW_DP.get(unit, 3)
+    return f"{m3h * factor:.{dp}f}"
+
+
+def duct_volume_to_m3h(display: float, unit: str, U) -> float:
+    if U.system != "SI":
+        return U.to_si("duct_flow", display)
+    factor = _DUCT_FLOW_FROM_M3H.get(unit, _DUCT_FLOW_FROM_M3H["m3s"])
+    return display / factor
+
+
 # -- top 3-column sizer (fully independent of the index leg) -------------------------
 
 def _compute_state(args, U):
@@ -189,11 +238,13 @@ def _compute_state(args, U):
             if basis == "velocity"
             else U.fmt("friction_rate", eng.DEFAULT_MAX_FRICTION_RATE)
         )
-        fields["volume"] = _s(args, "volume", U.fmt("duct_flow", 1800.0))
+        flow_unit = _duct_flow_unit(args, U)
+        fields["duct_flow_unit"] = flow_unit if U.system == "SI" else ""
+        fields["volume"] = _s(args, "volume", fmt_duct_volume(_DEFAULT_DUCT_VOLUME_M3H, flow_unit, U))
         fields["basis"] = basis
         fields["target_value"] = _s(args, "target_value", default_target)
 
-        volume_si = U.to_si("duct_flow", _f(fields["volume"]))
+        volume_si = duct_volume_to_m3h(_f(fields["volume"]), flow_unit, U)
         target_value_si = U.to_si(basis, _f(fields["target_value"]))
 
         # Thresholds and default-derivation parameters (Correction #3: no
@@ -723,7 +774,7 @@ def _duct_input_rows(fields, U):
     circular_mm = fields.get("circular_mm") or ""
     circular_desc = "Auto (calculated)" if not circular_mm else f"{circular_mm} {U.sym('duct_dimension')} (Lindab stock)"
     return [
-        ("Air Volume", fields["volume"], U.sym("duct_flow")),
+        ("Air Volume", fields["volume"], duct_flow_symbol(fields.get("duct_flow_unit") or "m3s", U)),
         ("Sizing Basis", basis_label, ""),
         ("Target Value", fields["target_value"], target_unit),
         ("Circular Stock Size", circular_desc, ""),

@@ -237,11 +237,15 @@ def coming_soon_tool(slug: str):
 def duct():
     U = current_view()
     fields, circular, rectangular, flat_oval, error = duct_mod._compute_state(request.args, U)
+    shape = request.args.get("shape", "circular")
+    if shape not in ("circular", "rectangular", "flat_oval"):
+        shape = "circular"
     return render_template(
         "v2/duct.html",
         active="duct",
         nav="duct",
         U=U,
+        shape=shape,
         fields=fields,
         circular=circular,
         rectangular=rectangular,

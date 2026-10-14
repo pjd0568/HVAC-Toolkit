@@ -98,6 +98,7 @@
     basis: document.getElementById("f-basis"),
     target: document.getElementById("f-target"),
     targetUnit: document.getElementById("f-target-unit"),
+    ductFlowUnit: document.getElementById("f-duct-flow-unit"),
     circularMm: document.getElementById("f-circular-mm"),
     rectWidthHidden: document.getElementById("f-rect-width"),
     rectHeightHidden: document.getElementById("f-rect-height"),
@@ -135,7 +136,38 @@
   function volumeM3s() {
     var v = parseFloat(els.volume && els.volume.value) || 0;
     if (UNIT_SYSTEM === "IP") return v * CFM_TO_M3S;
+    var unit = ductFlowUnit();
+    if (unit === "ls") return v / 1000.0;
+    if (unit === "m3h") return v / 3600.0;
     return v;
+  }
+
+  // Display factors match blueprints/duct.py (_DUCT_FLOW_FROM_M3H / _DUCT_FLOW_DP).
+  var DUCT_FLOW_TO_M3H = { ls: 3.6, m3h: 1, m3s: 3600 };
+  var DUCT_FLOW_DP = { ls: 1, m3h: 1, m3s: 3 };
+
+  function ductFlowUnit() {
+    if (UNIT_SYSTEM !== "SI") return "m3s";
+    var raw = els.ductFlowUnit ? els.ductFlowUnit.value : (form.dataset.ductFlowUnit || "m3s");
+    return DUCT_FLOW_TO_M3H[raw] ? raw : "m3s";
+  }
+
+  function convertDuctVolume(value, fromUnit, toUnit) {
+    var m3h = value * (DUCT_FLOW_TO_M3H[fromUnit] || 3600);
+    var next = m3h / (DUCT_FLOW_TO_M3H[toUnit] || 3600);
+    return next.toFixed(DUCT_FLOW_DP[toUnit] || 3);
+  }
+
+  function setDuctFlowUnit(unit) {
+    if (!els.ductFlowUnit) return;
+    els.ductFlowUnit.value = unit;
+    form.dataset.ductFlowUnit = unit;
+    document.querySelectorAll("[data-duct-flow-unit]").forEach(function (btn) {
+      if (btn.tagName !== "BUTTON") return;
+      var on = btn.getAttribute("data-duct-flow-unit") === unit;
+      btn.classList.toggle("on", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
   }
 
   function scrubRangeMm() {
@@ -235,6 +267,9 @@
     p.set("volume", els.volume.value);
     p.set("basis", els.basis.value);
     p.set("target_value", els.target.value);
+    if (UNIT_SYSTEM === "SI" && els.ductFlowUnit) {
+      p.set("duct_flow_unit", ductFlowUnit());
+    }
     p.set("circular_mm", els.circularMm.value || "");
     p.set("rect_width", els.rectWidthHidden.value || "");
     p.set("rect_height", els.rectHeightHidden.value || "");
@@ -362,6 +397,9 @@
         p.set(k, fields[k]);
       }
     });
+    var shapeBtn = document.querySelector("#v2-shape-tabs button.active");
+    var shape = shapeBtn ? shapeBtn.getAttribute("data-shape") : "";
+    if (shape) p.set("shape", shape);
     var newUrl = window.location.pathname + "?" + p.toString();
     window.history.replaceState(null, "", newUrl);
     if (window.HvacDraft) HvacDraft.save(HvacDraft.KEYS.ductSizer, p);
@@ -451,10 +489,25 @@
     });
   }
 
+  document.querySelectorAll(".duct-flow-units [data-duct-flow-unit]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var next = btn.getAttribute("data-duct-flow-unit");
+      var cur = ductFlowUnit();
+      if (!next || next === cur) return;
+      var v = parseFloat(els.volume.value);
+      if (!isNaN(v)) els.volume.value = convertDuctVolume(v, cur, next);
+      setDuctFlowUnit(next);
+      onLivePrimaryChange();
+      syncAllDimScrubs();
+    });
+  });
+
   els.basis.addEventListener("change", function () {
     var isVelocity = els.basis.value === "velocity";
     if (els.targetUnit) {
-      els.targetUnit.textContent = isVelocity ? els.targetUnit.dataset.velocitySym : els.targetUnit.dataset.frictionSym;
+      var sym = isVelocity ? els.targetUnit.dataset.velocitySym : els.targetUnit.dataset.frictionSym;
+      els.targetUnit.textContent = sym;
+      if (els.target) els.target.title = sym;
     }
     var defVel = form.dataset.defaultVelocity || "6";
     var defFric = form.dataset.defaultFriction || "1";

@@ -1,5 +1,4 @@
 {% extends "marketing/public_calc_shell.html" if public_embed else "v2/base.html" %}
-{% from "_duct_shared.html" import status_dot, status_legend with context %}
 {% from "_report_form.html" import report_form %}
 {% block page_title %}Duct Sizing{% endblock %}
 {% block tool_body %}
@@ -10,250 +9,375 @@
 
 <div id="duct-error">{% if error %}<div class="error">{{ error }}</div>{% endif %}</div>
 
-<div class="v2-duct-chrome">
-<form id="duct-form" method="get"
-      data-nudge-step="{{ nudge_step }}"
-      data-round25-step="{{ round25_step }}"
-      data-dim-unit="{{ U.sym('duct_dimension') }}"
+<div class="duct-sizer">
+  <div class="shape-tabs" id="v2-shape-tabs" role="tablist" aria-label="Duct shape">
+    <button type="button" data-shape="circular" class="{{ 'active' if shape == 'circular' }}" role="tab" aria-selected="{{ 'true' if shape == 'circular' else 'false' }}">Circular</button>
+    <button type="button" data-shape="rectangular" class="{{ 'active' if shape == 'rectangular' }}" role="tab" aria-selected="{{ 'true' if shape == 'rectangular' else 'false' }}">Rectangular</button>
+    <button type="button" data-shape="flat_oval" class="{{ 'active' if shape == 'flat_oval' }}" role="tab" aria-selected="{{ 'true' if shape == 'flat_oval' else 'false' }}">Flat oval</button>
+  </div>
+
+  <div class="duct-split">
+    <section class="duct-pane duct-pane-in" aria-label="Inputs">
+      <h2 class="duct-pane-title">Inputs</h2>
+      <form id="duct-form" class="compact-form" method="get"
+            data-nudge-step="{{ nudge_step }}"
+            data-round25-step="{{ round25_step }}"
+            data-dim-unit="{{ U.sym('duct_dimension') }}"
       data-unit-system="{{ U.system }}"
+      data-duct-flow-unit="{{ fields.duct_flow_unit or 'm3s' }}"
       data-default-velocity="{{ U.fmt('velocity', 6.0) }}"
       data-default-friction="{{ U.fmt('friction_rate', 1.0) }}">
-  <div class="v2-duct-duty" id="duct-duty-panel">
-    <div class="v2-duct-duty-row">
-      <div class="v2-duct-field v2-duct-field-vol">
-        <label for="f-volume">Volume <span class="v2-duct-unit">({{ U.sym('duct_flow') }})</span></label>
-        <input id="f-volume" name="volume" value="{{ fields.volume }}" inputmode="decimal">
-      </div>
-      <div class="v2-duct-field v2-duct-field-basis">
-        <label for="f-basis">Size by</label>
-        <select id="f-basis" name="basis">
-          <option value="velocity" {{ 'selected' if fields.basis == 'velocity' }}>Velocity</option>
-          <option value="friction_rate" {{ 'selected' if fields.basis == 'friction_rate' }}>{{ U.sym('friction_rate') }}</option>
-        </select>
-      </div>
-      <div class="v2-duct-field v2-duct-field-target">
-        <label id="f-target-label" for="f-target">Target <span class="v2-duct-unit">(<span id="f-target-unit" data-velocity-sym="{{ U.sym('velocity') }}" data-friction-sym="{{ U.sym('friction_rate') }}">{{ U.sym(fields.basis) }}</span>)</span></label>
-        <input id="f-target" name="target_value" value="{{ fields.target_value }}" inputmode="decimal">
-      </div>
-      <div class="v2-duct-field v2-duct-field-actions">
-        <span class="v2-duct-label-spacer" aria-hidden="true">&nbsp;</span>
-        <div class="v2-duct-actions">
+        <fieldset class="compact-group duct-duty">
+          <legend>Duty</legend>
+          <div class="compact-row">
+            <div class="compact-field duct-duty-volume">
+              <label for="f-volume" title="Air volume flow">Volume</label>
+              <div class="duct-volume-control">
+                <input id="f-volume" name="volume" value="{{ fields.volume }}" inputmode="decimal" title="{{ {'ls': 'l/s', 'm3h': 'm³/h', 'm3s': 'm³/s'}.get(fields.duct_flow_unit, U.sym('duct_flow')) }}">
+                {% if U.system == 'SI' %}
+                <div class="duct-flow-units" role="group" aria-label="Volume unit">
+                  <button type="button" data-duct-flow-unit="ls" class="{{ 'on' if fields.duct_flow_unit == 'ls' }}" aria-pressed="{{ 'true' if fields.duct_flow_unit == 'ls' else 'false' }}">l/s</button>
+                  <button type="button" data-duct-flow-unit="m3h" class="{{ 'on' if fields.duct_flow_unit == 'm3h' }}" aria-pressed="{{ 'true' if fields.duct_flow_unit == 'm3h' else 'false' }}">m³/h</button>
+                  <button type="button" data-duct-flow-unit="m3s" class="{{ 'on' if fields.duct_flow_unit == 'm3s' }}" aria-pressed="{{ 'true' if fields.duct_flow_unit == 'm3s' else 'false' }}">m³/s</button>
+                </div>
+                {% else %}
+                <span class="duct-flow-fixed">{{ U.sym('duct_flow') }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="compact-row">
+            <div class="compact-field">
+              <label for="f-basis">Size by</label>
+              <select id="f-basis" name="basis">
+                <option value="velocity" {{ 'selected' if fields.basis == 'velocity' }}>Velocity</option>
+                <option value="friction_rate" {{ 'selected' if fields.basis == 'friction_rate' }}>{{ U.sym('friction_rate') }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="compact-row">
+            <div class="compact-field">
+              <label id="f-target-label" for="f-target">Target</label>
+              <div class="duct-volume-control">
+                <input id="f-target" name="target_value" value="{{ fields.target_value }}" inputmode="decimal"
+                       title="{{ U.sym(fields.basis) }}">
+                <div class="duct-flow-units" aria-live="polite">
+                  <span id="f-target-unit" class="on" data-velocity-sym="{{ U.sym('velocity') }}" data-friction-sym="{{ U.sym('friction_rate') }}">{{ U.sym(fields.basis) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="compact-group duct-shape-fields {{ 'active' if shape == 'circular' }}" data-shape="circular">
+          <legend>Size</legend>
+          <div class="compact-row">
+            <div class="compact-field">
+              <label for="circular-select">Stock</label>
+              <select id="circular-select" title="Lindab stock diameter, or the true calculated size">
+                <option value="" {{ 'selected' if circular.is_auto }}>Auto (calculated)</option>
+                {% for opt in catalog_options %}
+                <option value="{{ opt.mm }}" {{ 'selected' if not circular.is_auto and circular.selected_mm == opt.mm|string }}>{{ opt.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <p class="duct-hint">Auto is the true calculated diameter. A stock pick uses a Lindab size.</p>
+        </fieldset>
+
+        <fieldset class="compact-group duct-shape-fields {{ 'active' if shape == 'rectangular' }}" data-shape="rectangular">
+          <legend>Size</legend>
+          <div class="rect-round25-row">
+            <label><input type="checkbox" id="rect-round25" {{ 'checked' if fields.rect_round25 == '1' }}> Round to 25 mm</label>
+          </div>
+          <div class="rect-wh-pair">
+            <div class="rect-dim-card" id="rect-width-card" data-dim="width">
+              <div class="rect-dim-main">
+                <span class="rect-dim-label">Width</span>
+                <input type="number" step="any" id="rect-width" value="{{ fields.rect_width }}" data-field="rect_width"
+                       {{ 'disabled' if fields.rect_lock_width == '1' }}>
+                <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
+                <button type="button" class="lock-icon-btn" id="rect-width-lock"
+                        data-locked="{{ 'true' if fields.rect_lock_width == '1' else 'false' }}"
+                        aria-pressed="{{ 'true' if fields.rect_lock_width == '1' else 'false' }}"
+                        aria-label="Lock width"
+                        title="Lock width">
+                  <svg class="lock-icon lock-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+                  <svg class="lock-icon lock-closed" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                </button>
+              </div>
+              <div class="dim-scrub-wrap">
+                <div class="dim-scrub {{ 'is-disabled' if fields.rect_lock_width == '1' }}"
+                     data-nudge-scrub="rect_width"
+                     tabindex="{{ '0' if fields.rect_lock_width != '1' else '-1' }}"
+                     role="slider"
+                     aria-label="Adjust width"
+                     aria-orientation="horizontal"
+                     aria-disabled="{{ 'true' if fields.rect_lock_width == '1' else 'false' }}">
+                  <div class="dim-scrub-rail" aria-hidden="true"></div>
+                  <div class="dim-scrub-ticks" aria-hidden="true">
+                    <span class="dim-scrub-tick" style="left:0%"></span>
+                    <span class="dim-scrub-tick" style="left:50%"></span>
+                    <span class="dim-scrub-tick" style="left:100%"></span>
+                  </div>
+                  <div class="dim-scrub-thumb" aria-hidden="true"></div>
+                </div>
+                <div class="dim-scrub-marks" aria-hidden="true">
+                  <span data-scrub-mark="min">100</span>
+                  <span data-scrub-mark="mid">800</span>
+                  <span data-scrub-mark="max">1500</span>
+                </div>
+              </div>
+            </div>
+            <div class="rect-dim-card" id="rect-height-card" data-dim="height">
+              <div class="rect-dim-main">
+                <span class="rect-dim-label">Height</span>
+                <input type="number" step="any" id="rect-height" value="{{ fields.rect_height }}" data-field="rect_height"
+                       {{ 'disabled' if fields.rect_lock_height == '1' }}>
+                <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
+                <button type="button" class="lock-icon-btn" id="rect-height-lock"
+                        data-locked="{{ 'true' if fields.rect_lock_height == '1' else 'false' }}"
+                        aria-pressed="{{ 'true' if fields.rect_lock_height == '1' else 'false' }}"
+                        aria-label="Lock height"
+                        title="Lock height">
+                  <svg class="lock-icon lock-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+                  <svg class="lock-icon lock-closed" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                </button>
+              </div>
+              <div class="dim-scrub-wrap">
+                <div class="dim-scrub {{ 'is-disabled' if fields.rect_lock_height == '1' }}"
+                     data-nudge-scrub="rect_height"
+                     tabindex="{{ '0' if fields.rect_lock_height != '1' else '-1' }}"
+                     role="slider"
+                     aria-label="Adjust height"
+                     aria-orientation="horizontal"
+                     aria-disabled="{{ 'true' if fields.rect_lock_height == '1' else 'false' }}">
+                  <div class="dim-scrub-rail" aria-hidden="true"></div>
+                  <div class="dim-scrub-ticks" aria-hidden="true">
+                    <span class="dim-scrub-tick" style="left:0%"></span>
+                    <span class="dim-scrub-tick" style="left:50%"></span>
+                    <span class="dim-scrub-tick" style="left:100%"></span>
+                  </div>
+                  <div class="dim-scrub-thumb" aria-hidden="true"></div>
+                </div>
+                <div class="dim-scrub-marks" aria-hidden="true">
+                  <span data-scrub-mark="min">100</span>
+                  <span data-scrub-mark="mid">800</span>
+                  <span data-scrub-mark="max">1500</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="col-reset" data-reset="rectangular">Reset to calculated</button>
+        </fieldset>
+
+        <fieldset class="compact-group duct-shape-fields {{ 'active' if shape == 'flat_oval' }}" data-shape="flat_oval">
+          <legend>Size</legend>
+          <div class="compact-row">
+            <div class="compact-field">
+              <label for="oval-major">Major</label>
+              <div class="stepper">
+                <button type="button" data-oval-step="oval_major" data-dir="-1" aria-label="Smaller major axis">−</button>
+                <input type="number" step="any" id="oval-major" value="{{ fields.oval_major }}" data-field="oval_major" readonly>
+                <button type="button" data-oval-step="oval_major" data-dir="1" aria-label="Larger major axis">+</button>
+                <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="compact-row">
+            <div class="compact-field">
+              <label for="oval-minor">Minor</label>
+              <div class="stepper">
+                <button type="button" data-oval-step="oval_minor" data-dir="-1" aria-label="Smaller minor axis">−</button>
+                <input type="number" step="any" id="oval-minor" value="{{ fields.oval_minor }}" data-field="oval_minor" readonly>
+                <button type="button" data-oval-step="oval_minor" data-dir="1" aria-label="Larger minor axis">+</button>
+                <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
+              </div>
+            </div>
+          </div>
+          <p class="duct-hint">Steps through Lindab stocked major and minor pairs.</p>
+          <button type="button" class="col-reset" data-reset="oval">Reset to calculated</button>
+        </fieldset>
+
+        <input type="hidden" id="f-duct-flow-unit" name="duct_flow_unit" value="{{ fields.duct_flow_unit }}">
+        <input type="hidden" id="f-circular-mm" name="circular_mm" value="{{ fields.circular_mm }}">
+        <input type="hidden" id="f-rect-width" name="rect_width" value="{{ fields.rect_width }}">
+        <input type="hidden" id="f-rect-height" name="rect_height" value="{{ fields.rect_height }}">
+        <input type="hidden" id="f-rect-lock-width" name="rect_lock_width" value="{{ fields.rect_lock_width }}">
+        <input type="hidden" id="f-rect-lock-height" name="rect_lock_height" value="{{ fields.rect_lock_height }}">
+        <input type="hidden" id="f-rect-round25" name="rect_round25" value="{{ fields.rect_round25 }}">
+        <input type="hidden" id="f-oval-major" name="oval_major" value="{{ fields.oval_major }}">
+        <input type="hidden" id="f-oval-minor" name="oval_minor" value="{{ fields.oval_minor }}">
+
+        <div class="compact-actions">
           <button class="btn-accent" type="submit" title="Propose sizes from volume and design rule">Calculate</button>
           <a class="btn-ghost" href="{{ url_for('v2.duct') }}" title="Reset all to calculated">Reset</a>
           <span id="duct-loading" class="suffix" style="display:none;">…</span>
         </div>
+      </form>
+    </section>
+
+    <section class="duct-pane duct-pane-out" aria-label="Results">
+      <h2 class="duct-pane-title">Results</h2>
+
+      <div class="col-panel {{ 'active' if shape == 'circular' }}" id="col-circular">
+        <div class="col-head"><span>Circular</span></div>
+        <table class="results">
+          <tr><td>Diameter</td>
+            <td class="num"><span class="valunit"><span class="v" id="circ-diameter">{{ circular.diameter }}</span><span class="u">{{ U.sym('duct_dimension') }}</span></span></td></tr>
+          <tr id="circ-gauge-row" style="{{ '' if not circular.is_auto and circular.gauge_mm is not none else 'display:none;' }}">
+            <td colspan="2" class="suffix" id="circ-gauge-text">
+              {% if not circular.is_auto and circular.gauge_mm is not none %}
+              {{ circular.gauge_mm }} mm gauge{{ ' — standard stock' if circular.standard else ' — special order only' }}
+              {% endif %}
+            </td>
+          </tr>
+          <tr><td>Velocity</td>
+            <td class="num"><span class="valunit"><span class="v" id="circ-velocity">{{ circular.velocity }}</span><span class="u">{{ U.sym('velocity') }}</span></span></td></tr>
+          <tr><td>Velocity Pressure</td>
+            <td class="num"><span class="valunit"><span class="v" id="circ-vp">{{ circular.velocity_pressure }}</span><span class="u">{{ U.sym('velocity_pressure') }}</span></span></td></tr>
+          <tr><td>Friction Rate</td>
+            <td class="num"><span class="valunit"><span class="v" id="circ-friction">{{ circular.friction_rate }}</span><span class="u">{{ U.sym('friction_rate') }}</span></span></td></tr>
+        </table>
       </div>
-    </div>
+
+      <div class="col-panel {{ 'active' if shape == 'rectangular' }}" id="col-rectangular">
+        <div class="col-head"><span>Rectangular</span></div>
+        <table class="results">
+          <tr><td>Aspect Ratio</td>
+            <td class="num"><span id="rect-aspect-ratio">{{ rectangular.aspect_ratio }}</span> : 1</td></tr>
+          <tr id="rect-warn-row" style="{{ '' if rectangular.aspect_ratio_warning else 'display:none;' }}">
+            <td colspan="2"><span class="warn-banner" style="margin:0; padding:6px 10px; font-size:11.5px;" id="rect-warn-text">Exceeds the 4:1 guide limit</span></td></tr>
+          <tr><td>Velocity <span class="suffix">(actual)</span></td>
+            <td class="num"><span class="valunit"><span class="v" id="rect-velocity">{{ rectangular.velocity }}</span><span class="u">{{ U.sym('velocity') }}</span></span></td></tr>
+          <tr><td>Velocity Pressure</td>
+            <td class="num"><span class="valunit"><span class="v" id="rect-vp">{{ rectangular.velocity_pressure }}</span><span class="u">{{ U.sym('velocity_pressure') }}</span></span></td></tr>
+          <tr><td>Friction Rate</td>
+            <td class="num"><span class="valunit"><span class="v" id="rect-friction">{{ rectangular.friction_rate }}</span><span class="u">{{ U.sym('friction_rate') }}</span></span></td></tr>
+          <tr><td>Equivalent Diameter</td>
+            <td class="num"><span class="valunit"><span class="v" id="rect-de">{{ rectangular.equivalent_diameter }}</span><span class="u">{{ U.sym('duct_dimension') }}</span></span></td></tr>
+        </table>
+      </div>
+
+      <div class="col-panel {{ 'active' if shape == 'flat_oval' }}" id="col-oval">
+        <div class="col-head"><span>Flat oval</span></div>
+        <table class="results">
+          <tr><td>Velocity <span class="suffix">(actual)</span></td>
+            <td class="num"><span class="valunit"><span class="v" id="oval-velocity">{{ flat_oval.velocity }}</span><span class="u">{{ U.sym('velocity') }}</span></span></td></tr>
+          <tr><td>Velocity Pressure</td>
+            <td class="num"><span class="valunit"><span class="v" id="oval-vp">{{ flat_oval.velocity_pressure }}</span><span class="u">{{ U.sym('velocity_pressure') }}</span></span></td></tr>
+          <tr><td>Friction Rate</td>
+            <td class="num"><span class="valunit"><span class="v" id="oval-friction">{{ flat_oval.friction_rate }}</span><span class="u">{{ U.sym('friction_rate') }}</span></span></td></tr>
+          <tr><td>Equivalent Diameter</td>
+            <td class="num"><span class="valunit"><span class="v" id="oval-de">{{ flat_oval.equivalent_diameter }}</span><span class="u">{{ U.sym('duct_dimension') }}</span></span></td></tr>
+        </table>
+      </div>
+    </section>
   </div>
-
-  <input type="hidden" id="f-circular-mm" name="circular_mm" value="{{ fields.circular_mm }}">
-  <input type="hidden" id="f-rect-width" name="rect_width" value="{{ fields.rect_width }}">
-  <input type="hidden" id="f-rect-height" name="rect_height" value="{{ fields.rect_height }}">
-  <input type="hidden" id="f-rect-lock-width" name="rect_lock_width" value="{{ fields.rect_lock_width }}">
-  <input type="hidden" id="f-rect-lock-height" name="rect_lock_height" value="{{ fields.rect_lock_height }}">
-  <input type="hidden" id="f-rect-round25" name="rect_round25" value="{{ fields.rect_round25 }}">
-  <input type="hidden" id="f-oval-major" name="oval_major" value="{{ fields.oval_major }}">
-  <input type="hidden" id="f-oval-minor" name="oval_minor" value="{{ fields.oval_minor }}">
-</form>
-
-<div class="shape-tabs" id="v2-shape-tabs" role="tablist" aria-label="Duct shape">
-  <button type="button" data-shape="circular" class="active" role="tab" aria-selected="true">Circular</button>
-  <button type="button" data-shape="rectangular" role="tab" aria-selected="false">Rect</button>
-  <button type="button" data-shape="flat_oval" role="tab" aria-selected="false">Flat oval</button>
-</div>
-</div><!-- v2-duct-chrome -->
-
-{{ status_legend() }}
-
-<div class="duct-columns">
-
-  <div class="col-panel active" id="col-circular">
-    <div class="col-head"><span>Circular</span></div>
-    <div class="col-subhead">True calculated size, or pick a real Lindab stock diameter.</div>
-
-    <div class="form-grid" style="max-width:none; grid-template-columns: 1fr; margin-bottom:14px;">
-      <div>
-        <label>Stock Size</label>
-        <select id="circular-select">
-          <option value="" {{ 'selected' if circular.is_auto }}>Auto (true calculated)</option>
-          {% for opt in catalog_options %}
-          <option value="{{ opt.mm }}" {{ 'selected' if not circular.is_auto and circular.selected_mm == opt.mm|string }}>{{ opt.label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-    </div>
-
-    <table class="results">
-      <tr><td>Diameter</td>
-        <td class="num"><span class="valunit"><span class="v" id="circ-diameter">{{ circular.diameter }}</span><span class="u">{{ U.sym('duct_dimension') }}</span></span></td></tr>
-      <tr id="circ-gauge-row" style="{{ '' if not circular.is_auto and circular.gauge_mm is not none else 'display:none;' }}">
-        <td colspan="2" class="suffix" id="circ-gauge-text">
-          {% if not circular.is_auto and circular.gauge_mm is not none %}
-          {{ circular.gauge_mm }} mm gauge{{ ' — standard stock' if circular.standard else ' — special order only' }}
-          {% endif %}
-        </td>
-      </tr>
-      <tr><td>Velocity</td>
-        <td class="num"><span class="valunit"><span class="v" id="circ-velocity">{{ circular.velocity }}</span><span class="u">{{ U.sym('velocity') }}</span></span> <span id="circ-dot-velocity">{{ status_dot(circular.status_velocity) }}</span></td></tr>
-      <tr><td>Velocity Pressure</td>
-        <td class="num"><span class="valunit"><span class="v" id="circ-vp">{{ circular.velocity_pressure }}</span><span class="u">{{ U.sym('velocity_pressure') }}</span></span></td></tr>
-      <tr><td>Friction Rate</td>
-        <td class="num"><span class="valunit"><span class="v" id="circ-friction">{{ circular.friction_rate }}</span><span class="u">{{ U.sym('friction_rate') }}</span></span> <span id="circ-dot-friction">{{ status_dot(circular.status_friction) }}</span></td></tr>
-    </table>
-  </div>
-
-  <div class="col-panel" id="col-rectangular">
-    <div class="col-head">
-      <span>Rectangular</span>
-      <button type="button" class="col-reset" data-reset="rectangular">Reset to calculated</button>
-    </div>
-    <div class="col-subhead">Width and height are independent. Lock a side to keep it fixed on Calculate.</div>
-
-    <div class="rect-round25-row">
-      <label><input type="checkbox" id="rect-round25" {{ 'checked' if fields.rect_round25 == '1' }}> Round to 25mm</label>
-    </div>
-
-    <div class="rect-wh-pair">
-      <div class="rect-dim-card" id="rect-width-card" data-dim="width">
-        <div class="rect-dim-main">
-          <span class="rect-dim-label">Width</span>
-          <input type="number" step="any" id="rect-width" value="{{ fields.rect_width }}" data-field="rect_width"
-                 {{ 'disabled' if fields.rect_lock_width == '1' }}>
-          <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
-          <button type="button" class="lock-icon-btn" id="rect-width-lock"
-                  data-locked="{{ 'true' if fields.rect_lock_width == '1' else 'false' }}"
-                  aria-pressed="{{ 'true' if fields.rect_lock_width == '1' else 'false' }}"
-                  aria-label="Lock width"
-                  title="Lock width">
-            <svg class="lock-icon lock-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
-            <svg class="lock-icon lock-closed" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-          </button>
-        </div>
-        <div class="dim-scrub-wrap">
-          <div class="dim-scrub {{ 'is-disabled' if fields.rect_lock_width == '1' }}"
-               data-nudge-scrub="rect_width"
-               tabindex="{{ '0' if fields.rect_lock_width != '1' else '-1' }}"
-               role="slider"
-               aria-label="Adjust width"
-               aria-orientation="horizontal"
-               aria-disabled="{{ 'true' if fields.rect_lock_width == '1' else 'false' }}">
-            <div class="dim-scrub-rail" aria-hidden="true"></div>
-            <div class="dim-scrub-ticks" aria-hidden="true">
-              <span class="dim-scrub-tick" style="left:0%"></span>
-              <span class="dim-scrub-tick" style="left:50%"></span>
-              <span class="dim-scrub-tick" style="left:100%"></span>
-            </div>
-            <div class="dim-scrub-thumb" aria-hidden="true"></div>
-          </div>
-          <div class="dim-scrub-marks" aria-hidden="true">
-            <span data-scrub-mark="min">100</span>
-            <span data-scrub-mark="mid">800</span>
-            <span data-scrub-mark="max">1500</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="rect-wh-x" aria-hidden="true">×</div>
-
-      <div class="rect-dim-card" id="rect-height-card" data-dim="height">
-        <div class="rect-dim-main">
-          <span class="rect-dim-label">Height</span>
-          <input type="number" step="any" id="rect-height" value="{{ fields.rect_height }}" data-field="rect_height"
-                 {{ 'disabled' if fields.rect_lock_height == '1' }}>
-          <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
-          <button type="button" class="lock-icon-btn" id="rect-height-lock"
-                  data-locked="{{ 'true' if fields.rect_lock_height == '1' else 'false' }}"
-                  aria-pressed="{{ 'true' if fields.rect_lock_height == '1' else 'false' }}"
-                  aria-label="Lock height"
-                  title="Lock height">
-            <svg class="lock-icon lock-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
-            <svg class="lock-icon lock-closed" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-          </button>
-        </div>
-        <div class="dim-scrub-wrap">
-          <div class="dim-scrub {{ 'is-disabled' if fields.rect_lock_height == '1' }}"
-               data-nudge-scrub="rect_height"
-               tabindex="{{ '0' if fields.rect_lock_height != '1' else '-1' }}"
-               role="slider"
-               aria-label="Adjust height"
-               aria-orientation="horizontal"
-               aria-disabled="{{ 'true' if fields.rect_lock_height == '1' else 'false' }}">
-            <div class="dim-scrub-rail" aria-hidden="true"></div>
-            <div class="dim-scrub-ticks" aria-hidden="true">
-              <span class="dim-scrub-tick" style="left:0%"></span>
-              <span class="dim-scrub-tick" style="left:50%"></span>
-              <span class="dim-scrub-tick" style="left:100%"></span>
-            </div>
-            <div class="dim-scrub-thumb" aria-hidden="true"></div>
-          </div>
-          <div class="dim-scrub-marks" aria-hidden="true">
-            <span data-scrub-mark="min">100</span>
-            <span data-scrub-mark="mid">800</span>
-            <span data-scrub-mark="max">1500</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <table class="results">
-      <tr><td>Aspect Ratio</td>
-        <td class="num"><span id="rect-aspect-ratio">{{ rectangular.aspect_ratio }}</span> : 1</td></tr>
-      <tr id="rect-warn-row" style="{{ '' if rectangular.aspect_ratio_warning else 'display:none;' }}">
-        <td colspan="2"><span class="warn-banner" style="margin:0; padding:6px 10px; font-size:11.5px;" id="rect-warn-text">Exceeds the 4:1 guide limit</span></td></tr>
-      <tr><td>Velocity <span class="suffix">(actual)</span></td>
-        <td class="num"><span class="valunit"><span class="v" id="rect-velocity">{{ rectangular.velocity }}</span><span class="u">{{ U.sym('velocity') }}</span></span> <span id="rect-dot-velocity">{{ status_dot(rectangular.status_velocity) }}</span></td></tr>
-      <tr><td>Velocity Pressure</td>
-        <td class="num"><span class="valunit"><span class="v" id="rect-vp">{{ rectangular.velocity_pressure }}</span><span class="u">{{ U.sym('velocity_pressure') }}</span></span></td></tr>
-      <tr><td>Friction Rate</td>
-        <td class="num"><span class="valunit"><span class="v" id="rect-friction">{{ rectangular.friction_rate }}</span><span class="u">{{ U.sym('friction_rate') }}</span></span> <span id="rect-dot-friction">{{ status_dot(rectangular.status_friction) }}</span></td></tr>
-      <tr><td>Equivalent Diameter</td>
-        <td class="num"><span class="valunit"><span class="v" id="rect-de">{{ rectangular.equivalent_diameter }}</span><span class="u">{{ U.sym('duct_dimension') }}</span></span></td></tr>
-    </table>
-  </div>
-
-  <div class="col-panel" id="col-oval">
-    <div class="col-head">
-      <span>Flat Oval</span>
-      <button type="button" class="col-reset" data-reset="oval">Reset to calculated</button>
-    </div>
-    <div class="col-subhead">Steps through Lindab stocked major/minor combinations only.</div>
-
-    <div style="margin-bottom:10px;">
-      <label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:5px;">Major Axis</label>
-      <div class="stepper">
-        <button type="button" data-oval-step="oval_major" data-dir="-1">−</button>
-        <input type="number" step="any" id="oval-major" value="{{ fields.oval_major }}" data-field="oval_major" readonly>
-        <button type="button" data-oval-step="oval_major" data-dir="1">+</button>
-        <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
-      </div>
-    </div>
-    <div style="margin-bottom:14px;">
-      <label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:5px;">Minor Axis</label>
-      <div class="stepper">
-        <button type="button" data-oval-step="oval_minor" data-dir="-1">−</button>
-        <input type="number" step="any" id="oval-minor" value="{{ fields.oval_minor }}" data-field="oval_minor" readonly>
-        <button type="button" data-oval-step="oval_minor" data-dir="1">+</button>
-        <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
-      </div>
-    </div>
-
-    <table class="results">
-      <tr><td>Velocity <span class="suffix">(actual)</span></td>
-        <td class="num"><span class="valunit"><span class="v" id="oval-velocity">{{ flat_oval.velocity }}</span><span class="u">{{ U.sym('velocity') }}</span></span> <span id="oval-dot-velocity">{{ status_dot(flat_oval.status_velocity) }}</span></td></tr>
-      <tr><td>Velocity Pressure</td>
-        <td class="num"><span class="valunit"><span class="v" id="oval-vp">{{ flat_oval.velocity_pressure }}</span><span class="u">{{ U.sym('velocity_pressure') }}</span></span></td></tr>
-      <tr><td>Friction Rate</td>
-        <td class="num"><span class="valunit"><span class="v" id="oval-friction">{{ flat_oval.friction_rate }}</span><span class="u">{{ U.sym('friction_rate') }}</span></span> <span id="oval-dot-friction">{{ status_dot(flat_oval.status_friction) }}</span></td></tr>
-      <tr><td>Equivalent Diameter</td>
-        <td class="num"><span class="valunit"><span class="v" id="oval-de">{{ flat_oval.equivalent_diameter }}</span><span class="u">{{ U.sym('duct_dimension') }}</span></span></td></tr>
-    </table>
-  </div>
-
 </div>
 
 {% if report_fields and access.has_suite_access %}
 {{ report_form(url_for('duct.report'), report_fields) }}
 {% endif %}
+
+<section class="duct-guide" aria-label="Velocity guidance">
+    <h2 class="duct-pane-title">Velocity guidance</h2>
+    <p>Low-pressure ductwork. Maximum recommended velocities from CIBSE Guide B (2005) Table 3.2, chosen for the noise rating of the space. Main header, branch, and the final run to the grille are separate limits — the last leg is the quietest.</p>
+    <div class="table-scroll">
+      <table class="duct-guide-table">
+        <thead>
+          <tr>
+            <th>Application</th>
+            <th>NR</th>
+            <th class="num">Main header</th>
+            <th class="num">Branch</th>
+            <th class="num">Final run to grille</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Domestic bedrooms</td><td>25</td>
+            <td class="num">{{ U.fmt('velocity', 3.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 2.5) }}</td>
+            <td class="num">&lt; {{ U.fmt('velocity', 2.0) }}</td>
+          </tr>
+          <tr>
+            <td>Theatres, concert halls</td><td>20–25</td>
+            <td class="num">{{ U.fmt('velocity', 4.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 2.5) }}</td>
+            <td class="num">&lt; {{ U.fmt('velocity', 2.0) }}</td>
+          </tr>
+          <tr>
+            <td>Auditoria, lecture halls, cinemas</td><td>25–30</td>
+            <td class="num">{{ U.fmt('velocity', 4.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 3.5) }}</td>
+            <td class="num">&lt; {{ U.fmt('velocity', 2.0) }}</td>
+          </tr>
+          <tr>
+            <td>Non-domestic bedrooms</td><td>20–30</td>
+            <td class="num">{{ U.fmt('velocity', 5.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 4.5) }}</td>
+            <td class="num">{{ U.fmt('velocity', 2.5) }}</td>
+          </tr>
+          <tr>
+            <td>Private offices, libraries</td><td>30–35</td>
+            <td class="num">{{ U.fmt('velocity', 6.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 5.5) }}</td>
+            <td class="num">{{ U.fmt('velocity', 3.0) }}</td>
+          </tr>
+          <tr>
+            <td>General offices, restaurants, banks</td><td>35–40</td>
+            <td class="num">{{ U.fmt('velocity', 7.5) }}</td>
+            <td class="num">{{ U.fmt('velocity', 6.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 3.5) }}</td>
+          </tr>
+          <tr>
+            <td>Shops, supermarkets, cafeterias</td><td>40–45</td>
+            <td class="num">{{ U.fmt('velocity', 9.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 7.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 4.5) }}</td>
+          </tr>
+          <tr>
+            <td>Industrial</td><td>45–55</td>
+            <td class="num">{{ U.fmt('velocity', 10.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 8.0) }}</td>
+            <td class="num">{{ U.fmt('velocity', 5.0) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="duct-guide-unit">Velocities in {{ U.sym('velocity') }}.</p>
+    <h3 class="duct-guide-sub">DW/144 construction class</h3>
+    <p>BESA DW/144 limits how the duct is built, not how quiet the room should be. Pick the class from the system pressure. Keep the CIBSE velocity for the section you are sizing.</p>
+    <div class="table-scroll">
+      <table class="duct-guide-table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th class="num">Max velocity</th>
+            <th>Static pressure</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Low</td>
+            <td class="num">{{ U.fmt('velocity', 10.0) }} {{ U.sym('velocity') }}</td>
+            <td>+500 / −500 Pa</td>
+          </tr>
+          <tr>
+            <td>Medium</td>
+            <td class="num">{{ U.fmt('velocity', 20.0) }} {{ U.sym('velocity') }}</td>
+            <td>+1000 / −750 Pa</td>
+          </tr>
+          <tr>
+            <td>High</td>
+            <td class="num">{{ U.fmt('velocity', 40.0) }} {{ U.sym('velocity') }}</td>
+            <td>+2000 / −750 Pa</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
 {% endblock %}
 {% block calc_complete %}{% if not error %}1{% endif %}{% endblock %}
@@ -261,23 +385,40 @@
 {% block extra_scripts %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
-<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=rect-wh-6"></script>
+<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=target-unit-1"></script>
 <script>
 (function(){
   var tabs=document.getElementById('v2-shape-tabs');
   if(!tabs) return;
   var map={circular:'col-circular',rectangular:'col-rectangular',flat_oval:'col-oval'};
-  tabs.addEventListener('click',function(e){
-    var b=e.target.closest('button[data-shape]'); if(!b) return;
+  function show(shape){
     tabs.querySelectorAll('button').forEach(function(x){
-      var on=x===b;
-      x.classList.toggle('active',on);
+      var on=x.getAttribute('data-shape')===shape;
+      x.classList.toggle('active', on);
       x.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     Object.keys(map).forEach(function(k){
       var el=document.getElementById(map[k]);
-      if(el) el.classList.toggle('active', k===b.getAttribute('data-shape'));
+      if(el) el.classList.toggle('active', k===shape);
     });
+    document.querySelectorAll('.duct-shape-fields').forEach(function(el){
+      el.classList.toggle('active', el.getAttribute('data-shape')===shape);
+    });
+  }
+  function remember(shape){
+    if(!window.history || !window.history.replaceState) return;
+    var p=new URLSearchParams(window.location.search);
+    p.set('shape', shape);
+    var qs=p.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+    if(window.HvacDraft) HvacDraft.save(HvacDraft.KEYS.ductSizer, p);
+  }
+  tabs.addEventListener('click', function(e){
+    var b=e.target.closest('button[data-shape]');
+    if(!b) return;
+    var shape=b.getAttribute('data-shape');
+    show(shape);
+    remember(shape);
   });
 })();
 </script>

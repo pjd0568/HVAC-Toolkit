@@ -1616,6 +1616,221 @@ a:hover { color: var(--v2-green-ink); }
 }
 .v2-main .col-panel { display: none; }
 .v2-main .col-panel.active { display: block; }
+
+/* Duct sizer: shape on top, input | results, guidance, then the report. */
+.v2-main:has(.duct-sizer) {
+  max-width: 920px;
+}
+.duct-sizer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.duct-sizer .shape-tabs {
+  margin: 0;
+}
+.duct-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.duct-pane,
+.duct-guide {
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius);
+  background: #fff;
+  box-shadow: var(--v2-shadow);
+  padding: 12px 14px;
+  min-width: 0;
+}
+.duct-guide {
+  margin-top: 12px;
+}
+.duct-pane-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--v2-muted);
+}
+.duct-sizer .compact-form {
+  max-width: none;
+}
+.duct-pane .compact-row {
+  grid-template-columns: 1fr;
+  margin-bottom: 8px;
+}
+.duct-pane .compact-group {
+  margin-bottom: 10px;
+}
+.duct-shape-fields { display: none; }
+.duct-shape-fields.active { display: block; }
+.duct-unit-line,
+.duct-hint,
+.duct-guide p,
+.duct-guide-unit {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--v2-muted);
+}
+.duct-guide-unit { margin-top: -4px; }
+.duct-guide-sub {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--v2-ink);
+}
+.duct-guide .table-scroll { margin: 0 0 4px; }
+.duct-guide-table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.duct-guide-table th,
+.duct-guide-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--v2-line);
+  text-align: left;
+  vertical-align: top;
+}
+.duct-guide-table th {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--v2-muted);
+}
+.duct-guide-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.duct-pane .col-panel {
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  background: transparent;
+  border-radius: 0;
+}
+.duct-pane .col-head {
+  margin-bottom: 4px;
+}
+.duct-pane table.results td {
+  padding: 7px 0;
+}
+.duct-pane .status-legend {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.duct-pane .status-legend .tl {
+  white-space: nowrap;
+}
+.duct-pane .rect-wh-pair {
+  flex-direction: column;
+  gap: 8px;
+}
+.duct-pane .rect-wh-x { display: none; }
+.duct-pane .stepper {
+  width: 100%;
+  min-width: 0;
+}
+.duct-pane .stepper input[type="number"] {
+  width: 4.75rem;
+  min-width: 0;
+  min-height: 34px;
+  flex: 0 0 auto;
+}
+.duct-pane .stepper button {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+.duct-pane .duct-duty .compact-field {
+  grid-template-columns: 5.25rem auto;
+  justify-content: start;
+}
+.duct-pane .duct-duty .compact-field label {
+  text-align: left;
+}
+.duct-pane .duct-duty .compact-field input:not(#f-volume):not(#f-target),
+.duct-pane .duct-duty .compact-field select {
+  width: 8.5rem;
+  text-align: left;
+}
+.duct-pane .duct-duty-volume {
+  align-items: start;
+}
+.duct-pane .duct-duty-volume > label {
+  padding-top: 8px;
+}
+.duct-volume-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.duct-volume-control input {
+  flex: 0 0 auto;
+  width: 6.5rem;
+  min-width: 0;
+  text-align: left;
+}
+.duct-flow-units {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
+  background: var(--v2-bg);
+  border: 1px solid var(--v2-line);
+  border-radius: 8px;
+}
+.duct-flow-units button {
+  min-height: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--v2-muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.duct-flow-units button.on,
+.duct-flow-units span.on {
+  background: #fff;
+  color: var(--v2-green-ink);
+  box-shadow: var(--v2-shadow);
+}
+.duct-flow-units span.on {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.duct-flow-fixed {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--v2-muted);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .duct-split {
+    grid-template-columns: 1fr;
+  }
+}
 .v2-main .pipe-results-layout {
   display: flex;
   flex-direction: column;
