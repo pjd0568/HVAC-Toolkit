@@ -8,48 +8,42 @@
 <ul class="v2-picker-list refrig-picker-list">
   <li>
     <a href="{{ url_for('v2.interactive_chart') }}">
-      <span class="refrig-picker-title">Multi-point interactive chart</span>
+      <span class="refrig-picker-title">Multi-point interactive chart {% with level=access.tool_access('psychro.interactive_chart') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>
     <a href="{{ url_for('v2.single_point') }}">
-      <span class="refrig-picker-title">Single point</span>
+      <span class="refrig-picker-title">Single point {% with level=access.tool_access('psychro.single_point') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>
     <a href="{{ url_for('v2.mixed_air') }}">
-      <span class="refrig-picker-title">Mixed air</span>
+      <span class="refrig-picker-title">Mixed air {% with level=access.tool_access('psychro.mixed_air') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>
     <a href="{{ url_for('v2.cooling_coil') }}">
-      <span class="refrig-picker-title">Cooling coil</span>
+      <span class="refrig-picker-title">Cooling coil {% with level=access.tool_access('psychro.cooling_coil') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>
     <a href="{{ url_for('v2.desiccant') }}">
-      <span class="refrig-picker-title">Desiccant dehumidification</span>
+      <span class="refrig-picker-title">Desiccant dehumidification {% with level=access.tool_access('psychro.desiccant') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>
     <a href="{{ url_for('v2.heat_humidify') }}">
-      <span class="refrig-picker-title">Heat &amp; humidify</span>
+      <span class="refrig-picker-title">Heat &amp; humidify {% with level=access.tool_access('psychro.heat_humidify') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>
     <a href="{{ url_for('v2.adiabatic_cool') }}">
-      <span class="refrig-picker-title">Adiabatic cool</span>
+      <span class="refrig-picker-title">Adiabatic cool {% with level=access.tool_access('psychro.adiabatic_cool') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>
     <a href="{{ url_for('v2.ahu') }}">
-      <span class="refrig-picker-title">AHU design</span>
-    </a>
-  </li>
-  <li>
-    <a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}">
-      <span class="refrig-picker-title">Fresh air &amp; CO₂ <span class="soon">Coming soon</span></span>
-      <span class="refrig-picker-desc">Build-up to a critical CO₂ threshold under peak occupancy.</span>
+      <span class="refrig-picker-title">AHU design {% with level=access.tool_access('psychro.ahu') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
 </ul>

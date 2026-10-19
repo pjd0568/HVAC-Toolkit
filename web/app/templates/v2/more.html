@@ -3,13 +3,10 @@
 {% block content %}
 
 <div class="v2-greeting">More</div>
-<div class="v2-greeting-sub">Utilities, reference, and coming-soon modules.</div>
+<div class="v2-greeting-sub">Utilities, reference, and account links.</div>
 
 <ul class="v2-picker-list">
   <li><a href="{{ url_for('v2.converter') }}">Unit converter</a></li>
-  <li><a href="{{ url_for('v2.acoustics_picker') }}">Acoustics <span class="soon">Coming soon</span></a></li>
-  <li><a href="{{ url_for('weather.index') }}">Weather &amp; design conditions <span class="soon">Coming soon</span></a></li>
-  <li><a href="{{ url_for('projects.index') }}">Projects <span class="soon">Coming soon</span></a></li>
   <li><a href="{{ url_for('guides.article', slug='add-to-mobile-homescreen') }}">Add to mobile homescreen</a></li>
   <li><a href="{{ url_for('guides.index') }}">Design guides</a></li>
   <li><a href="{{ url_for('methodology.index') }}">Methodology &amp; limitations</a></li>

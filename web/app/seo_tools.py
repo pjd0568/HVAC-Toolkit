@@ -7,6 +7,7 @@ the landings instead of empty tool UIs.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,8 @@ class ToolLanding:
     formulas: tuple[str, ...]
     cta_app_endpoint: str  # flask endpoint after login
     cta_label: str
+    # Catalogue classification for listing badges — not the visitor's entitlement.
+    access: Literal["free", "pro"]
     related_slugs: tuple[str, ...] = ()
     # When set, /tools/<slug> renders this view with no login (same engine path).
     free_view: str = ""
@@ -76,6 +79,7 @@ LANDINGS: dict[str, ToolLanding] = {
         ),
         cta_app_endpoint="v2.single_point",
         cta_label="Open single-point tool",
+        access="free",
         related_slugs=("mixed-air-calculator", "duct-sizing-calculator"),
         free_view="v2.single_point",
         pro_endpoint="v2.interactive_chart",
@@ -140,6 +144,7 @@ LANDINGS: dict[str, ToolLanding] = {
         ),
         cta_app_endpoint="v2.mixed_air",
         cta_label="Open mixed-air tool",
+        access="pro",
         related_slugs=("psychrometric-calculator", "duct-sizing-calculator"),
     ),
     "duct-sizing-calculator": ToolLanding(
@@ -179,6 +184,7 @@ LANDINGS: dict[str, ToolLanding] = {
         ),
         cta_app_endpoint="v2.duct",
         cta_label="Open duct sizing tool",
+        access="free",
         related_slugs=("chilled-water-pipe-sizing", "mixed-air-calculator"),
         free_view="v2.duct",
         pro_endpoint="v2.duct_index_leg",
@@ -236,6 +242,7 @@ LANDINGS: dict[str, ToolLanding] = {
         ),
         cta_app_endpoint="v2.pipe",
         cta_label="Open pipe sizing tool",
+        access="free",
         related_slugs=("lthw-pipe-pressure-drop", "duct-sizing-calculator"),
         free_view="v2.pipe",
         pro_endpoint="v2.pipe_system",
@@ -294,6 +301,7 @@ LANDINGS: dict[str, ToolLanding] = {
         ),
         cta_app_endpoint="v2.pipe_system",
         cta_label="Open system pressure-drop tool",
+        access="pro",
         related_slugs=("chilled-water-pipe-sizing", "duct-sizing-calculator"),
         pro_next=(
             "Pipe system pressure drop and pump head are part of HVAC-CALCS Pro."
@@ -332,6 +340,7 @@ LANDINGS: dict[str, ToolLanding] = {
         ),
         cta_app_endpoint="v2.refrig_pt_table",
         cta_label="Open PT table",
+        access="free",
         related_slugs=("superheat-subcooling", "duct-sizing-calculator"),
         free_view="v2.refrig_pt_table",
         pro_endpoint="v2.refrig_pipe_sizer",
@@ -385,6 +394,7 @@ LANDINGS: dict[str, ToolLanding] = {
         ),
         cta_app_endpoint="v2.refrig_diagnostics",
         cta_label="Open superheat tool",
+        access="free",
         related_slugs=("refrigerant-pt-table",),
         free_view="v2.refrig_diagnostics",
         pro_endpoint="v2.refrig_pipe_sizer",
@@ -432,6 +442,7 @@ LANDINGS: dict[str, ToolLanding] = {
         ),
         cta_app_endpoint="v2.converter",
         cta_label="Open converter",
+        access="free",
         related_slugs=("duct-sizing-calculator", "chilled-water-pipe-sizing"),
         free_view="v2.converter",
         faqs=(

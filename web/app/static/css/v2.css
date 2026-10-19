@@ -196,6 +196,61 @@ a:hover { color: var(--v2-green-ink); }
   background: var(--v2-green-ink);
   color: #fff !important;
 }
+
+/* Secondary feedback strip under available tools (Apps / home) */
+.v2-feedback-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 18px;
+  margin: 8px 0 4px;
+  padding: 16px 18px;
+  background: var(--v2-panel);
+  border: 1px solid var(--v2-line);
+  border-left: 3px solid #2a3038;
+  border-radius: var(--v2-radius);
+  box-shadow: var(--v2-shadow);
+}
+.v2-feedback-panel-copy {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.v2-feedback-panel-copy h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--v2-ink);
+}
+.v2-feedback-panel-copy p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--v2-muted);
+}
+.v2-feedback-panel-copy p:last-child {
+  margin-bottom: 0;
+}
+.v2-feedback-panel-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v2-tap);
+  padding: 0 16px;
+  border-radius: var(--v2-radius-sm);
+  border: 1px solid var(--v2-green);
+  background: var(--v2-panel);
+  color: var(--v2-green-ink) !important;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none !important;
+}
+.v2-feedback-panel-btn:hover {
+  background: var(--v2-green-soft);
+  border-color: var(--v2-green-ink);
+  color: var(--v2-green-ink) !important;
+}
 .v2-install-phone {
   width: 15px;
   height: 15px;
@@ -697,6 +752,7 @@ a:hover { color: var(--v2-green-ink); }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 12px 14px;
   border-radius: var(--v2-radius-sm);
   background: var(--v2-bg);
@@ -705,6 +761,40 @@ a:hover { color: var(--v2-green-ink); }
   font-weight: 600;
   text-decoration: none;
   min-height: var(--v2-tap);
+}
+.v2-card-link-text {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  min-width: 0;
+}
+.v2-card-links .access-badge,
+.v2-picker-list .access-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 4px;
+  margin-left: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  vertical-align: 0.15em;
+}
+.v2-card-links .access-badge--free,
+.v2-picker-list .access-badge--free {
+  color: var(--v2-green-ink);
+  background: rgba(0, 169, 157, 0.12);
+  border: 1px solid rgba(0, 169, 157, 0.45);
+}
+.v2-card-links .access-badge--pro,
+.v2-picker-list .access-badge--pro {
+  color: #edf1f4;
+  background: #2a3038;
+  border: 1px solid #2a3038;
 }
 .v2-card-links a::after {
   content: "→";

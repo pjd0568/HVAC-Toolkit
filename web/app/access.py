@@ -187,6 +187,19 @@ def requires_suite(module_id: str) -> bool:
     return True
 
 
+def tool_access(module_id: str) -> Literal["free", "pro"] | None:
+    """Catalogue access level for a tool — not the current user's entitlement.
+
+    Returns ``\"free\"`` / ``\"pro\"`` for live calculators, or ``None`` for
+    coming-soon placeholders and non-calculator pages (no FREE/PRO badge).
+    """
+    if module_id in PUBLIC_MODULES:
+        return "free"
+    if module_id in SUITE_MODULES:
+        return "pro"
+    return None
+
+
 def can_access(module_id: str) -> bool:
     """True if the current entitlement may use this module."""
     if not requires_suite(module_id):
@@ -224,6 +237,9 @@ class AccessView:
         if not requires_suite(module_id):
             return True
         return self.entitlement.has_suite_access
+
+    def tool_access(self, module_id: str) -> Literal["free", "pro"] | None:
+        return tool_access(module_id)
 
     def is_coming_soon(self, module_id: str) -> bool:
         return is_coming_soon(module_id)
@@ -265,4 +281,5 @@ __all__ = [
     "is_coming_soon",
     "module_label",
     "requires_suite",
+    "tool_access",
 ]

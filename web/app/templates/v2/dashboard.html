@@ -15,12 +15,6 @@
     calculators without starting again. Add the site to your phone home screen for a
     quick site-day launcher.
   </p>
-  <p>
-    More modules are on the roadmap — room loads, grille throw, expansion vessels,
-    buffer tanks, fresh-air / CO₂ modelling, acoustics, and further refrigeration tools.
-    If something is missing for your workflow, request it on the
-    <a href="{{ url_for('pages.contact') }}">Contact us</a> page.
-  </p>
 </div>
 
 {% if access.tier != 'pro' %}
@@ -39,78 +33,48 @@
 
   <article class="v2-card v2-home-tile">
     <h2>Psychrometrics</h2>
-    <p>Air states on the chart, mixing, coils, desiccant and steam humidification, evaporative cooling, and stepped AHU design. Fresh-air / CO₂ modelling is coming next in this suite.</p>
+    <p>Air states on the chart, mixing, coils, desiccant and steam humidification, evaporative cooling, and stepped AHU design.</p>
     <ul class="v2-card-links">
-      <li><a href="{{ url_for('v2.interactive_chart') }}">Multi-point chart</a></li>
-      <li><a href="{{ url_for('v2.single_point') }}">Single point</a></li>
-      <li><a href="{{ url_for('v2.mixed_air') }}">Mixed air</a></li>
-      <li><a href="{{ url_for('v2.cooling_coil') }}">Cooling coil</a></li>
-      <li><a href="{{ url_for('v2.desiccant') }}">Desiccant</a></li>
-      <li><a href="{{ url_for('v2.heat_humidify') }}">Heat &amp; humidify</a></li>
-      <li><a href="{{ url_for('v2.adiabatic_cool') }}">Adiabatic cool</a></li>
-      <li><a href="{{ url_for('v2.ahu') }}">AHU design</a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}">Fresh air &amp; CO₂ <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.interactive_chart') }}"><span class="v2-card-link-text">Multi-point chart {% with level=access.tool_access('psychro.interactive_chart') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.single_point') }}"><span class="v2-card-link-text">Single point {% with level=access.tool_access('psychro.single_point') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.mixed_air') }}"><span class="v2-card-link-text">Mixed air {% with level=access.tool_access('psychro.mixed_air') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.cooling_coil') }}"><span class="v2-card-link-text">Cooling coil {% with level=access.tool_access('psychro.cooling_coil') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.desiccant') }}"><span class="v2-card-link-text">Desiccant {% with level=access.tool_access('psychro.desiccant') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.heat_humidify') }}"><span class="v2-card-link-text">Heat &amp; humidify {% with level=access.tool_access('psychro.heat_humidify') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.adiabatic_cool') }}"><span class="v2-card-link-text">Adiabatic cool {% with level=access.tool_access('psychro.adiabatic_cool') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.ahu') }}"><span class="v2-card-link-text">AHU design {% with level=access.tool_access('psychro.ahu') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.psychro_picker') }}">All psychro tools</a></li>
     </ul>
   </article>
 
   <article class="v2-card v2-home-tile">
     <h2>Air distribution</h2>
-    <p>Size circular, rectangular, and flat-oval duct by velocity or friction rate, then build an index-leg pressure-drop path. Room load and grille throw are planned for this suite.</p>
+    <p>Size circular, rectangular, and flat-oval duct by velocity or friction rate, then build an index-leg pressure-drop path.</p>
     <ul class="v2-card-links">
-      {% if access.can('duct.sizer') %}
-      <li><a href="{{ url_for('v2.duct') }}">Duct sizing</a></li>
-      {% endif %}
-      {% if access.can('duct.index_leg') %}
-      <li><a href="{{ url_for('v2.duct_index_leg') }}">Index leg — ΔP</a></li>
-      {% endif %}
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}">Room load <span class="soon">Soon</span></a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}">Grille throw <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.duct') }}"><span class="v2-card-link-text">Duct sizing {% with level=access.tool_access('duct.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.duct_index_leg') }}"><span class="v2-card-link-text">Index leg — ΔP {% with level=access.tool_access('duct.index_leg') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.air_picker') }}">All air tools</a></li>
     </ul>
   </article>
 
   <article class="v2-card v2-home-tile">
     <h2>Hydronics</h2>
-    <p>Catalogue DN / flow sizing with design-limit traffic lights, plus a circuit pressure-drop schedule and pump head (open or pressurised). Expansion vessel and buffer tank sizing are on the roadmap.</p>
+    <p>Catalogue DN / flow sizing with design-limit traffic lights, plus a circuit pressure-drop schedule and pump head (open or pressurised).</p>
     <ul class="v2-card-links">
-      {% if access.can('pipe.sizer') %}
-      <li><a href="{{ url_for('v2.pipe') }}">Pipe sizing</a></li>
-      {% endif %}
-      {% if access.can('pipe.system') %}
-      <li><a href="{{ url_for('v2.pipe_system') }}">System — pressure drop</a></li>
-      {% endif %}
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='expansion-vessel') }}">Expansion vessel <span class="soon">Soon</span></a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='buffer-tank') }}">Buffer tank <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.pipe') }}"><span class="v2-card-link-text">Pipe sizing {% with level=access.tool_access('pipe.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.pipe_system') }}"><span class="v2-card-link-text">System — pressure drop {% with level=access.tool_access('pipe.system') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.water_picker') }}">All hydronics tools</a></li>
     </ul>
   </article>
 
   <article class="v2-card v2-home-tile">
     <h2>Refrigeration</h2>
-    <p>Sub-critical DX tools: PT tables, velocity-based ACR pipe sizing, and superheat / subcooling diagnostics. A charge calculator is next; R-744 and P–h charts are planned later.</p>
+    <p>Sub-critical DX tools: PT tables, velocity-based ACR pipe sizing, and superheat / subcooling diagnostics.</p>
     <ul class="v2-card-links">
-      {% if access.can('refrig.pt_table') %}
-      <li><a href="{{ url_for('v2.refrig_pt_table') }}">PT table</a></li>
-      {% endif %}
-      {% if access.can('refrig.pipe_sizer') %}
-      <li><a href="{{ url_for('v2.refrig_pipe_sizer') }}">DX pipe sizing</a></li>
-      {% endif %}
-      {% if access.can('refrig.diagnostics') %}
-      <li><a href="{{ url_for('v2.refrig_diagnostics') }}">Superheat / subcooling</a></li>
-      {% endif %}
-      <li><a href="{{ url_for('v2.refrig_charge') }}">Charge calculator <span class="soon">Soon</span></a></li>
+      <li><a href="{{ url_for('v2.refrig_pt_table') }}"><span class="v2-card-link-text">PT table {% with level=access.tool_access('refrig.pt_table') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.refrig_pipe_sizer') }}"><span class="v2-card-link-text">DX pipe sizing {% with level=access.tool_access('refrig.pipe_sizer') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a href="{{ url_for('v2.refrig_diagnostics') }}"><span class="v2-card-link-text">Superheat / subcooling {% with level=access.tool_access('refrig.diagnostics') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.refrig_picker') }}">All refrigeration tools</a></li>
-    </ul>
-  </article>
-
-  <article class="v2-card v2-home-tile">
-    <h2>Acoustics</h2>
-    <p>Coming soon — duct path attenuation to room NR, and outdoor barrier screening (Maekawa). Open the suite to see planned inputs.</p>
-    <ul class="v2-card-links">
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='duct-nr') }}">Duct NR <span class="soon">Soon</span></a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='barrier') }}">Acoustic barrier <span class="soon">Soon</span></a></li>
-      <li><a href="{{ url_for('v2.acoustics_picker') }}">All acoustics tools</a></li>
     </ul>
   </article>
 
@@ -118,12 +82,21 @@
     <h2>Utilities</h2>
     <p>Quick SI ↔ imperial conversion for common HVAC quantities while you work in other tools.</p>
     <ul class="v2-card-links">
-      <li><a href="{{ url_for('v2.converter') }}">Unit converter</a></li>
+      <li><a href="{{ url_for('v2.converter') }}"><span class="v2-card-link-text">Unit converter {% with level=access.tool_access('converter') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.more') }}">More / account</a></li>
     </ul>
   </article>
 
 </div>
+
+<aside class="v2-feedback-panel" aria-labelledby="v2-feedback-heading">
+  <div class="v2-feedback-panel-copy">
+    <h2 id="v2-feedback-heading">Can’t find the calculation you’re looking for?</h2>
+    <p>HVAC-CALCS is continuously evolving, with new tools and workflows shaped by feedback from HVAC engineers.</p>
+    <p>If there’s a calculation or feature you’d find useful, we’d like to hear from you.</p>
+  </div>
+  <a class="v2-feedback-panel-btn" href="{{ url_for('pages.contact') }}">Suggest a feature</a>
+</aside>
 
 <div class="v2-section-label">Reference &amp; support</div>
 

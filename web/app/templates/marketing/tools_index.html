@@ -16,7 +16,10 @@
     {% for t in landings %}
     <li>
       <a href="{{ url_for('pages.tool_landing', slug=t.slug) }}">
-        <span class="tool-index-title">{{ t.h1 }}</span>
+        <span class="tool-index-title">
+          <span class="tool-index-name">{{ t.h1 }}</span>
+          {% with level=t.access %}{% include "_access_badge.html" %}{% endwith %}
+        </span>
         <span class="tool-index-desc">{{ t.lead }}</span>
       </a>
     </li>

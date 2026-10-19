@@ -240,6 +240,32 @@ body {
   background: var(--panel); border: 1px solid var(--green); padding: 1px 6px;
   border-radius: 4px; text-transform: uppercase;
 }
+
+/* Tool catalogue access badges (FREE / PRO) — not entitlement state */
+.access-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 4px;
+  vertical-align: 0.15em;
+  margin-left: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.access-badge--free {
+  color: var(--green-ink);
+  background: rgba(0, 169, 157, 0.12);
+  border: 1px solid rgba(0, 169, 157, 0.45);
+}
+.access-badge--pro {
+  color: #EDF1F4;
+  background: #2A3038;
+  border: 1px solid #2A3038;
+}
 .disc-chip {
   font-size: 10px; font-weight: 700; letter-spacing: .4px; padding: 2px 9px;
   border-radius: 4px; background: var(--panel); color: var(--util-ink); border: 1px solid var(--line);
@@ -2400,8 +2426,18 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
   text-decoration: none;
 }
 .tool-index-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   font-weight: 700;
   letter-spacing: -0.01em;
+}
+.tool-index-name {
+  min-width: 0;
+}
+.tool-index-title .access-badge {
+  margin-left: 0;
 }
 .tool-index-desc {
   font-size: 13.5px;
@@ -3041,7 +3077,8 @@ body.teaser-modal-open { overflow: hidden; }
 }
 a.tool-card:hover { border-color: var(--accent); }
 .tool-card strong { display: block; color: var(--blue-ink); margin-bottom: 4px; }
-.tool-card span { font-size: 13px; line-height: 1.4; color: var(--ink); }
+.tool-card strong .access-badge { vertical-align: 0.1em; }
+.tool-card > span { font-size: 13px; line-height: 1.4; color: var(--ink); }
 .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 .compare-card {
   background: #fff;

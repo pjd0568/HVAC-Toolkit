@@ -3,35 +3,19 @@
 {% block content %}
 
 <div class="v2-greeting">Hydronics</div>
-<div class="v2-greeting-sub">Size a pipe, build a circuit pressure-drop schedule, or preview plant volume tools on the roadmap.</div>
+<div class="v2-greeting-sub">Size a pipe or build a circuit pressure-drop schedule.</div>
 
 <ul class="v2-picker-list refrig-picker-list">
-  {% if access.can('pipe.sizer') %}
   <li>
     <a href="{{ url_for('v2.pipe') }}">
-      <span class="refrig-picker-title">Pipe sizing</span>
+      <span class="refrig-picker-title">Pipe sizing {% with level=access.tool_access('pipe.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span>
       <span class="refrig-picker-desc">DN catalogue with velocity and pressure-gradient traffic lights.</span>
     </a>
   </li>
-  {% endif %}
-  {% if access.can('pipe.system') %}
   <li>
     <a href="{{ url_for('v2.pipe_system') }}">
-      <span class="refrig-picker-title">System — pressure drop</span>
+      <span class="refrig-picker-title">System — pressure drop {% with level=access.tool_access('pipe.system') %}{% include "_access_badge.html" %}{% endwith %}</span>
       <span class="refrig-picker-desc">Circuit schedule with fittings, devices, and pump head.</span>
-    </a>
-  </li>
-  {% endif %}
-  <li>
-    <a href="{{ url_for('v2.coming_soon_tool', slug='expansion-vessel') }}">
-      <span class="refrig-picker-title">Expansion vessel <span class="soon">Coming soon</span></span>
-      <span class="refrig-picker-desc">Minimum vessel volume and pre-charge from system volume and temperatures.</span>
-    </a>
-  </li>
-  <li>
-    <a href="{{ url_for('v2.coming_soon_tool', slug='buffer-tank') }}">
-      <span class="refrig-picker-title">Buffer tank <span class="soon">Coming soon</span></span>
-      <span class="refrig-picker-desc">Minimum volume to limit compressor or boiler short-cycling.</span>
     </a>
   </li>
 </ul>

@@ -18,12 +18,26 @@ def test_landing_catalogue_complete():
         assert slug in LANDINGS
 
 
+def test_every_landing_has_explicit_access():
+    for landing in list_landings():
+        assert landing.access in ("free", "pro"), landing.slug
+        if landing.free_view:
+            assert landing.access == "free", landing.slug
+        if landing.access == "pro":
+            assert not landing.free_view, landing.slug
+
+
 def test_tools_index_and_landing_are_public(app):
     client = app.test_client()
     r = client.get("/tools/")
     assert r.status_code == 200
     assert b"HVAC calculator guides" in r.data
     assert b"psychrometric-calculator" in r.data
+    body = r.get_data(as_text=True)
+    assert 'class="access-badge access-badge--free"' in body
+    assert 'class="access-badge access-badge--pro"' in body
+    assert ">FREE</span>" in body
+    assert ">PRO</span>" in body
 
     r2 = client.get("/tools/mixed-air-calculator")
     assert r2.status_code == 200

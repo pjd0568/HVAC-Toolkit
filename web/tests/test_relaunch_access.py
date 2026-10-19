@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from app import create_app
-from app.access import PRICE_MONTHLY_GBP, price_unit_amount_pence
+from app.access import PRICE_MONTHLY_GBP, price_unit_amount_pence, tool_access
 
 ROOT = Path(__file__).resolve().parents[1]
 FREE_TOOLS = (
@@ -35,6 +35,15 @@ def client(app):
 def test_price_comes_from_one_constant():
     assert PRICE_MONTHLY_GBP == "4.50"
     assert price_unit_amount_pence() == 450
+
+
+def test_tool_access_is_catalogue_not_entitlement():
+    assert tool_access("psychro.single_point") == "free"
+    assert tool_access("duct.sizer") == "free"
+    assert tool_access("psychro.mixed_air") == "pro"
+    assert tool_access("duct.index_leg") == "pro"
+    assert tool_access("weather") is None
+    assert tool_access("room.load") is None
 
 
 def test_anonymous_free_calculators(client):

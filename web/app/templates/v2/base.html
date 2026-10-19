@@ -150,19 +150,6 @@
       <li><a href="{{ url_for('pages.contact') }}">Contact</a></li>
     </ul>
 
-    <div class="v2-menu-section">Coming soon</div>
-    <ul class="v2-menu-list">
-      <li><a href="{{ url_for('v2.refrig_charge') }}">Charge calculator</a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='room-load') }}">Room load</a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='grille-throw') }}">Grille throw</a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='expansion-vessel') }}">Expansion vessel</a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='buffer-tank') }}">Buffer tank</a></li>
-      <li><a href="{{ url_for('v2.coming_soon_tool', slug='co2') }}">Fresh air &amp; CO₂</a></li>
-      <li><a href="{{ url_for('v2.acoustics_picker') }}">Acoustics</a></li>
-      <li><a href="{{ url_for('weather.index') }}">Weather &amp; design conditions</a></li>
-      <li><a href="{{ url_for('projects.index') }}">Projects</a></li>
-    </ul>
-
     <div class="v2-menu-section">Account</div>
     <ul class="v2-menu-list">
       {% if current_user.is_authenticated %}
