@@ -38,6 +38,9 @@ def test_tools_index_and_landing_are_public(app):
     assert 'class="access-badge access-badge--pro"' in body
     assert ">FREE</span>" in body
     assert ">PRO</span>" in body
+    assert "tool-access-free" in body
+    # Free calculators appear before Pro landings in the catalogue.
+    assert body.find("access-badge--free") < body.find("access-badge--pro")
 
     r2 = client.get("/tools/mixed-air-calculator")
     assert r2.status_code == 200

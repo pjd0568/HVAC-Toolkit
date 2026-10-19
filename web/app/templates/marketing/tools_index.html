@@ -15,7 +15,7 @@
   <ul class="tool-index-list">
     {% for t in landings %}
     <li>
-      <a href="{{ url_for('pages.tool_landing', slug=t.slug) }}">
+      <a href="{{ url_for('pages.tool_landing', slug=t.slug) }}"{% if t.access == 'free' %} class="tool-access-free"{% endif %}>
         <span class="tool-index-title">
           <span class="tool-index-name">{{ t.h1 }}</span>
           {% with level=t.access %}{% include "_access_badge.html" %}{% endwith %}

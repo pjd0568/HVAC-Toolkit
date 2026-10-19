@@ -7,7 +7,7 @@
 
 <ul class="v2-picker-list refrig-picker-list">
   <li>
-    <a href="{{ url_for('v2.pipe') }}">
+    <a class="tool-access-free" href="{{ url_for('v2.pipe') }}">
       <span class="refrig-picker-title">Pipe sizing {% with level=access.tool_access('pipe.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span>
       <span class="refrig-picker-desc">DN catalogue with velocity and pressure-gradient traffic lights.</span>
     </a>

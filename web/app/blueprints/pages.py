@@ -47,9 +47,14 @@ def terms():
 def tools_index():
     from app.seo_tools import list_landings
 
+    # Free calculators first so the catalogue leads with what anyone can run.
+    landings = sorted(
+        list_landings(),
+        key=lambda t: (0 if t.access == "free" else 1, t.h1.lower()),
+    )
     return render_template(
         "marketing/tools_index.html",
-        landings=list_landings(),
+        landings=landings,
     )
 
 

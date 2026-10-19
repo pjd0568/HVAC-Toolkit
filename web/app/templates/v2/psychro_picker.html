@@ -3,17 +3,17 @@
 {% block content %}
 
 <div class="v2-greeting">Psychrometrics</div>
-<div class="v2-greeting-sub">Pick a tool — start with the multi-point interactive chart or Single Point, or open AHU for a stepped flow on smaller screens.</div>
+<div class="v2-greeting-sub">Pick a tool — start with Single Point, or open the multi-point chart and process tools. AHU works well as a stepped flow on smaller screens.</div>
 
 <ul class="v2-picker-list refrig-picker-list">
   <li>
-    <a href="{{ url_for('v2.interactive_chart') }}">
-      <span class="refrig-picker-title">Multi-point interactive chart {% with level=access.tool_access('psychro.interactive_chart') %}{% include "_access_badge.html" %}{% endwith %}</span>
+    <a class="tool-access-free" href="{{ url_for('v2.single_point') }}">
+      <span class="refrig-picker-title">Single point {% with level=access.tool_access('psychro.single_point') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>
-    <a href="{{ url_for('v2.single_point') }}">
-      <span class="refrig-picker-title">Single point {% with level=access.tool_access('psychro.single_point') %}{% include "_access_badge.html" %}{% endwith %}</span>
+    <a href="{{ url_for('v2.interactive_chart') }}">
+      <span class="refrig-picker-title">Multi-point interactive chart {% with level=access.tool_access('psychro.interactive_chart') %}{% include "_access_badge.html" %}{% endwith %}</span>
     </a>
   </li>
   <li>

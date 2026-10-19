@@ -7,7 +7,7 @@
 
 <ul class="v2-picker-list refrig-picker-list">
   <li>
-    <a href="{{ url_for('v2.duct') }}">
+    <a class="tool-access-free" href="{{ url_for('v2.duct') }}">
       <span class="refrig-picker-title">Duct sizing {% with level=access.tool_access('duct.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span>
       <span class="refrig-picker-desc">Circular, rectangular, and flat-oval by velocity or pressure gradient.</span>
     </a>

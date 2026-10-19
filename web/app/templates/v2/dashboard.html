@@ -35,8 +35,8 @@
     <h2>Psychrometrics</h2>
     <p>Air states on the chart, mixing, coils, desiccant and steam humidification, evaporative cooling, and stepped AHU design.</p>
     <ul class="v2-card-links">
+      <li><a class="tool-access-free" href="{{ url_for('v2.single_point') }}"><span class="v2-card-link-text">Single point {% with level=access.tool_access('psychro.single_point') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.interactive_chart') }}"><span class="v2-card-link-text">Multi-point chart {% with level=access.tool_access('psychro.interactive_chart') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
-      <li><a href="{{ url_for('v2.single_point') }}"><span class="v2-card-link-text">Single point {% with level=access.tool_access('psychro.single_point') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.mixed_air') }}"><span class="v2-card-link-text">Mixed air {% with level=access.tool_access('psychro.mixed_air') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.cooling_coil') }}"><span class="v2-card-link-text">Cooling coil {% with level=access.tool_access('psychro.cooling_coil') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.desiccant') }}"><span class="v2-card-link-text">Desiccant {% with level=access.tool_access('psychro.desiccant') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
@@ -51,7 +51,7 @@
     <h2>Air distribution</h2>
     <p>Size circular, rectangular, and flat-oval duct by velocity or friction rate, then build an index-leg pressure-drop path.</p>
     <ul class="v2-card-links">
-      <li><a href="{{ url_for('v2.duct') }}"><span class="v2-card-link-text">Duct sizing {% with level=access.tool_access('duct.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a class="tool-access-free" href="{{ url_for('v2.duct') }}"><span class="v2-card-link-text">Duct sizing {% with level=access.tool_access('duct.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.duct_index_leg') }}"><span class="v2-card-link-text">Index leg — ΔP {% with level=access.tool_access('duct.index_leg') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.air_picker') }}">All air tools</a></li>
     </ul>
@@ -61,7 +61,7 @@
     <h2>Hydronics</h2>
     <p>Catalogue DN / flow sizing with design-limit traffic lights, plus a circuit pressure-drop schedule and pump head (open or pressurised).</p>
     <ul class="v2-card-links">
-      <li><a href="{{ url_for('v2.pipe') }}"><span class="v2-card-link-text">Pipe sizing {% with level=access.tool_access('pipe.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a class="tool-access-free" href="{{ url_for('v2.pipe') }}"><span class="v2-card-link-text">Pipe sizing {% with level=access.tool_access('pipe.sizer') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.pipe_system') }}"><span class="v2-card-link-text">System — pressure drop {% with level=access.tool_access('pipe.system') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.water_picker') }}">All hydronics tools</a></li>
     </ul>
@@ -71,9 +71,9 @@
     <h2>Refrigeration</h2>
     <p>Sub-critical DX tools: PT tables, velocity-based ACR pipe sizing, and superheat / subcooling diagnostics.</p>
     <ul class="v2-card-links">
-      <li><a href="{{ url_for('v2.refrig_pt_table') }}"><span class="v2-card-link-text">PT table {% with level=access.tool_access('refrig.pt_table') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a class="tool-access-free" href="{{ url_for('v2.refrig_pt_table') }}"><span class="v2-card-link-text">PT table {% with level=access.tool_access('refrig.pt_table') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a class="tool-access-free" href="{{ url_for('v2.refrig_diagnostics') }}"><span class="v2-card-link-text">Superheat / subcooling {% with level=access.tool_access('refrig.diagnostics') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.refrig_pipe_sizer') }}"><span class="v2-card-link-text">DX pipe sizing {% with level=access.tool_access('refrig.pipe_sizer') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
-      <li><a href="{{ url_for('v2.refrig_diagnostics') }}"><span class="v2-card-link-text">Superheat / subcooling {% with level=access.tool_access('refrig.diagnostics') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.refrig_picker') }}">All refrigeration tools</a></li>
     </ul>
   </article>
@@ -82,7 +82,7 @@
     <h2>Utilities</h2>
     <p>Quick SI ↔ imperial conversion for common HVAC quantities while you work in other tools.</p>
     <ul class="v2-card-links">
-      <li><a href="{{ url_for('v2.converter') }}"><span class="v2-card-link-text">Unit converter {% with level=access.tool_access('converter') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
+      <li><a class="tool-access-free" href="{{ url_for('v2.converter') }}"><span class="v2-card-link-text">Unit converter {% with level=access.tool_access('converter') %}{% include "_access_badge.html" %}{% endwith %}</span></a></li>
       <li><a href="{{ url_for('v2.more') }}">More / account</a></li>
     </ul>
   </article>

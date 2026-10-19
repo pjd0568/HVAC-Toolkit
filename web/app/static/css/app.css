@@ -2425,6 +2425,13 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
   border-color: var(--blue, #2a6f97);
   text-decoration: none;
 }
+.tool-index-list a.tool-access-free {
+  border-color: var(--green);
+  background: rgba(0, 169, 157, 0.06);
+}
+.tool-index-list a.tool-access-free:hover {
+  border-color: var(--green-ink);
+}
 .tool-index-title {
   display: flex;
   align-items: center;
@@ -3076,6 +3083,11 @@ body.teaser-modal-open { overflow: hidden; }
   text-decoration: none;
 }
 a.tool-card:hover { border-color: var(--accent); }
+a.tool-card.tool-access-free {
+  border-color: var(--green);
+  background: rgba(0, 169, 157, 0.06);
+}
+a.tool-card.tool-access-free:hover { border-color: var(--green-ink); }
 .tool-card strong { display: block; color: var(--blue-ink); margin-bottom: 4px; }
 .tool-card strong .access-badge { vertical-align: 0.1em; }
 .tool-card > span { font-size: 13px; line-height: 1.4; color: var(--ink); }

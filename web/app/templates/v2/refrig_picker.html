@@ -3,25 +3,25 @@
 {% block content %}
 
 <div class="v2-greeting">Refrigeration</div>
-<div class="v2-greeting-sub">Sub-critical DX tools for pipe sizing, PT lookup, and site diagnostics. Switch freely within this suite.</div>
+<div class="v2-greeting-sub">Sub-critical DX tools for PT lookup, site diagnostics, and pipe sizing. Switch freely within this suite.</div>
 
 <ul class="v2-picker-list refrig-picker-list">
   <li>
-    <a href="{{ url_for('v2.refrig_pipe_sizer') }}">
-      <span class="refrig-picker-title">DX pipe sizing {% with level=access.tool_access('refrig.pipe_sizer') %}{% include "_access_badge.html" %}{% endwith %}</span>
-      <span class="refrig-picker-desc">Mass flow from capacity and Δh; ACR copper for suction / liquid / discharge velocity bands and oil-return warnings.</span>
-    </a>
-  </li>
-  <li>
-    <a href="{{ url_for('v2.refrig_pt_table') }}">
+    <a class="tool-access-free" href="{{ url_for('v2.refrig_pt_table') }}">
       <span class="refrig-picker-title">PT table {% with level=access.tool_access('refrig.pt_table') %}{% include "_access_badge.html" %}{% endwith %}</span>
       <span class="refrig-picker-desc">Bubble / dew pressures vs temperature, gauges, and measured-pressure → saturation temperature.</span>
     </a>
   </li>
   <li>
-    <a href="{{ url_for('v2.refrig_diagnostics') }}">
+    <a class="tool-access-free" href="{{ url_for('v2.refrig_diagnostics') }}">
       <span class="refrig-picker-title">Superheat &amp; subcooling {% with level=access.tool_access('refrig.diagnostics') %}{% include "_access_badge.html" %}{% endwith %}</span>
       <span class="refrig-picker-desc">Live fault-finding from gauge pressures and pipe temperatures — colour-coded SH / SC ranges.</span>
+    </a>
+  </li>
+  <li>
+    <a href="{{ url_for('v2.refrig_pipe_sizer') }}">
+      <span class="refrig-picker-title">DX pipe sizing {% with level=access.tool_access('refrig.pipe_sizer') %}{% include "_access_badge.html" %}{% endwith %}</span>
+      <span class="refrig-picker-desc">Mass flow from capacity and Δh; ACR copper for suction / liquid / discharge velocity bands and oil-return warnings.</span>
     </a>
   </li>
 </ul>

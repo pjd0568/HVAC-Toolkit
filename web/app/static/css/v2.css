@@ -809,6 +809,18 @@ a:hover { color: var(--v2-green-ink); }
 }
 .v2-card-links a:hover::after { color: var(--v2-green-ink); }
 
+/* Free tools — slightly elevated in the list and edged in teal */
+.v2-card-links a.tool-access-free,
+.v2-picker-list a.tool-access-free {
+  border-color: var(--v2-green);
+  background: var(--v2-green-soft);
+}
+.v2-card-links a.tool-access-free:hover,
+.v2-picker-list a.tool-access-free:hover {
+  border-color: var(--v2-green-ink);
+  background: #d8f3ef;
+}
+
 .v2-greeting {
   font-size: 26px;
   font-weight: 700;
