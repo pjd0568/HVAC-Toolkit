@@ -99,9 +99,12 @@ def test_sitemap_and_robots(client):
     assert "/tools/superheat-subcooling" in sitemap
     assert "/tools/unit-converter" in sitemap
     assert "/methods" in sitemap
+    assert "/methodology" in sitemap
+    assert "/reference/add-to-mobile-homescreen" in sitemap
     assert "/v2/" not in sitemap
     robots = client.get("/robots.txt").get_data(as_text=True)
     assert "Allow: /tools/" in robots
+    assert "Allow: /methodology" in robots
     assert "Disallow: /v2/" in robots
     assert "Disallow: /help" in robots
 

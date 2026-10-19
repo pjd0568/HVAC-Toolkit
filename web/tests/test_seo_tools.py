@@ -56,4 +56,8 @@ def test_sitemap_includes_tool_landings(app):
     assert "/tools/" in body
     assert "/tools/psychrometric-calculator" in body
     assert "/tools/chilled-water-pipe-sizing" in body
+    assert "/methodology" in body
+    assert "/reference/cooling-coil-design" in body
+    assert "/reference/pipe-sizing-design-limits" in body
+    assert "<lastmod>" in body
     assert "/v2/" not in body

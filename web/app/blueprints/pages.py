@@ -226,9 +226,10 @@ def robots_txt():
         "Allow: /",
         "Allow: /tools/",
         "Allow: /methods",
+        "Allow: /methodology",
         "Allow: /about",
         "Allow: /reference",
-        "Allow: /methodology",
+        "Allow: /reference/",
         "Disallow: /app",
         "Disallow: /v2/",
         "Disallow: /weather",
@@ -266,14 +267,19 @@ def bing_site_auth():
 
 @bp.get("/sitemap.xml")
 def sitemap_xml():
+    from datetime import date
+
+    from app.blueprints.guides import GUIDES
     from app.seo_tools import list_landings
 
     base = current_app.config["PUBLIC_BASE_URL"].rstrip("/")
     # Public marketing URLs only — logged-in calculators stay out of the sitemap.
+    lastmod = date.today().isoformat()
     paths = [
         ("/", "weekly", "1.0"),
         ("/tools/", "weekly", "0.9"),
         ("/methods", "monthly", "0.7"),
+        ("/methodology", "monthly", "0.7"),
         ("/about", "monthly", "0.5"),
         ("/reference/", "monthly", "0.6"),
         ("/subscribe", "weekly", "0.8"),
@@ -282,12 +288,17 @@ def sitemap_xml():
         ("/privacy", "yearly", "0.3"),
     ]
     for landing in list_landings():
-        paths.append((f"/tools/{landing.slug}", "monthly", "0.85"))
+        # Free runnable tools slightly above Pro marketing landings.
+        priority = "0.9" if landing.access == "free" else "0.75"
+        paths.append((f"/tools/{landing.slug}", "monthly", priority))
+    for guide in GUIDES:
+        paths.append((f"/reference/{guide['slug']}", "monthly", "0.55"))
     urls = []
     for path, freq, priority in paths:
         urls.append(
             "  <url>\n"
             f"    <loc>{base}{path}</loc>\n"
+            f"    <lastmod>{lastmod}</lastmod>\n"
             f"    <changefreq>{freq}</changefreq>\n"
             f"    <priority>{priority}</priority>\n"
             "  </url>"
