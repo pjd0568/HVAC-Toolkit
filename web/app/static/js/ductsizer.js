@@ -123,6 +123,15 @@
     return (els.rectRound25 && els.rectRound25.checked) ? ROUND25_STEP : NUDGE_STEP;
   }
 
+  // Keep native number-input spinner / arrow-key step in sync with the
+  // round-to-25mm checkbox (step="any" would otherwise increment by 1).
+  function syncRectInputStep() {
+    var step = currentStep();
+    [els.rectWidth, els.rectHeight].forEach(function (input) {
+      if (input) input.step = String(step);
+    });
+  }
+
   // Absolute W/H scale: SI mm ranges keyed by air volume (m³/s).
   // Display values follow the active unit system (mm or in).
   var UNIT_SYSTEM = form.dataset.unitSystem || "SI";
@@ -546,13 +555,21 @@
 
   // -- Round-to-25mm checkbox --
   els.rectRound25.addEventListener("change", function () {
-    els.rectRound25Hidden.value = els.rectRound25.checked ? "1" : "";
+    els.rectRound25Hidden.value = els.rectRound25.checked ? "1" : "0";
+    syncRectInputStep();
     fetchState({ rect_round25: els.rectRound25Hidden.value }, { quiet: true });
     syncAllDimScrubs();
   });
 
-  // -- Rectangular nudge inputs (direct type-in; flat oval is readonly and
-  // has no equivalent -- see the oval catalogue-step handler below) --
+  // -- Rectangular nudge inputs (type-in + native spinner / arrow keys).
+  // Spinner up/down often fires `input` without a reliable `change` until
+  // blur, so both events drive a quiet recalc; flat oval is readonly and
+  // uses the catalogue-step handler below instead.
+  function onRectDimEdit(field, input) {
+    if (!input || input.disabled) return;
+    syncDimScrub(document.querySelector('[data-nudge-scrub="' + field + '"]'));
+    debouncedNudgeFetch(field, input.value);
+  }
   els.rectWidth.addEventListener("change", function () {
     if (els.rectWidth.disabled) return;
     fetchState({ nudge: "rect_width", nudge_value: els.rectWidth.value }, { quiet: true });
@@ -563,8 +580,9 @@
     fetchState({ nudge: "rect_height", nudge_value: els.rectHeight.value }, { quiet: true });
     syncAllDimScrubs();
   });
-  els.rectWidth.addEventListener("input", function () { syncDimScrub(document.querySelector('[data-nudge-scrub="rect_width"]')); });
-  els.rectHeight.addEventListener("input", function () { syncDimScrub(document.querySelector('[data-nudge-scrub="rect_height"]')); });
+  els.rectWidth.addEventListener("input", function () { onRectDimEdit("rect_width", els.rectWidth); });
+  els.rectHeight.addEventListener("input", function () { onRectDimEdit("rect_height", els.rectHeight); });
+  syncRectInputStep();
 
   // -- Rectangular stepper +/- buttons (continuous, computed client-side) --
   document.querySelectorAll("[data-nudge][data-dir]").forEach(function (btn) {

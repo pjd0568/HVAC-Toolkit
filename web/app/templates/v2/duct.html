@@ -88,13 +88,13 @@
         <fieldset class="compact-group duct-shape-fields {{ 'active' if shape == 'rectangular' }}" data-shape="rectangular">
           <legend>Size</legend>
           <div class="rect-round25-row">
-            <label><input type="checkbox" id="rect-round25" {{ 'checked' if fields.rect_round25 == '1' }}> Round to 25 mm</label>
+            <label><input type="checkbox" id="rect-round25" {{ 'checked' if fields.rect_round25 != '0' }}> Round to 25 mm</label>
           </div>
           <div class="rect-wh-pair">
             <div class="rect-dim-card" id="rect-width-card" data-dim="width">
               <div class="rect-dim-main">
                 <span class="rect-dim-label">Width</span>
-                <input type="number" step="any" id="rect-width" value="{{ fields.rect_width }}" data-field="rect_width"
+                <input type="number" step="{{ round25_step if fields.rect_round25 != '0' else nudge_step }}" id="rect-width" value="{{ fields.rect_width }}" data-field="rect_width"
                        {{ 'disabled' if fields.rect_lock_width == '1' }}>
                 <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
                 <button type="button" class="lock-icon-btn" id="rect-width-lock"
@@ -132,7 +132,7 @@
             <div class="rect-dim-card" id="rect-height-card" data-dim="height">
               <div class="rect-dim-main">
                 <span class="rect-dim-label">Height</span>
-                <input type="number" step="any" id="rect-height" value="{{ fields.rect_height }}" data-field="rect_height"
+                <input type="number" step="{{ round25_step if fields.rect_round25 != '0' else nudge_step }}" id="rect-height" value="{{ fields.rect_height }}" data-field="rect_height"
                        {{ 'disabled' if fields.rect_lock_height == '1' }}>
                 <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
                 <button type="button" class="lock-icon-btn" id="rect-height-lock"
@@ -385,7 +385,7 @@
 {% block extra_scripts %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
-<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=target-unit-1"></script>
+<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=round25-step-1"></script>
 <script>
 (function(){
   var tabs=document.getElementById('v2-shape-tabs');

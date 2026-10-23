@@ -304,8 +304,11 @@ def _compute_state(args, U):
         fields["rect_lock_width"] = "1" if lock_width else ""
         fields["rect_lock_height"] = "1" if lock_height else ""
 
-        round25 = args.get("rect_round25") == "1"
-        fields["rect_round25"] = "1" if round25 else ""
+        # Default on when the param is absent (first visit / bare URL). Use
+        # explicit "0" when the user turns it off so reloads keep that choice.
+        round25_raw = args.get("rect_round25")
+        round25 = True if round25_raw is None else round25_raw == "1"
+        fields["rect_round25"] = "1" if round25 else "0"
 
         width_raw = args.get("rect_width")
         if nudge == "rect_width":

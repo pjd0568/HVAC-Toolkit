@@ -110,14 +110,14 @@
       (e.g. a shallow ceiling void).</div>
 
     <div class="rect-round25-row">
-      <label><input type="checkbox" id="rect-round25" {{ 'checked' if fields.rect_round25 == '1' }}> Round to 25mm</label>
+      <label><input type="checkbox" id="rect-round25" {{ 'checked' if fields.rect_round25 != '0' }}> Round to 25mm</label>
     </div>
 
     <div class="rect-dim-row">
       <div class="rect-dim-label">Width</div>
       <div class="stepper">
         <button type="button" data-nudge="rect_width" data-dir="-1">−</button>
-        <input type="number" step="any" id="rect-width" value="{{ fields.rect_width }}" data-field="rect_width">
+        <input type="number" step="{{ round25_step if fields.rect_round25 != '0' else nudge_step }}" id="rect-width" value="{{ fields.rect_width }}" data-field="rect_width">
         <button type="button" data-nudge="rect_width" data-dir="1">+</button>
         <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
       </div>
@@ -133,7 +133,7 @@
       <div class="rect-dim-label">Height</div>
       <div class="stepper">
         <button type="button" data-nudge="rect_height" data-dir="-1">−</button>
-        <input type="number" step="any" id="rect-height" value="{{ fields.rect_height }}" data-field="rect_height">
+        <input type="number" step="{{ round25_step if fields.rect_round25 != '0' else nudge_step }}" id="rect-height" value="{{ fields.rect_height }}" data-field="rect_height">
         <button type="button" data-nudge="rect_height" data-dir="1">+</button>
         <span class="stepper-unit">{{ U.sym('duct_dimension') }}</span>
       </div>
