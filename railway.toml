@@ -8,3 +8,6 @@ healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 # Run after each deploy once DATABASE_URL is attached (Railway Postgres plugin).
 releaseCommand = "flask --app wsgi db upgrade"
+# This file is the website service (Pauls Hvac App). It does not send the
+# weekly email. Fix the existing cron service HVAC Toolkit. Do not add another.
+# See docs/analytics-reporting.md.

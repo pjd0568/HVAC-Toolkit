@@ -30,6 +30,27 @@ class AnalyticsEvent(db.Model):
     utm_medium = db.Column(db.String(64), nullable=True)
     utm_campaign = db.Column(db.String(80), nullable=True)
     utm_content = db.Column(db.String(80), nullable=True)
+    utm_term = db.Column(db.String(80), nullable=True)
+    cta_placement = db.Column(db.String(40), nullable=True)
+    # Null on historical rows. False is a normal visitor. True is an explicit
+    # internal or test session and is left out of product reports.
+    excluded = db.Column(db.Boolean, nullable=True)
+    # Null means this row predates first/latest capture. Do not infer a channel.
+    first_captured = db.Column(db.Boolean, nullable=True)
+    latest_captured = db.Column(db.Boolean, nullable=True)
+    first_utm_source = db.Column(db.String(64), nullable=True)
+    first_utm_medium = db.Column(db.String(64), nullable=True)
+    first_utm_campaign = db.Column(db.String(80), nullable=True)
+    first_utm_content = db.Column(db.String(80), nullable=True)
+    first_utm_term = db.Column(db.String(80), nullable=True)
+    first_landing_path = db.Column(db.String(200), nullable=True)
+    first_referrer_host = db.Column(db.String(120), nullable=True)
+    first_seen_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    first_channel = db.Column(db.String(80), nullable=True)
+    latest_landing_path = db.Column(db.String(200), nullable=True)
+    latest_referrer_host = db.Column(db.String(120), nullable=True)
+    latest_seen_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    latest_channel = db.Column(db.String(80), nullable=True)
 
     __table_args__ = (
         db.Index("ix_analytics_events_occurred_at", "occurred_at"),
@@ -54,5 +75,9 @@ class AnalyticsReportRun(db.Model):
     status = db.Column(db.String(16), nullable=False)  # sending | sent | failed
     weekly_key = db.Column(db.String(32), nullable=True, unique=True)
     sent_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    started_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    completed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    attempt_count = db.Column(db.Integer, nullable=True)
+    provider_message_id = db.Column(db.String(80), nullable=True)
     detail = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utcnow)

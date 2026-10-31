@@ -73,15 +73,39 @@ def send_email(
     reply_to: str | None = None,
     html: str | None = None,
 ) -> bool:
-    """Send an email. Returns True on success. ``html`` is optional."""
+    """Send an email. Returns True on success. ``html`` is optional.
+
+    ``last_message_id`` is the provider id for this call, or None. It is not
+    a recipient address.
+    """
+    ok, message_id = deliver_email(
+        to=to,
+        subject=subject,
+        body=body,
+        reply_to=reply_to,
+        html=html,
+    )
+    send_email.last_message_id = message_id
+    return ok
+
+
+def deliver_email(
+    *,
+    to: str,
+    subject: str,
+    body: str,
+    reply_to: str | None = None,
+    html: str | None = None,
+) -> tuple[bool, str | None]:
+    """Send one message. The id is the provider id when Resend returns one."""
     backend = mail_backend()
     if backend == "none":
-        log.warning("Mail not configured; skipped send: %s", subject)
-        return False
-
+        log.warning("Mail not configured; skipped send subject=%r", subject)
+        return False, None
     if backend == "resend":
         return _send_via_resend(to=to, subject=subject, body=body, reply_to=reply_to, html=html)
-    return _send_via_smtp(to=to, subject=subject, body=body, reply_to=reply_to, html=html)
+    ok = _send_via_smtp(to=to, subject=subject, body=body, reply_to=reply_to, html=html)
+    return ok, None
 
 
 def _send_via_resend(
@@ -91,7 +115,7 @@ def _send_via_resend(
     body: str,
     reply_to: str | None,
     html: str | None = None,
-) -> bool:
+) -> tuple[bool, str | None]:
     api_key = _resend_api_key()
     payload: dict = {
         "from": _from_header(),
@@ -105,7 +129,7 @@ def _send_via_resend(
         payload["reply_to"] = reply_to
 
     try:
-        log.info("Sending email via Resend to %s subject=%r", to, subject)
+        log.info("Sending email via Resend subject=%r", subject)
         resp = requests.post(
             "https://api.resend.com/emails",
             headers={
@@ -121,12 +145,19 @@ def _send_via_resend(
                 resp.status_code,
                 (resp.text or "")[:500],
             )
-            return False
-        log.info("Sent email via Resend to %s subject=%r", to, subject)
-        return True
+            return False, None
+        message_id = None
+        try:
+            payload_id = resp.json().get("id")
+            if isinstance(payload_id, str) and payload_id and "@" not in payload_id:
+                message_id = payload_id[:80]
+        except ValueError:
+            message_id = None
+        log.info("Sent email via Resend subject=%r provider_message_id=%s", subject, message_id or "")
+        return True, message_id
     except requests.RequestException:
-        log.exception("Resend request failed: %s", subject)
-        return False
+        log.exception("Resend request failed subject=%r", subject)
+        return False, None
 
 
 def _send_via_smtp(
@@ -156,7 +187,7 @@ def _send_via_smtp(
     use_ssl = port == 465 or bool(cfg.get("MAIL_USE_SSL"))
 
     try:
-        log.info("Sending email via SMTP to %s via %s:%s", to, host, port)
+        log.info("Sending email via SMTP via %s:%s", host, port)
         if use_ssl:
             with smtplib.SMTP_SSL(host, port, timeout=SMTP_TIMEOUT_SEC) as smtp:
                 smtp.ehlo()
@@ -170,7 +201,7 @@ def _send_via_smtp(
                     smtp.ehlo()
                 smtp.login(username, password)
                 smtp.send_message(msg)
-        log.info("Sent email via SMTP to %s subject=%r", to, subject)
+        log.info("Sent email via SMTP subject=%r", subject)
         return True
     except smtplib.SMTPAuthenticationError:
         log.exception(

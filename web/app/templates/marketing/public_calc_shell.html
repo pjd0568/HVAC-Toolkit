@@ -38,12 +38,12 @@
   <div class="public-calc-surface v2-main" data-calculator="{{ analytics_tool(public_landing.slug) }}">
     {% block tool_body %}{% endblock %}
   </div>
-  {% if self.calc_complete()|trim %}
-  <div data-calc-complete="{{ public_landing.slug }}" hidden></div>
+  {% if g.get('analytics_calc_complete') %}
+  <div data-calc-complete="{{ g.analytics_calc_complete }}" hidden></div>
   {% endif %}
 
   {% if public_landing.pro_next and not access.has_suite_access %}
-  <aside class="pro-next" data-pro-cta data-cta-source="{{ analytics_tool(public_landing.slug) }}" data-cta-target="{{ analytics_tool(public_landing.pro_endpoint) }}">
+  <aside class="pro-next" data-pro-cta data-cta-after-result data-cta-placement="result" data-cta-source="{{ analytics_tool(public_landing.slug) }}" data-cta-target="{{ analytics_tool(public_landing.pro_endpoint) }}">
     <p>{{ public_landing.pro_next }}</p>
     {% set cta = pro_cta(url_for(public_landing.pro_endpoint) if public_landing.pro_endpoint else none) %}
     <a class="btn-accent" href="{{ cta.href }}">{{ cta.label }}</a>

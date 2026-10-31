@@ -51,8 +51,12 @@
     successful calculator completion, a Pro-feature click, registration, and
     an active subscription. The engineering values you type — flows, sizes,
     temperatures, pressures and similar results — are not stored as product
-    analytics. Anonymous journeys use a random identifier in the existing
-    session. It is not an email address and not an IP address. If you have an
+    analytics.     Anonymous journeys use a random identifier in the existing
+    session. It is not an email address and not an IP address. The same
+    session stores the landing path, the referring site’s hostname (not the
+    full address, and not a search query) and campaign parameters from the
+    link you followed, such as utm_source. The first landing is kept, and a
+    later campaign or external referrer is stored separately. If you have an
     account, the same kind of event may be linked to that account’s internal
     id. These events are kept for {{ config.ANALYTICS_RETENTION_DAYS }} days
     and then deleted. They do not set a separate analytics cookie.

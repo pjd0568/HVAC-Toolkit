@@ -160,6 +160,8 @@ class Config:
 
     # Owner-only product analytics. Comma-separated emails. Not a subscriber role.
     ANALYTICS_ADMIN_EMAILS = os.environ.get("ANALYTICS_ADMIN_EMAILS", "")
+    # Extra addresses whose product events are left out of reports. Not a role.
+    ANALYTICS_INTERNAL_EMAILS = os.environ.get("ANALYTICS_INTERNAL_EMAILS", "")
     ANALYTICS_REPORT_EMAIL = os.environ.get("ANALYTICS_REPORT_EMAIL", "")
     ANALYTICS_WEEKLY_REPORT_ENABLED = os.environ.get(
         "ANALYTICS_WEEKLY_REPORT_ENABLED", "false"

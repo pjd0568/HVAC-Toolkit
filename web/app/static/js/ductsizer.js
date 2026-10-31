@@ -427,6 +427,11 @@
       .then(function (data) {
         if (!quiet) setLoading(false);
         applyState(data);
+        if (opts && opts.intent === "calculate" && data && !data.error) {
+          try {
+            document.dispatchEvent(new CustomEvent("hvac:calc-complete"));
+          } catch (ignore) { /* analytics must not block the result */ }
+        }
         return data;
       })
       .catch(function () {

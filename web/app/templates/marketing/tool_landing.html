@@ -13,7 +13,7 @@
       <a class="btn-accent" href="{{ url_for(landing.cta_app_endpoint) }}">{{ landing.cta_label }}</a>
     {% else %}
       {% set cta = pro_cta(url_for(landing.cta_app_endpoint)) %}
-      <a class="btn-accent" data-pro-cta="{{ landing.slug }}" href="{{ cta.href }}">{{ cta.label }}</a>
+      <a class="btn-accent" data-pro-cta="{{ landing.slug }}" data-cta-placement="landing" data-cta-source="{{ landing.slug }}" href="{{ cta.href }}">{{ cta.label }}</a>
     {% endif %}
   </div>
 

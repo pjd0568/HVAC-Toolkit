@@ -261,14 +261,10 @@ def handle_checkout_session_completed(session: Any) -> None:
 
     db.session.commit()
     notify_subscription_status_change(user, previous_status)
-    if user.subscription_status == "active" and previous_status != "active":
-        from app.analytics import record_analytics_event
+    if subscription_id:
+        from app.analytics import note_confirmed_subscription
 
-        record_analytics_event(
-            "subscription_active",
-            route="/webhooks/stripe",
-            user_id=user.id,
-        )
+        note_confirmed_subscription(user.id, _field(subscription, "status"))
     logger.info(
         "Unlocked suite for user %s (status=%s, sub=%s)",
         user.id,
@@ -302,14 +298,9 @@ def handle_subscription_event(subscription: Any) -> None:
     _apply_subscription_to_user(user, subscription)
     db.session.commit()
     notify_subscription_status_change(user, previous_status)
-    if user.subscription_status == "active" and previous_status != "active":
-        from app.analytics import record_analytics_event
+    from app.analytics import note_confirmed_subscription
 
-        record_analytics_event(
-            "subscription_active",
-            route="/webhooks/stripe",
-            user_id=user.id,
-        )
+    note_confirmed_subscription(user.id, _field(subscription, "status"))
 
 
 def construct_webhook_event(payload: bytes, sig_header: str | None) -> stripe.Event:

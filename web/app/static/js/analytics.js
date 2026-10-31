@@ -35,11 +35,20 @@
   document.querySelectorAll("[data-pro-cta]").forEach(function (el) {
     var source = el.getAttribute("data-cta-source") || el.getAttribute("data-pro-cta") || "";
     var target = el.getAttribute("data-cta-target") || "";
-    if (el.getAttribute("data-cta-viewed")) return;
-    el.setAttribute("data-cta-viewed", "1");
-    send("pro_cta_view", { source: source, target: target });
+    var placement = el.getAttribute("data-cta-placement") || "";
+    var props = { source: source, target: target, placement: placement };
+    function emitView() {
+      if (el.getAttribute("data-cta-viewed")) return;
+      el.setAttribute("data-cta-viewed", "1");
+      send("pro_cta_view", props);
+    }
+    if (!el.hasAttribute("data-cta-after-result") || document.querySelector("[data-calc-complete]")) {
+      emitView();
+    } else {
+      document.addEventListener("hvac:calc-complete", emitView);
+    }
     el.addEventListener("click", function () {
-      send("pro_cta_click", { source: source, target: target });
+      send("pro_cta_click", props);
     });
   });
 

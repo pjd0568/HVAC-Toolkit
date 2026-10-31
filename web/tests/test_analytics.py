@@ -7,7 +7,14 @@ import pytest
 
 from app import create_app
 from app.analytics import record_analytics_event
-from app.analytics_report import build_report, previous_complete_week, prune_analytics_events, render_markdown, send_weekly_analytics_report
+from app.analytics_report import (
+    build_report,
+    previous_complete_week,
+    prune_analytics_events,
+    render_email_html,
+    render_markdown,
+    send_weekly_analytics_report,
+)
 from app.extensions import db
 from app.models.analytics import AnalyticsEvent, AnalyticsReportRun
 from app.models.user import User
@@ -111,6 +118,24 @@ _PERMITTED_EVENT_COLUMNS = {
     "utm_medium",
     "utm_campaign",
     "utm_content",
+    "utm_term",
+    "cta_placement",
+    "excluded",
+    "first_captured",
+    "latest_captured",
+    "first_utm_source",
+    "first_utm_medium",
+    "first_utm_campaign",
+    "first_utm_content",
+    "first_utm_term",
+    "first_landing_path",
+    "first_referrer_host",
+    "first_seen_at",
+    "first_channel",
+    "latest_landing_path",
+    "latest_referrer_host",
+    "latest_seen_at",
+    "latest_channel",
 }
 
 # Text dimensions that can hold client or application strings.
@@ -129,6 +154,19 @@ _STORED_TEXT_FIELDS = (
     "utm_medium",
     "utm_campaign",
     "utm_content",
+    "utm_term",
+    "cta_placement",
+    "first_utm_source",
+    "first_utm_medium",
+    "first_utm_campaign",
+    "first_utm_content",
+    "first_utm_term",
+    "first_landing_path",
+    "first_referrer_host",
+    "first_channel",
+    "latest_landing_path",
+    "latest_referrer_host",
+    "latest_channel",
 )
 
 _CALCULATION_PAYLOAD_COLUMNS = {
@@ -221,8 +259,8 @@ def test_owner_dashboard_is_private(client, analytics_app):
 def test_funnel_uses_unique_journeys_and_guards_zero(analytics_app):
     with analytics_app.app_context():
         empty = build_report(datetime.now(timezone.utc).date(), datetime.now(timezone.utc).date())
-        assert empty.calc_to_cta is None
-        assert "not calculated" in render_markdown(empty)
+        assert empty.funnel[0].rate == "insufficient data"
+        assert "insufficient data" in render_markdown(empty)
 
         with analytics_app.test_request_context("/tools/duct-sizing-calculator"):
             record_analytics_event("calculator_complete", tool="duct_sizing")
@@ -254,6 +292,26 @@ def test_markdown_omits_identifiers(analytics_app):
         ))
         assert "session-secret-value" not in text
         assert "@" not in text
+        html_body = render_email_html(build_report(
+            row.occurred_at.date() - timedelta(days=1),
+            row.occurred_at.date() + timedelta(days=1),
+        ))
+        assert "plain-text part" not in html_body
+        assert "5. Sequenced conversion funnel" in html_body
+        assert "18. Automated report-delivery status" in html_body
+        assert "Machine-readable totals" in html_body
+
+
+def test_email_html_escapes_markup():
+    from app.analytics_report import _markdown_email_html
+
+    body = _markdown_email_html(
+        "# Title\n\n<script>alert(1)</script>\n\nName | Count\nbad <tag> | 2\n"
+    )
+    assert "<script>" not in body
+    assert "&lt;script&gt;" in body
+    assert "&lt;tag&gt;" in body
+    assert "Title" in body
 
 
 def test_previous_london_week_across_bst():

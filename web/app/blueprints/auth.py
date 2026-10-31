@@ -86,8 +86,9 @@ def login_post():
         return render_template("auth/login.html", next=request.form.get("next", "")), 401
 
     login_user(user, remember=bool(request.form.get("remember")))
-    from app.analytics import track
+    from app.analytics import link_session_to_user, track
 
+    link_session_to_user(user.id)
     track("login", route="/login")
     return redirect(nxt)
 
@@ -146,8 +147,9 @@ def register_post():
 
     send_trial_started(user)
 
-    from app.analytics import track
+    from app.analytics import link_session_to_user, track
 
+    link_session_to_user(user.id)
     track("registration_complete", route="/register")
     flash("Account created. Your 14-day free trial has started.", "success")
     # Honour a validated next path (the Pro workflow that prompted signup).

@@ -55,7 +55,7 @@
     {% elif stripe_ready and registration_open %}
       <div class="pricing-actions">
         {% set cta = pro_cta(url_for('billing.subscribe')) %}
-        <a class="btn-accent" data-pro-cta="pricing" href="{{ cta.href }}">{{ cta.label }}</a>
+        <a class="btn-accent" data-pro-cta="pricing" data-cta-placement="pricing" data-cta-source="pricing" href="{{ cta.href }}">{{ cta.label }}</a>
         <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for('billing.subscribe', checkout=1)) }}">Subscribe now</a>
       </div>
       <p class="pricing-note">Creating an account starts the 14-day trial. Subscribe now signs you in, then takes you to payment for £{{ access.price_monthly }}/month.</p>
