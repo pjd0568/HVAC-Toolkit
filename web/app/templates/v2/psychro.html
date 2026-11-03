@@ -64,6 +64,31 @@
   </div>
   {% endif %}
 
+  {% if show_psychro_stage_cta %}
+  <aside
+    class="pro-next psychro-stage-cta"
+    data-pro-cta
+    data-cta-placement="stage"
+    data-cta-source="psychrometric_single"
+    data-cta-target="interactive_chart"
+  >
+    <p class="psychro-stage-cta-title">Continue this job in Pro</p>
+    <p>
+      You’ve resolved several air states. Free keeps giving you a full single-point
+      answer. Pro plots multiple states on the interactive psychrometric chart and
+      maps heating, cooling and moisture changes between them—plus mixed air, coil
+      and AHU workflows.
+    </p>
+    {% set cta = pro_cta(url_for('v2.interactive_chart')) %}
+    <div class="psychro-stage-cta-actions">
+      <a class="btn-accent" href="{{ cta.href }}">{{ cta.label }}</a>
+      <form method="post" class="psychro-stage-cta-dismiss">
+        <button class="btn-ghost" type="submit" name="action" value="dismiss_stage_cta">Not now</button>
+      </form>
+    </div>
+  </aside>
+  {% endif %}
+
   <div class="psychro-chart panel">
     <div class="panel-head">Psychrometric chart</div>
     <div class="panel-body">

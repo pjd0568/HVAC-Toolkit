@@ -355,6 +355,13 @@ def interactive_chart():
 @require_module("psychro.single_point")
 def single_point():
     """Classic Single Point — resolve a moist-air state (optional Point B)."""
+    from app.psychro_stage_cta import (
+        dismiss_psychro_stage_cta,
+        increment_psychro_single_calc,
+        psychro_single_calc_count,
+        should_show_psychro_stage_cta,
+    )
+
     U = current_view()
     error = None
     pressure = None
@@ -363,9 +370,13 @@ def single_point():
     if request.method == "POST":
         action = request.form.get("action", "calculate")
         form = {k: request.form.get(k, d) for k, d in psy_mod._SINGLE_POINT_DEFAULTS.items()}
+        if action == "dismiss_stage_cta":
+            dismiss_psychro_stage_cta()
+            # Stay on public embed or V2 URL — do not force a shell switch.
+            return redirect(request.path)
         if action == "reset":
             psy_mod._clear_saved_points()
-            return redirect(url_for("v2.single_point"))
+            return redirect(request.path)
         try:
             pressure, result, _, _ = psy_mod._run_single_point(form, U)
             entry = psy_mod._state_to_session("A", result)
@@ -384,6 +395,7 @@ def single_point():
                 else:
                     psy_mod._set_saved_points([entry])
             saved = psy_mod._get_saved_points()
+            increment_psychro_single_calc()
             from app.analytics import note_calculator_complete
 
             note_calculator_complete("psychrometric_single")
@@ -426,6 +438,8 @@ def single_point():
         pressure=pressure,
         can_add_b=len(saved) >= 1,
         has_points=len(saved) >= 1,
+        psychro_calc_count=psychro_single_calc_count(),
+        show_psychro_stage_cta=should_show_psychro_stage_cta(),
     )
 
 
