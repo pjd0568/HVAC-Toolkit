@@ -3110,6 +3110,24 @@ a.tool-card.tool-access-free:hover { border-color: var(--green-ink); }
   border-left: 3px solid var(--accent);
   border-radius: 8px;
 }
+.psychro-stage-cta {
+  grid-column: 1 / -1;
+  max-width: 640px;
+  margin-top: 0;
+}
+.psychro-stage-cta-title {
+  margin: 0 0 6px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.psychro-stage-cta p { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--ink); }
+.psychro-stage-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.psychro-stage-cta-dismiss { margin: 0; }
 .public-tool-lead { max-width: 44rem; }
 .public-disclaimer { color: var(--muted); font-size: 13px; max-width: 44rem; }
 .public-unit-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0 12px; }

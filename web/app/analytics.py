@@ -129,7 +129,15 @@ ENDPOINT_TO_TOOL = {
 
 ACCESS_STATES = frozenset({"free", "trial", "pro"})
 UNIT_SYSTEMS = frozenset({"SI", "IP"})
-CTA_PLACEMENTS = frozenset({"result", "home", "pricing", "landing", "gate", "nav"})
+CTA_PLACEMENTS = frozenset({
+    "result",
+    "home",
+    "pricing",
+    "landing",
+    "gate",
+    "nav",
+    "stage",
+})
 
 _SLUG = re.compile(r"^[a-z0-9._~-]{1,40}$")
 _SESSION_KEY = "aid"
