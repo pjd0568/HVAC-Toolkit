@@ -138,6 +138,11 @@
   {% endif %}
 </div>
 
+{% if not error and not public_embed %}
+{% set prompt = prompt_for_free_module('pipe.sizer') %}
+{% include "_pro_next_card.html" %}
+{% endif %}
+
 {% if report_fields and access.has_suite_access %}
 {{ report_form(url_for('pipe.report'), report_fields, panel_class='tile-water-border') }}
 {% endif %}

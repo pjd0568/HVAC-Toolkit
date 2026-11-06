@@ -3118,6 +3118,12 @@ a.tool-card.tool-access-free:hover { border-color: var(--green-ink); }
   border-left: 3px solid var(--accent);
   border-radius: 8px;
 }
+.pro-next-blurb {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
 .psychro-stage-cta {
   grid-column: 1 / -1;
   max-width: 640px;
@@ -3136,6 +3142,136 @@ a.tool-card.tool-access-free:hover { border-color: var(--green-ink); }
   align-items: center;
 }
 .psychro-stage-cta-dismiss { margin: 0; }
+
+/* Free → Pro upgrade dialog + comparison */
+.pro-upgrade-dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+  max-width: min(560px, calc(100vw - 24px));
+  width: 100%;
+}
+.pro-upgrade-dialog::backdrop {
+  background: rgba(14, 17, 22, 0.45);
+}
+.pro-upgrade-dialog-card {
+  position: relative;
+  background: var(--panel, #fff);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(14, 17, 22, 0.18);
+  padding: 20px 20px 16px;
+  max-height: min(90vh, 720px);
+  overflow: auto;
+}
+.pro-upgrade-dialog-x {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.pro-upgrade-dialog-x:hover { color: var(--ink); }
+.pro-upgrade-heading {
+  margin: 0 28px 8px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--blue-ink, var(--ink));
+  line-height: 1.3;
+}
+.pro-upgrade-lead {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.pro-upgrade-processes {
+  margin: 0 0 12px 1.1rem;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.pro-upgrade-footer {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.pro-upgrade-brand {
+  margin: 0;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+.pro-upgrade-price {
+  margin: 2px 0 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.pro-upgrade-tagline {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.pro-upgrade-price-note { margin: 4px 0 0; font-size: 12px; }
+.pro-upgrade-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+.access-gate-note { margin: 12px 0 0; font-size: 12px; }
+.pro-compare-wrap {
+  margin: 12px 0 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.pro-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.pro-compare th,
+.pro-compare td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.pro-compare thead th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 650;
+}
+.pro-compare tbody th {
+  font-weight: 550;
+  color: var(--ink);
+  max-width: 14rem;
+}
+.pro-compare td { text-align: center; width: 3.5rem; }
+.pro-compare-pro {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.pro-compare thead .pro-compare-pro { color: var(--accent); }
+.pro-compare-yes { color: var(--accent); font-weight: 700; }
+.pro-compare-no { color: var(--muted); }
+@media (max-width: 520px) {
+  .pro-upgrade-dialog-card { padding: 16px 14px 14px; }
+  .pro-compare tbody th { max-width: 9.5rem; }
+}
 .public-tool-lead { max-width: 44rem; }
 .public-disclaimer { color: var(--muted); font-size: 13px; max-width: 44rem; }
 .public-unit-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0 12px; }

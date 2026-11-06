@@ -137,6 +137,7 @@ CTA_PLACEMENTS = frozenset({
     "gate",
     "nav",
     "stage",
+    "dialog",
 })
 
 _SLUG = re.compile(r"^[a-z0-9._~-]{1,40}$")

@@ -1,8 +1,25 @@
-{# Shared trial-ended / subscribe panel. Expects module_label, entitlement,
-   trial_expired, price_monthly. #}
+{# Shared trial-ended / locked-Pro panel. Expects module_id, module_label,
+   entitlement, trial_expired, price_monthly, optional pro_prompt. #}
 <div class="panel tile-util-border access-gate-panel">
   <div class="panel-head">Pro workflow</div>
   <div class="panel-body">
+    {% if pro_prompt %}
+      {% set next_path = url_for(pro_prompt.next_endpoint) if pro_prompt.next_endpoint else none %}
+      {% set cta = pro_cta(next_path) %}
+      {% with
+        prompt=pro_prompt,
+        cta=cta,
+        placement='gate',
+        secondary_href=(url_for('pages.tools_index') if not current_user.is_authenticated else url_for('v2.dashboard')),
+        secondary_href_label='Back',
+        heading_id='pro-upgrade-title-gate'
+      %}
+      {% include "_pro_upgrade_body.html" %}
+      {% endwith %}
+      {% if trial_expired %}
+      <p class="access-gate-note muted">Your 14-day trial has ended.</p>
+      {% endif %}
+    {% else %}
     <p class="access-gate-lead">
       <strong>{{ module_label }}</strong> is part of HVAC-CALCS Pro.
     </p>
@@ -23,5 +40,6 @@
       <a class="btn-accent" data-pro-cta data-cta-placement="gate" data-cta-source="{{ analytics_tool(module_id) }}" data-cta-target="{{ analytics_tool(module_id) }}" href="{{ cta.href }}">{{ cta.label }}</a>
       <a class="btn-ghost" href="{{ url_for('pages.tools_index') if not current_user.is_authenticated else url_for('v2.dashboard') }}">Back</a>
     </div>
+    {% endif %}
   </div>
 </div>

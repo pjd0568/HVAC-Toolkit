@@ -125,5 +125,10 @@
 {% endfor %}
 {% endif %}
 
+{% if result and not public_embed %}
+{% set prompt = prompt_for_free_module('refrig.diagnostics') %}
+{% include "_pro_next_card.html" %}
+{% endif %}
+
 {% endblock %}
 {% block calc_complete %}{% if result %}1{% endif %}{% endblock %}

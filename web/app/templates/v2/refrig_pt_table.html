@@ -171,6 +171,11 @@
 <script type="application/json" id="pt-data">{{ pt_points|tojson }}</script>
 {% endif %}
 
+{% if result and not public_embed %}
+{% set prompt = prompt_for_free_module('refrig.pt_table') %}
+{% include "_pro_next_card.html" %}
+{% endif %}
+
 {% endblock %}
 {% block calc_complete %}{% if result %}1{% endif %}{% endblock %}
 

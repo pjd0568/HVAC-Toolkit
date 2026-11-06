@@ -1,0 +1,39 @@
+{# Shared body for dialog and access gate.
+   Expects: prompt, cta, placement.
+   Optional: secondary_label (button dismiss), secondary_href + secondary_href_label,
+   heading_id. Uses compare_rows and pro_price_footer from context. #}
+<div class="pro-upgrade-body">
+  <h2 class="pro-upgrade-heading" id="{{ heading_id or 'pro-upgrade-title' }}">{{ prompt.heading }}</h2>
+  <p class="pro-upgrade-lead">{{ prompt.body }}</p>
+  {% if prompt.processes %}
+  <ul class="pro-upgrade-processes">
+    {% for name in prompt.processes %}
+    <li>{{ name }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% include "_pro_compare_table.html" %}
+
+  <div class="pro-upgrade-footer">
+    <p class="pro-upgrade-brand">HVAC-CALCS Pro</p>
+    <p class="pro-upgrade-price">£{{ pro_price_footer.monthly }}/month</p>
+    <p class="pro-upgrade-tagline">{{ pro_price_footer.tagline }}</p>
+    <p class="pro-upgrade-price-note muted">Or £{{ pro_price_footer.annual }}/year on the pricing page.</p>
+    <div class="pro-upgrade-actions">
+      <a
+        class="btn-accent"
+        data-pro-cta
+        data-cta-placement="{{ placement }}"
+        data-cta-source="{{ prompt.source_tool }}"
+        data-cta-target="{{ prompt.target_tool }}"
+        href="{{ cta.href }}"
+      >{{ cta.label }}</a>
+      {% if secondary_label %}
+      <button type="button" class="btn-ghost" data-pro-upgrade-dismiss>{{ secondary_label }}</button>
+      {% elif secondary_href %}
+      <a class="btn-ghost" href="{{ secondary_href }}">{{ secondary_href_label or 'Back' }}</a>
+      {% endif %}
+    </div>
+  </div>
+</div>

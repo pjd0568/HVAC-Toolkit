@@ -1,0 +1,21 @@
+{# Compact Free vs Pro matrix. Expects compare_rows (iterable of CompareRow). #}
+<div class="pro-compare-wrap">
+  <table class="pro-compare">
+    <thead>
+      <tr>
+        <th scope="col">Feature</th>
+        <th scope="col">Free</th>
+        <th scope="col" class="pro-compare-pro">Pro</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in compare_rows %}
+      <tr>
+        <th scope="row">{{ row.feature }}</th>
+        <td>{% if row.free %}<span class="pro-compare-yes" aria-label="Included">✓</span>{% else %}<span class="pro-compare-no" aria-label="Not included">—</span>{% endif %}</td>
+        <td class="pro-compare-pro">{% if row.pro %}<span class="pro-compare-yes" aria-label="Included">✓</span>{% else %}<span class="pro-compare-no" aria-label="Not included">—</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

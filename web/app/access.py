@@ -264,6 +264,8 @@ def current_access() -> AccessView:
 
 def deny_upgrade_context(module_id: str) -> dict:
     """Context for the shared trial-ended / subscribe panel."""
+    from app.pro_promotion import prompt_for_locked_module
+
     ent = get_entitlement()
     return {
         "module_id": module_id,
@@ -272,6 +274,7 @@ def deny_upgrade_context(module_id: str) -> dict:
         "trial_expired": ent.tier == "free" and ent.trial_started is not None,
         "price_monthly": PRICE_MONTHLY_GBP,
         "price_annual": PRICE_ANNUAL_GBP,
+        "pro_prompt": prompt_for_locked_module(module_id),
     }
 
 

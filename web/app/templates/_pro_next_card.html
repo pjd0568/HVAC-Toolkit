@@ -1,0 +1,20 @@
+{# Restrained post-result Free→Pro card. Expects prompt. Opens shared dialog. #}
+{% if prompt and should_show_pro_promotion and prompt.card_blurb %}
+<aside
+  class="pro-next"
+  data-pro-cta
+  data-cta-after-result
+  data-cta-placement="result"
+  data-cta-source="{{ prompt.source_tool }}"
+  data-cta-target="{{ prompt.target_tool }}"
+>
+  <p class="pro-next-blurb">{{ prompt.card_blurb }}</p>
+  <button
+    type="button"
+    class="btn-accent"
+    data-pro-upgrade-open
+    data-pro-prompt-key="{{ prompt.key }}"
+  >Explore Pro →</button>
+</aside>
+{% include "_pro_upgrade_dialog.html" %}
+{% endif %}

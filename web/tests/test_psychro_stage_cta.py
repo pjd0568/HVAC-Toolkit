@@ -69,10 +69,10 @@ def test_third_calc_shows_stage_cta_on_public_and_v2(client, app):
         assert 'data-cta-placement="stage"' in html
         assert 'data-cta-source="psychrometric_single"' in html
         assert 'data-cta-target="interactive_chart"' in html
-        assert "Continue this job in Pro" in html
-        assert "full single-point" in html
+        assert "psychrometric chart" in html.lower()
+        assert "Explore Pro" in html
+        assert "pro-upgrade-dialog" in html
         assert "/register" in html
-        assert "interactive-chart" in html
         # Static public pro_next must stay suppressed for psychrometrics.
         if path == PUBLIC:
             assert "Need process lines, AHU analysis" not in html
@@ -166,11 +166,13 @@ def test_suite_access_hides_stage_cta(client, app):
         app.config["ACCESS_DEV_TIER"] = None
 
 
-def test_other_free_tools_keep_static_pro_next(client):
+def test_other_free_tools_keep_contextual_pro_next(client):
     page = client.get("/tools/duct-sizing-calculator")
     html = page.get_data(as_text=True)
     assert page.status_code == 200
     assert "pro-next" in html
+    assert "Explore Pro" in html
+    assert "index leg" in html.lower()
     assert "psychro-stage-cta" not in html
 
 

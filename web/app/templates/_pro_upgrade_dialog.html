@@ -1,0 +1,24 @@
+{# Reusable Pro upgrade dialog. Expects prompt. Opens via [data-pro-upgrade-open]. #}
+{% if prompt and should_show_pro_promotion %}
+{% set next_path = url_for(prompt.next_endpoint) if prompt.next_endpoint else none %}
+{% set cta = pro_cta(next_path) %}
+<dialog
+  class="pro-upgrade-dialog"
+  data-pro-upgrade-dialog
+  data-pro-prompt-key="{{ prompt.key }}"
+  aria-labelledby="pro-upgrade-title-{{ prompt.key }}"
+>
+  <div class="pro-upgrade-dialog-card">
+    <button type="button" class="pro-upgrade-dialog-x" data-pro-upgrade-dismiss aria-label="Close">×</button>
+    {% with
+      prompt=prompt,
+      cta=cta,
+      placement='dialog',
+      secondary_label='Continue with Free',
+      heading_id='pro-upgrade-title-' ~ prompt.key
+    %}
+    {% include "_pro_upgrade_body.html" %}
+    {% endwith %}
+  </div>
+</dialog>
+{% endif %}

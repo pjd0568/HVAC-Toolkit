@@ -276,6 +276,11 @@
   </div>
 </div>
 
+{% if not error and not public_embed %}
+{% set prompt = prompt_for_free_module('duct.sizer') %}
+{% include "_pro_next_card.html" %}
+{% endif %}
+
 {% if report_fields and access.has_suite_access %}
 {{ report_form(url_for('duct.report'), report_fields) }}
 {% endif %}

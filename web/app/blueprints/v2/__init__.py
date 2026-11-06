@@ -240,6 +240,10 @@ def duct():
     shape = request.args.get("shape", "circular")
     if shape not in ("circular", "rectangular", "flat_oval"):
         shape = "circular"
+    if request.args and not error:
+        from app.analytics import note_calculator_complete
+
+        note_calculator_complete("duct_sizing")
     return render_template(
         "v2/duct.html",
         active="duct",

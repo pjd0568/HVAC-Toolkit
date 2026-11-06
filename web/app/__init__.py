@@ -233,12 +233,25 @@ def create_app(config_class: type = Config) -> Flask:
         def analytics_tool(value: str) -> str:
             return resolve_tool(value) or ""
 
+        from app.pro_promotion import (
+            COMPARE_ROWS,
+            price_footer,
+            prompt_for_landing_slug,
+            prompt_for_free_module,
+            should_show_pro_promotion,
+        )
+
         return {
             "public_embed": bool(getattr(g, "public_embed", False)),
             "public_landing": landing,
             "pro_cta": pro_cta,
             "analytics_tool": analytics_tool,
             "page_tool": tool_for_endpoint(request.endpoint),
+            "compare_rows": COMPARE_ROWS,
+            "pro_price_footer": price_footer(),
+            "should_show_pro_promotion": should_show_pro_promotion(),
+            "prompt_for_landing_slug": prompt_for_landing_slug,
+            "prompt_for_free_module": prompt_for_free_module,
         }
 
     @app.context_processor

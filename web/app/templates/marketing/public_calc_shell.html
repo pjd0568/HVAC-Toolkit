@@ -42,12 +42,11 @@
   <div data-calc-complete="{{ g.analytics_calc_complete }}" hidden></div>
   {% endif %}
 
-  {% if public_landing.pro_next and not access.has_suite_access and public_landing.slug != 'psychrometric-calculator' %}
-  <aside class="pro-next" data-pro-cta data-cta-after-result data-cta-placement="result" data-cta-source="{{ analytics_tool(public_landing.slug) }}" data-cta-target="{{ analytics_tool(public_landing.pro_endpoint) }}">
-    <p>{{ public_landing.pro_next }}</p>
-    {% set cta = pro_cta(url_for(public_landing.pro_endpoint) if public_landing.pro_endpoint else none) %}
-    <a class="btn-accent" href="{{ cta.href }}">{{ cta.label }}</a>
-  </aside>
+  {# Psychrometric public embed uses the stage CTA inside v2/psychro.html instead.
+     Card sits below the Free result surface; converter never promotes. #}
+  {% if public_landing.slug != 'psychrometric-calculator' and public_landing.slug != 'unit-converter' %}
+  {% set prompt = prompt_for_landing_slug(public_landing.slug) %}
+  {% include "_pro_next_card.html" %}
   {% endif %}
 
   <section class="coming-section">
