@@ -32,7 +32,7 @@ See `specs/SPEC-transactional-email.md`.
 
 ### Stripe Test mode (local or prod webhook)
 
-- [ ] Test API keys in env: `STRIPE_SECRET_KEY=sk_test_…`, `STRIPE_PRICE_ID`
+- [ ] Test API keys in env: `STRIPE_SECRET_KEY=sk_test_…`, `STRIPE_PRICE_ID`, `STRIPE_PRICE_ID_ANNUAL` (annual can stay the live price id once created)
 - [ ] Managed Payments terms accepted (Test Dashboard)
 - [ ] Product/price: `flask --app wsgi ensure-stripe-product` (or Dashboard tax code `txcd_10103100`)
 - [ ] Webhook events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`
@@ -43,7 +43,7 @@ See `specs/SPEC-transactional-email.md`.
 ### Stripe Live mode (only after Test walkthrough passes)
 
 - [ ] Live Managed Payments terms accepted
-- [ ] Railway: live `sk_live_…`, live `STRIPE_PRICE_ID`, live webhook `whsec_…` (replace test secrets)
+- [ ] Railway: live `sk_live_…`, live `STRIPE_PRICE_ID`, live `STRIPE_PRICE_ID_ANNUAL=price_1UYhLwBnHxGiB364gHBeO28L`, live webhook `whsec_…` (replace test secrets)
 - [ ] Live webhook endpoint on the same URL, Live mode, same four event types
 - [ ] Confirm CTA still works with live keys
 

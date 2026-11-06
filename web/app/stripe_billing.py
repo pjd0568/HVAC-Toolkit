@@ -1,16 +1,17 @@
 """Stripe Managed Payments helpers for the full-suite subscription.
 
-Creates / resolves the GBP monthly product+price, Checkout Sessions with
+Creates / resolves the GBP product+price, Checkout Sessions with
 ``managed_payments[enabled]``, and maps webhook events onto ``User`` rows.
 
-API keys and Price ID come from env (see Config / .env.example). Product creation
-uses the Managed Payments–eligible digital tax code ``txcd_10103100``.
+API keys and Price IDs come from env (see Config / .env.example). Product
+creation uses the Managed Payments–eligible digital tax code ``txcd_10103100``.
+Monthly is the default Checkout plan; annual uses ``STRIPE_PRICE_ID_ANNUAL``.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import stripe
 from flask import current_app
@@ -20,6 +21,9 @@ from app.extensions import db
 from app.models import User
 
 logger = logging.getLogger(__name__)
+
+CheckoutPlan = Literal["monthly", "annual"]
+ALLOWED_CHECKOUT_PLANS: frozenset[str] = frozenset({"monthly", "annual"})
 
 # Digital / SaaS tax code eligible for Managed Payments (blueprint + Stripe docs).
 MANAGED_PAYMENTS_TAX_CODE = "txcd_10103100"
@@ -133,8 +137,28 @@ def create_subscription_product() -> dict[str, str]:
     return {"product_id": str(product_id), "price_id": str(price_id)}
 
 
-def resolve_price_id() -> str:
-    """Return configured Price ID, or create the product+price once."""
+def normalise_checkout_plan(raw: object) -> CheckoutPlan:
+    """Return ``monthly`` or ``annual``. Unknown values fall back to monthly."""
+    text = str(raw or "").strip().lower()
+    if text in ALLOWED_CHECKOUT_PLANS:
+        return text  # type: ignore[return-value]
+    return "monthly"
+
+
+def resolve_price_id(plan: CheckoutPlan = "monthly") -> str:
+    """Return the Stripe Price ID for ``plan``.
+
+    Monthly may create the product+price once when ``STRIPE_PRICE_ID`` is unset.
+    Annual requires ``STRIPE_PRICE_ID_ANNUAL`` (no auto-create).
+    """
+    if plan == "annual":
+        configured = (current_app.config.get("STRIPE_PRICE_ID_ANNUAL") or "").strip()
+        if not configured:
+            raise StripeNotConfiguredError(
+                "Annual checkout is not configured (STRIPE_PRICE_ID_ANNUAL)."
+            )
+        return configured
+
     configured = (current_app.config.get("STRIPE_PRICE_ID") or "").strip()
     if configured:
         return configured
@@ -167,10 +191,17 @@ def ensure_stripe_customer(user: User) -> str:
     return user.stripe_customer_id
 
 
-def create_checkout_session(*, user: User, success_url: str, cancel_url: str) -> str:
+def create_checkout_session(
+    *,
+    user: User,
+    success_url: str,
+    cancel_url: str,
+    plan: CheckoutPlan = "monthly",
+) -> str:
     """Create a Managed Payments subscription Checkout Session; return its URL."""
     client = _client()
-    price_id = resolve_price_id()
+    chosen = normalise_checkout_plan(plan)
+    price_id = resolve_price_id(chosen)
     customer_id = ensure_stripe_customer(user)
 
     params: dict[str, Any] = {
@@ -180,9 +211,9 @@ def create_checkout_session(*, user: User, success_url: str, cancel_url: str) ->
         "cancel_url": cancel_url,
         "customer": customer_id,
         "client_reference_id": str(user.id),
-        "metadata": {"user_id": str(user.id)},
+        "metadata": {"user_id": str(user.id), "plan": chosen},
         "subscription_data": {
-            "metadata": {"user_id": str(user.id)},
+            "metadata": {"user_id": str(user.id), "plan": chosen},
         },
     }
     if current_app.config.get("STRIPE_MANAGED_PAYMENTS", True):

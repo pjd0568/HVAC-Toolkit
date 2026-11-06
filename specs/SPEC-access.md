@@ -17,7 +17,7 @@ specified in `SPEC-auth.md`.
 | Stage | Meaning |
 |-------|---------|
 | **Trial** | Full suite for 14 days from account registration. |
-| **Subscribed** | Paid subscriber — full suite (`subscription_status == active`). Price: **£4.50/month** (`PRICE_MONTHLY_GBP`). |
+| **Subscribed** | Paid subscriber — full suite (`subscription_status == active`). Price: **£4.50/month** (`PRICE_MONTHLY_GBP`) or **£39.50/year** (`PRICE_ANNUAL_GBP`). |
 | **Trial ended** | No calculator access until subscribed. Soft gate: subscribe panel (not a raw 403). |
 
 There is **no permanent free calculator catalogue**. Dashboard, Help, Design
@@ -59,6 +59,7 @@ COMING_SOON_MODULES       → weather, projects
 can_access(module_id)     → bool
 get_entitlement()         → {tier, has_suite_access, trial_days_remaining, …}
 PRICE_MONTHLY_GBP         → "4.50"
+PRICE_ANNUAL_GBP          → "39.50"
 ```
 
 Injected into every template as `access` (same pattern as `U`). Sidebar/topbar

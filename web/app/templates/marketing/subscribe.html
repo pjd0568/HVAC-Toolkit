@@ -1,12 +1,12 @@
 {% extends "marketing/base.html" %}
 {% block title %}Pricing — HVAC-CALCS{% endblock %}
-{% block meta_description %}HVAC-CALCS pricing. Free standalone calculators with no account. Pro is £{{ access.price_monthly }}/month for complete engineering workflows.{% endblock %}
+{% block meta_description %}HVAC-CALCS pricing. Free standalone calculators with no account. Pro is £{{ access.price_monthly }}/month or £{{ access.price_annual }}/year for complete engineering workflows.{% endblock %}
 {% block content %}
 <section class="pricing-hero">
   <h1>Pricing</h1>
   <p class="coming-lead">
     Use the free calculators with no account. Pro is the current launch price of
-    £{{ access.price_monthly }}/month for complete workflows and exports.
+    £{{ access.price_monthly }}/month or £{{ access.price_annual }}/year for complete workflows and exports.
     {% if registration_open %}New accounts include a 14-day Pro trial.{% endif %}
   </p>
 </section>
@@ -31,8 +31,16 @@
   <article class="compare-card featured">
     <h2>Pro</h2>
     <p>Complete engineering workflows</p>
-    <p class="pricing-amount">£{{ access.price_monthly }}</p>
-    <p class="pricing-period">per month</p>
+    <div class="pricing-tiers">
+      <div>
+        <p class="pricing-amount">£{{ access.price_monthly }}</p>
+        <p class="pricing-period">per month</p>
+      </div>
+      <div>
+        <p class="pricing-amount">£{{ access.price_annual }}</p>
+        <p class="pricing-period">per year</p>
+      </div>
+    </div>
     {% if registration_open %}
     <p class="pricing-trial">14-day trial on a new account</p>
     {% endif %}
@@ -48,19 +56,36 @@
       <a class="btn-accent" href="{{ url_for('v2.dashboard') }}">Open toolkit</a>
       <p class="pricing-note">Your subscription is active. Receipts and cancellation are handled by Stripe.</p>
     {% elif stripe_ready and current_user.is_authenticated %}
-      <form method="post" action="{{ url_for('billing.create_checkout_session_route') }}">
-        <button type="submit" class="btn-accent">Subscribe — £{{ access.price_monthly }}/month</button>
-      </form>
+      <div class="pricing-actions">
+        <form method="post" action="{{ url_for('billing.create_checkout_session_route') }}">
+          <input type="hidden" name="plan" value="monthly">
+          <button type="submit" class="btn-accent">Subscribe — £{{ access.price_monthly }}/month</button>
+        </form>
+        {% if annual_ready %}
+        <form method="post" action="{{ url_for('billing.create_checkout_session_route') }}">
+          <input type="hidden" name="plan" value="annual">
+          <button type="submit" class="btn-ghost">Subscribe — £{{ access.price_annual }}/year</button>
+        </form>
+        {% endif %}
+      </div>
       <p class="pricing-note">Signed in as {{ current_user.email }}. Payment continues on Stripe’s checkout.</p>
     {% elif stripe_ready and registration_open %}
       <div class="pricing-actions">
         {% set cta = pro_cta(url_for('billing.subscribe')) %}
         <a class="btn-accent" data-pro-cta="pricing" data-cta-placement="pricing" data-cta-source="pricing" href="{{ cta.href }}">{{ cta.label }}</a>
-        <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for('billing.subscribe', checkout=1)) }}">Subscribe now</a>
+        <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for('billing.subscribe', checkout=1, plan='monthly')) }}">Subscribe monthly</a>
+        {% if annual_ready %}
+        <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for('billing.subscribe', checkout=1, plan='annual')) }}">Subscribe yearly</a>
+        {% endif %}
       </div>
-      <p class="pricing-note">Creating an account starts the 14-day trial. Subscribe now signs you in, then takes you to payment for £{{ access.price_monthly }}/month.</p>
+      <p class="pricing-note">Creating an account starts the 14-day trial. Subscribe signs you in, then takes you to payment.</p>
     {% elif stripe_ready %}
-      <a class="btn-accent" href="{{ url_for('auth.login', next=url_for('billing.subscribe')) }}">Log in to subscribe</a>
+      <div class="pricing-actions">
+        <a class="btn-accent" href="{{ url_for('auth.login', next=url_for('billing.subscribe', checkout=1, plan='monthly')) }}">Log in — monthly</a>
+        {% if annual_ready %}
+        <a class="btn-ghost" href="{{ url_for('auth.login', next=url_for('billing.subscribe', checkout=1, plan='annual')) }}">Log in — yearly</a>
+        {% endif %}
+      </div>
     {% else %}
       <button type="button" class="btn-accent" disabled>Checkout unavailable</button>
       <p class="pricing-note">Online checkout is temporarily unavailable. Please contact us.</p>
@@ -69,7 +94,7 @@
 </section>
 
 <p class="public-disclaimer">
-  £{{ access.price_monthly }}/month is the current launch price. It is not a lifetime lock.
+  £{{ access.price_monthly }}/month or £{{ access.price_annual }}/year is the current launch price. It is not a lifetime lock.
   Tax is calculated at checkout. Weather lookup, saved projects, charge, room load,
   grille throw, expansion vessels, buffer tanks and acoustics are not included because they are not available.
 </p>

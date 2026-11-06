@@ -11,7 +11,7 @@ import logging
 
 from flask import current_app, url_for
 
-from app.access import PRICE_MONTHLY_GBP, TRIAL_DAYS
+from app.access import PRICE_ANNUAL_GBP, PRICE_MONTHLY_GBP, TRIAL_DAYS
 from app.mail import mail_configured, send_email
 from app.models import User
 
@@ -82,7 +82,7 @@ def send_owner_subscribed(user: User) -> bool:
 
 Email: {user.email}
 User id: {user.id}
-Plan: £{PRICE_MONTHLY_GBP}/month
+Plan: full suite (£{PRICE_MONTHLY_GBP}/month or £{PRICE_ANNUAL_GBP}/year)
 Stripe customer: {user.stripe_customer_id or '—'}
 Stripe subscription: {user.stripe_subscription_id or '—'}
 """
@@ -118,7 +118,7 @@ Your {TRIAL_DAYS}-day free trial of the full calculator suite is active now.
 Open the toolkit here:
 {_dashboard_url()}
 
-After the trial, continue with a subscription at £{PRICE_MONTHLY_GBP}/month:
+After the trial, continue with a subscription (£{PRICE_MONTHLY_GBP}/month or £{PRICE_ANNUAL_GBP}/year):
 {_subscribe_url()}
 
 Questions? Reply to this email or write to {_contact()}.
@@ -142,7 +142,7 @@ def send_subscribed(user: User) -> bool:
 
 Thanks for subscribing to {brand}.
 
-Your account now has full access to the calculator suite (£{PRICE_MONTHLY_GBP}/month).
+Your account now has full access to the calculator suite.
 Open the toolkit:
 {_dashboard_url()}
 

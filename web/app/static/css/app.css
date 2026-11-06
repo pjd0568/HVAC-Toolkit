@@ -2533,6 +2533,14 @@ table.pipe-sys-table col.col-sys-action { width: 7%; }
 .pricing-card-featured { border-color: var(--blue); box-shadow: 0 8px 28px rgba(30, 84, 136, 0.08); }
 .pricing-amount { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
 .pricing-period { color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+.pricing-tiers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 4px 0 8px;
+}
+.pricing-tiers .pricing-amount { margin: 0; }
+.pricing-tiers .pricing-period { margin: 0; }
 .pricing-trial { font-size: 13px; font-weight: 650; color: var(--blue-ink); margin-bottom: 8px; }
 .pricing-card ul { list-style: none; display: grid; gap: 8px; margin: 8px 0 16px; flex: 1; }
 .pricing-card li { font-size: 13px; line-height: 1.4; padding-left: 14px; position: relative; }

@@ -18,13 +18,19 @@ from flask_login import current_user
 TierName = Literal["free", "trial", "pro"]
 
 TRIAL_DAYS = 14
-# Display price for the full suite. Stripe Price ID stays in the environment.
+# Display prices for the full suite. Stripe Price IDs stay in the environment.
 PRICE_MONTHLY_GBP = "4.50"
+PRICE_ANNUAL_GBP = "39.50"
 
 
 def price_unit_amount_pence() -> int:
-    """GBP minor units for the display price. 4.50 → 450."""
+    """GBP minor units for the monthly display price. 4.50 → 450."""
     return int(round(float(PRICE_MONTHLY_GBP) * 100))
+
+
+def price_annual_unit_amount_pence() -> int:
+    """GBP minor units for the annual display price. 39.50 → 3950."""
+    return int(round(float(PRICE_ANNUAL_GBP) * 100))
 
 # Modules that need an active trial or subscription. Always-open pages
 # (dashboard, help, guides, methodology) and Coming Soon placeholders
@@ -233,6 +239,10 @@ class AccessView:
     def price_monthly(self) -> str:
         return PRICE_MONTHLY_GBP
 
+    @property
+    def price_annual(self) -> str:
+        return PRICE_ANNUAL_GBP
+
     def can(self, module_id: str) -> bool:
         if not requires_suite(module_id):
             return True
@@ -261,15 +271,18 @@ def deny_upgrade_context(module_id: str) -> dict:
         "entitlement": ent,
         "trial_expired": ent.tier == "free" and ent.trial_started is not None,
         "price_monthly": PRICE_MONTHLY_GBP,
+        "price_annual": PRICE_ANNUAL_GBP,
     }
 
 
 __all__ = [
     "COMING_SOON_MODULES",
     "MODULES",
+    "PRICE_ANNUAL_GBP",
     "PRICE_MONTHLY_GBP",
     "PUBLIC_MODULES",
     "SUITE_MODULES",
+    "price_annual_unit_amount_pence",
     "price_unit_amount_pence",
     "TRIAL_DAYS",
     "AccessView",

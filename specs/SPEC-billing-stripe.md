@@ -6,9 +6,9 @@
 
 ## Purpose
 
-Take payment for the £4.50/month full-suite plan via Stripe **Managed Payments**
-(Stripe as merchant of record; tax calculated at checkout) and flip
-`User.subscription_status` so `access.py` unlocks the suite.
+Take payment for the full-suite plan (£4.50/month or £39.50/year) via Stripe
+**Managed Payments** (Stripe as merchant of record; tax calculated at checkout)
+and flip `User.subscription_status` so `access.py` unlocks the suite.
 
 ## Env (Test mode)
 
@@ -18,6 +18,7 @@ Take payment for the £4.50/month full-suite plan via Stripe **Managed Payments*
 | `STRIPE_PUBLISHABLE_KEY` | Same page (`pk_test_…`) — reserved for future client use |
 | `STRIPE_WEBHOOK_SECRET` | Webhook endpoint signing secret (`whsec_…`) |
 | `STRIPE_PRICE_ID` | Price for £4.50/month GBP (`price_…`). Display amount is `PRICE_MONTHLY_GBP`. |
+| `STRIPE_PRICE_ID_ANNUAL` | Price for £39.50/year GBP (`price_…`). Display amount is `PRICE_ANNUAL_GBP`. Live default: `price_1UYhLwBnHxGiB364gHBeO28L`. |
 | `STRIPE_MANAGED_PAYMENTS` | Default `true` |
 
 Before first Checkout: accept Managed Payments terms at
@@ -37,11 +38,15 @@ flask --app wsgi ensure-stripe-product
 
 ## Flow
 
-1. Signed-in user POSTs `/create-checkout-session`.
+1. Signed-in user POSTs `/create-checkout-session` with `plan=monthly` or
+   `plan=annual` (default monthly). Deep link `/subscribe?checkout=1&plan=…`
+   starts the same path after login.
 2. App ensures a Stripe Customer, creates a Checkout Session with
    `mode=subscription`, `managed_payments[enabled]=true`, line item =
-   `STRIPE_PRICE_ID`, and redirects (303) to `session.url`.
+   `STRIPE_PRICE_ID` or `STRIPE_PRICE_ID_ANNUAL`, and redirects (303) to
+   `session.url`.
 3. Stripe redirects to `/subscribe/success` after payment.
+
 4. Webhook `POST /webhooks/stripe` handles:
    - `checkout.session.completed` / `checkout.session.async_payment_succeeded`
      → set `subscription_status=active`, store `stripe_customer_id` /
@@ -74,5 +79,5 @@ billing addresses to see tax.
 ## Out of scope (parked until after soft launch)
 
 Customer Portal (Managed Payments subscription management is via Link — see
-Help → Account, billing & cancel), refunds UI, multi-currency prices, annual
-plans. Operator dogfood + live cutover: `docs/go-live-checklist.md`.
+Help → Account, billing & cancel), refunds UI, multi-currency prices. Operator
+dogfood + live cutover: `docs/go-live-checklist.md`.

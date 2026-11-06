@@ -23,11 +23,16 @@ from app.stripe_billing import (
     create_checkout_session,
     handle_checkout_session_completed,
     handle_subscription_event,
+    normalise_checkout_plan,
     stripe_configured,
 )
 
 bp = Blueprint("billing", __name__)
 logger = logging.getLogger(__name__)
+
+
+def _annual_checkout_ready() -> bool:
+    return bool((current_app.config.get("STRIPE_PRICE_ID_ANNUAL") or "").strip())
 
 
 @bp.get("/subscribe")
@@ -39,10 +44,11 @@ def subscribe():
         and current_user.subscription_status != "active"
         and stripe_configured()
     ):
-        return create_checkout_session_route()
+        return _start_checkout(plan=normalise_checkout_plan(request.args.get("plan")))
     return render_template(
         "marketing/subscribe.html",
         stripe_ready=checkout_ready() and stripe_configured(),
+        annual_ready=_annual_checkout_ready(),
     )
 
 
@@ -61,6 +67,14 @@ def checkout_success():
 @login_required
 def create_checkout_session_route():
     """Create a Managed Payments Checkout Session and redirect to Stripe."""
+    plan = normalise_checkout_plan(
+        request.form.get("plan") or request.args.get("plan")
+    )
+    return _start_checkout(plan=plan)
+
+
+def _start_checkout(*, plan: str):
+    """Shared Checkout start for POST and ``?checkout=1`` deep links."""
     if not stripe_configured():
         logger.error("Checkout requested but Stripe is not configured")
         flash(
@@ -73,6 +87,15 @@ def create_checkout_session_route():
         flash("Your subscription is already active.", "info")
         return redirect(url_for("main.dashboard"))
 
+    chosen = normalise_checkout_plan(plan)
+    if chosen == "annual" and not _annual_checkout_ready():
+        flash(
+            "The annual plan is temporarily unavailable. Please choose monthly "
+            "or contact us.",
+            "error",
+        )
+        return redirect(url_for("billing.subscribe"))
+
     success_url = url_for("billing.checkout_success", _external=True)
     cancel_url = url_for("billing.subscribe", _external=True)
 
@@ -81,6 +104,7 @@ def create_checkout_session_route():
             user=current_user,
             success_url=success_url,
             cancel_url=cancel_url,
+            plan=chosen,
         )
     except StripeNotConfiguredError:
         logger.exception("Checkout not configured")

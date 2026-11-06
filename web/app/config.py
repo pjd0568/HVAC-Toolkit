@@ -141,6 +141,11 @@ class Config:
     # Price ID for the monthly full-suite plan (price_…). Optional if you
     # run `flask ensure-stripe-product` once to create product + price.
     STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
+    # Price ID for the annual full-suite plan (£39.50/year).
+    STRIPE_PRICE_ID_ANNUAL = os.environ.get(
+        "STRIPE_PRICE_ID_ANNUAL",
+        "price_1UYhLwBnHxGiB364gHBeO28L",
+    )
     # When true (default), Checkout Sessions use Managed Payments (Stripe MoR + tax).
     STRIPE_MANAGED_PAYMENTS = os.environ.get(
         "STRIPE_MANAGED_PAYMENTS", "true"

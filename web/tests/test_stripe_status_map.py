@@ -1,6 +1,13 @@
 """Billing status mapping — no Stripe network required."""
 
-from app.stripe_billing import map_stripe_subscription_status
+import pytest
+
+from app.stripe_billing import (
+    StripeNotConfiguredError,
+    map_stripe_subscription_status,
+    normalise_checkout_plan,
+    resolve_price_id,
+)
 
 
 def test_map_stripe_subscription_status_known_values():
@@ -23,3 +30,23 @@ def test_map_stripe_subscription_status_unknown_defaults_canceled():
 def test_map_stripe_subscription_status_is_case_insensitive():
     assert map_stripe_subscription_status("ACTIVE") == "active"
     assert map_stripe_subscription_status("Past_Due") == "active"
+
+
+def test_normalise_checkout_plan():
+    assert normalise_checkout_plan("monthly") == "monthly"
+    assert normalise_checkout_plan("ANNUAL") == "annual"
+    assert normalise_checkout_plan("") == "monthly"
+    assert normalise_checkout_plan("weekly") == "monthly"
+
+
+def test_resolve_annual_price_id(app):
+    with app.app_context():
+        app.config["STRIPE_PRICE_ID_ANNUAL"] = "price_annual_test"
+        assert resolve_price_id("annual") == "price_annual_test"
+
+
+def test_resolve_annual_price_id_requires_config(app):
+    with app.app_context():
+        app.config["STRIPE_PRICE_ID_ANNUAL"] = ""
+        with pytest.raises(StripeNotConfiguredError):
+            resolve_price_id("annual")

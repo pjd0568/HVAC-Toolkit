@@ -7,7 +7,13 @@ from pathlib import Path
 import pytest
 
 from app import create_app
-from app.access import PRICE_MONTHLY_GBP, price_unit_amount_pence, tool_access
+from app.access import (
+    PRICE_ANNUAL_GBP,
+    PRICE_MONTHLY_GBP,
+    price_annual_unit_amount_pence,
+    price_unit_amount_pence,
+    tool_access,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FREE_TOOLS = (
@@ -34,7 +40,9 @@ def client(app):
 
 def test_price_comes_from_one_constant():
     assert PRICE_MONTHLY_GBP == "4.50"
+    assert PRICE_ANNUAL_GBP == "39.50"
     assert price_unit_amount_pence() == 450
+    assert price_annual_unit_amount_pence() == 3950
 
 
 def test_tool_access_is_catalogue_not_entitlement():
@@ -81,7 +89,9 @@ def test_subscribe_uses_config_price_and_hides_stripe_setup(client):
     assert res.status_code == 200
     assert "<h1>Pricing</h1>" in html
     assert "£4.50" in html
-    assert "9.50" not in html
+    assert "£39.50" in html
+    assert "per year" in html
+    assert "£9.50" not in html
     assert "STRIPE_SECRET_KEY" not in html
     assert "Pricing/Subscribe" not in html
 
