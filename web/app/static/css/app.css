@@ -241,7 +241,7 @@ body {
   border-radius: 4px; text-transform: uppercase;
 }
 
-/* Tool catalogue access badges (FREE / PRO) — not entitlement state */
+/* Tool list access badges — catalogue FREE/PRO for free users; trial/subscribed override */
 .access-badge {
   display: inline-block;
   font-size: 9px;
@@ -265,6 +265,11 @@ body {
   color: #EDF1F4;
   background: #2A3038;
   border: 1px solid #2A3038;
+}
+.access-badge--trial {
+  color: var(--blue-ink, #1A4F7A);
+  background: rgba(26, 79, 122, 0.10);
+  border: 1px solid rgba(26, 79, 122, 0.35);
 }
 .disc-chip {
   font-size: 10px; font-weight: 700; letter-spacing: .4px; padding: 2px 9px;

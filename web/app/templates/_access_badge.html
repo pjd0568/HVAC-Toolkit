@@ -1,6 +1,14 @@
-{# Tool catalogue badge — expects `level`: "free" | "pro". #}
-{% if level == "free" %}
+{# Tool list badge — depends on visitor entitlement, not only catalogue level.
+   Expects optional `level`: "free" | "pro" (catalogue). Uses `access.tier`.
+   - subscribed (pro): no badge
+   - trial: PRO (trial) on every tool
+   - free / anonymous: FREE or PRO from catalogue `level`
+#}
+{% if access.tier == 'pro' %}
+{% elif access.tier == 'trial' %}
+<span class="access-badge access-badge--trial">PRO (trial)</span>
+{% elif level == 'free' %}
 <span class="access-badge access-badge--free">FREE</span>
-{% elif level == "pro" %}
+{% elif level == 'pro' %}
 <span class="access-badge access-badge--pro">PRO</span>
 {% endif %}

@@ -796,6 +796,12 @@ a:hover { color: var(--v2-green-ink); }
   background: #2a3038;
   border: 1px solid #2a3038;
 }
+.v2-card-links .access-badge--trial,
+.v2-picker-list .access-badge--trial {
+  color: var(--v2-blue-ink, #1a4f7a);
+  background: rgba(26, 79, 122, 0.10);
+  border: 1px solid rgba(26, 79, 122, 0.35);
+}
 .v2-card-links a::after {
   content: "→";
   color: var(--v2-muted);

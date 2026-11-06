@@ -134,6 +134,31 @@ def test_legacy_tool_paths_still_resolve(client):
     assert "duct" in res.headers["Location"]
 
 
+def test_tool_badges_follow_entitlement_tier(app):
+    """Free: FREE/PRO catalogue. Trial: PRO (trial). Subscribed: no badges."""
+    client = app.test_client()
+    path = "/tools/"
+
+    app.config["ACCESS_DEV_TIER"] = None
+    free = client.get(path).get_data(as_text=True)
+    assert "access-badge--free" in free
+    assert "access-badge--pro" in free
+    assert "access-badge--trial" not in free
+
+    app.config["ACCESS_DEV_TIER"] = "trial"
+    trial = client.get(path).get_data(as_text=True)
+    assert "access-badge--trial" in trial
+    assert "PRO (trial)" in trial
+    assert "access-badge--free" not in trial
+    assert "access-badge--pro" not in trial
+
+    app.config["ACCESS_DEV_TIER"] = "pro"
+    paid = client.get(path).get_data(as_text=True)
+    assert "access-badge" not in paid
+
+    app.config["ACCESS_DEV_TIER"] = None
+
+
 def test_trial_expired_and_subscribed_gates(app):
     """Entitlement tiers use the same gate as a signed-in trial, expiry, or subscription.
 
