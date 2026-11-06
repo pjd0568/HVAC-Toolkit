@@ -10,11 +10,19 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 
 from app import create_app
-from app.analytics import capture_campaign, link_session_to_user, note_confirmed_subscription, record_analytics_event
+from app.analytics import (
+    ALLOWED_EVENTS,
+    capture_campaign,
+    link_session_to_user,
+    note_confirmed_subscription,
+    record_analytics_event,
+)
 from app.analytics_channels import build_campaign_url, classify_channel
 from app.analytics_report import (
+    _DIAGNOSTIC_EVENTS,
     build_report,
     format_delta,
+    render_email_html,
     render_markdown,
     send_weekly_analytics_report,
 )
@@ -439,6 +447,175 @@ def test_weekly_send_stores_provider_id_and_cannot_repeat(analytics_app, monkeyp
         assert row.completed_at is not None
         assert row.weekly_key == "2026-10-05"
         assert AnalyticsReportRun.query.filter_by(status="sent").count() == 1
+
+
+def test_funnel_diagnostics_count_links_without_identifiers(analytics_app, client):
+    secret_sessions = (
+        "diag-session-ordered-9f3a",
+        "diag-session-early-9f3a",
+        "diag-session-mismatch-9f3a",
+        "diag-session-user-a-9f3a",
+        "diag-session-user-b-9f3a",
+        "diag-session-nosource-9f3a",
+        "diag-session-lonely-9f3a",
+        "diag-session-lonely-cta-9f3a",
+        "diag-session-far-9f3a",
+        "diag-session-excluded-9f3a",
+        "diag-session-only-9f3a",
+        "diag-session-both-9f3a",
+        "diag-session-excluded-login-9f3a",
+    )
+    start = date(2026, 10, 1)
+    end = date(2026, 10, 20)
+    base = datetime(2026, 10, 6, 9, 0, tzinfo=timezone.utc)
+
+    def at(minutes: int) -> datetime:
+        return base + timedelta(minutes=minutes)
+
+    with analytics_app.app_context():
+        assert set(_DIAGNOSTIC_EVENTS) == set(ALLOWED_EVENTS)
+        owner = User(email="owner@example.com", trial_started_at=start, subscription_status="trialing")
+        owner.set_password("password123")
+        db.session.add(owner)
+        db.session.add(AnalyticsEvent(
+            event_name="calculator_complete", occurred_at=at(0),
+            anonymous_session_id=secret_sessions[0], tool="duct_sizing", user_id=11,
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="pro_cta_view", occurred_at=at(10),
+            anonymous_session_id=secret_sessions[0], source="duct_sizing", target="duct_index_leg",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="pro_cta_view", occurred_at=at(20),
+            anonymous_session_id=secret_sessions[1], source="duct_sizing",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="calculator_complete", occurred_at=at(30),
+            anonymous_session_id=secret_sessions[1], tool="duct_sizing",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="calculator_complete", occurred_at=at(40),
+            anonymous_session_id=secret_sessions[2], tool="pipe_sizing",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="pro_cta_view", occurred_at=at(50),
+            anonymous_session_id=secret_sessions[2], source="duct_sizing",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="calculator_complete", occurred_at=at(60),
+            anonymous_session_id=secret_sessions[3], tool="duct_sizing", user_id=22,
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="pro_cta_view", occurred_at=at(70),
+            anonymous_session_id=secret_sessions[4], source="duct_sizing", user_id=22,
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="pro_cta_view", occurred_at=at(80),
+            anonymous_session_id=secret_sessions[5],
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="calculator_complete", occurred_at=at(90),
+            anonymous_session_id=secret_sessions[6], tool="duct_sizing",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="pro_cta_view", occurred_at=at(100),
+            anonymous_session_id=secret_sessions[7], source="duct_sizing",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="calculator_complete", occurred_at=at(110),
+            anonymous_session_id=secret_sessions[8], tool="duct_sizing",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="pro_cta_view", occurred_at=at(110) + timedelta(days=8),
+            anonymous_session_id=secret_sessions[8], source="duct_sizing",
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="calculator_complete", occurred_at=at(120),
+            anonymous_session_id=secret_sessions[9], tool="duct_sizing", excluded=True,
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="pro_cta_view", occurred_at=at(130),
+            anonymous_session_id=secret_sessions[9], source="duct_sizing", excluded=True,
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="login", occurred_at=at(140), anonymous_session_id=secret_sessions[10],
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="login", occurred_at=at(141), user_id=33,
+        ))
+        db.session.add(AnalyticsEvent(
+            event_name="login", occurred_at=at(142),
+            anonymous_session_id=secret_sessions[11], user_id=44,
+            source="duct_sizing", target="duct_index_leg",
+            first_captured=False, latest_captured=False,
+        ))
+        db.session.add(AnalyticsEvent(event_name="login", occurred_at=at(143)))
+        db.session.add(AnalyticsEvent(
+            event_name="login", occurred_at=at(144),
+            anonymous_session_id=secret_sessions[12], excluded=True,
+        ))
+        db.session.commit()
+        report = build_report(start, end)
+        by_event = {row.event_name: row for row in report.event_diagnostics}
+        assert list(by_event) == list(_DIAGNOSTIC_EVENTS)
+        login = by_event["login"]
+        assert login.total == 5
+        assert login.with_session == 3
+        assert login.with_user == 2
+        assert login.with_both == 1
+        assert login.with_neither == 1
+        assert login.distinct_sessions == 3
+        assert login.distinct_users == 2
+        assert login.with_source == 1
+        assert login.with_target == 1
+        assert login.with_capture_flag == 1
+        assert login.excluded == 1
+        assert login.with_both + login.with_neither + (login.with_session - login.with_both) + (login.with_user - login.with_both) == login.total
+        completes = by_event["calculator_complete"]
+        assert completes.total == 7
+        assert completes.excluded == 1
+        assert completes.with_session == 7
+        assert completes.with_user == 2
+        assert completes.with_both == 2
+        assert completes.with_neither == 0
+        assert completes.distinct_sessions == 7
+        assert completes.distinct_users == 2
+        assert completes.with_source == 0
+        views = by_event["pro_cta_view"]
+        assert views.total == 8
+        assert views.excluded == 1
+        assert views.with_source == 7
+        assert views.with_target == 1
+        link = report.link_diagnostics
+        assert link.same_journey_ordered == 1
+        assert link.same_journey_cta_first == 1
+        assert link.same_session_source_mismatch == 1
+        assert link.same_user_session_differs == 1
+        assert link.cta_without_source == 1
+        assert link.completion_without_cta == 5
+        assert link.cta_without_completion == 6
+        assert link.outside_window == 1
+        assert link.same_journey_ordered + link.completion_without_cta == 6
+        text = render_markdown(report)
+        html = render_email_html(report)
+        assert "19. Funnel diagnostics" in text
+        assert "Same journey and correct order | 1" in text
+        assert "Outside the 7-day window | 1" in text
+        for secret in secret_sessions:
+            assert secret not in text
+            assert secret not in html
+        assert "owner@example.com" not in text
+        assert "owner@example.com" not in html
+
+    logged_in = client.post("/login", data={"email": "owner@example.com", "password": "password123"})
+    assert logged_in.status_code in {302, 303}
+    page = client.get(f"/admin/analytics/?start={start.isoformat()}&end={end.isoformat()}")
+    assert page.status_code == 200
+    body = page.get_data(as_text=True)
+    assert "Funnel diagnostics" in body
+    assert "Same journey and correct order" in body
+    assert "diag-session-ordered-9f3a" not in body
+    assert "owner@example.com" not in body
 
 
 def test_capture_rejects_unusable_utm_without_calling_it_direct(analytics_app):

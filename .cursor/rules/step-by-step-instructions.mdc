@@ -1,0 +1,15 @@
+---
+description: Give Paul complete click-by-click instructions with no assumed knowledge
+alwaysApply: true
+---
+
+# Step-by-step instructions
+
+When Paul needs to do something outside the code, write every action in order.
+Do not assume he knows the product, the screen, or what a shorthand refers to.
+
+- Name the exact site, project, service, tab, and button.
+- One action per numbered step. Say what to click, what to type, and what the result should look like.
+- If a value comes from another Railway service, show the full `${{Service.VARIABLE}}` text and where to type it. Do not say only "from the other service".
+- Define a term the first time it appears, in the same step that uses it.
+- Include the success check and the most likely wrong result.

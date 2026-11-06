@@ -104,6 +104,71 @@ class FunnelStep:
     rate: str = INSUFFICIENT
 
 
+# Stable order for the diagnostics table. Must match ALLOWED_EVENTS.
+_DIAGNOSTIC_EVENTS = (
+    "calculator_start",
+    "calculator_complete",
+    "pro_cta_view",
+    "pro_cta_click",
+    "registration_start",
+    "registration_complete",
+    "login",
+    "pro_tool_use",
+    "checkout_start",
+    "subscription_active",
+)
+
+_LINK_LABELS = (
+    ("same_journey_ordered", "Same journey and correct order"),
+    ("same_journey_cta_first", "Same journey, CTA precedes completion"),
+    ("same_session_source_mismatch", "Same session, source tool does not match"),
+    ("same_user_session_differs", "Same user, session differs"),
+    ("cta_without_source", "CTA with no source calculator"),
+    ("completion_without_cta", "Completion with no matching CTA"),
+    ("cta_without_completion", "CTA with no matching completion"),
+    ("outside_window", "Outside the 7-day window"),
+)
+
+
+@dataclass
+class EventDiagnostics:
+    """Aggregate counts for one event type. No identifiers."""
+
+    event_name: str
+    total: int = 0
+    with_session: int = 0
+    with_user: int = 0
+    with_both: int = 0
+    with_neither: int = 0
+    distinct_sessions: int = 0
+    distinct_users: int = 0
+    with_source: int = 0
+    with_target: int = 0
+    with_capture_flag: int = 0
+    excluded: int = 0
+
+
+@dataclass
+class LinkDiagnostics:
+    """Why calculator_complete rows do or do not meet a later pro_cta_view.
+
+    Counts are events, except ``outside_window``, which is completion–view pairs.
+    A completion can meet more than one condition.
+    """
+
+    same_journey_ordered: int = 0
+    same_journey_cta_first: int = 0
+    same_session_source_mismatch: int = 0
+    same_user_session_differs: int = 0
+    cta_without_source: int = 0
+    completion_without_cta: int = 0
+    cta_without_completion: int = 0
+    outside_window: int = 0
+
+    def rows(self) -> list[tuple[str, int]]:
+        return [(label, getattr(self, key)) for key, label in _LINK_LABELS]
+
+
 @dataclass
 class ChannelRow:
     channel: str
@@ -221,6 +286,8 @@ class Report:
     days: list[DayPoint] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     quality_warnings: list[str] = field(default_factory=list)
+    event_diagnostics: list[EventDiagnostics] = field(default_factory=list)
+    link_diagnostics: LinkDiagnostics = field(default_factory=LinkDiagnostics)
     excluded_events: int = 0
     unmapped_views: int = 0
     unmapped_clicks: int = 0
@@ -346,6 +413,7 @@ def build_report(start: date, end: date) -> Report:
             "paid": format_delta(report.subscriptions, previous.subscriptions),
         }
     report.notes = _notes()
+    _attach_diagnostics(report, start_dt, end_dt)
     return report
 
 
@@ -534,6 +602,28 @@ def render_markdown(report: Report) -> str:
         "The web service does not schedule this email. A separate Railway cron process runs `flask --app wsgi analytics-weekly-report`.",
         "One successful send per London week is stored on analytics_report_runs.weekly_key.",
         "A failed send clears that key so a later run can retry. A second success for the same week cannot insert another key.",
+        "",
+        "## 19. Funnel diagnostics",
+        "Counts only. Session identifiers, user identifiers and other personal data are not included.",
+        "With session includes rows that also have a user. Capture flag counts rows that store a first-touch or latest-touch flag, including false. A null flag is a row from before that field existed.",
+        "Link rows use included events only. Internal and test rows stay in the event table and out of the link counts.",
+        "A completion can meet more than one link condition. Same journey and correct order, plus completion with no matching CTA, equals included free completions.",
+        "Outside the 7-day window counts completion–view pairs on the same journey with a matching source. The other link rows count events.",
+        "Event | Total | Session | User | Both | Neither | Distinct sessions | Distinct users | Source tool | Target tool | Capture flag | Excluded",
+    ])
+    for row in report.event_diagnostics:
+        lines.append(
+            f"{row.event_name} | {row.total} | {row.with_session} | {row.with_user} | "
+            f"{row.with_both} | {row.with_neither} | {row.distinct_sessions} | {row.distinct_users} | "
+            f"{row.with_source} | {row.with_target} | {row.with_capture_flag} | {row.excluded}"
+        )
+    lines.extend([
+        "",
+        "Completion to CTA view | Count",
+    ])
+    for label, count in report.link_diagnostics.rows():
+        lines.append(f"{label} | {count}")
+    lines.extend([
         "",
         "## Machine-readable totals",
         "```json",
@@ -954,6 +1044,145 @@ def last_event_at() -> datetime | None:
 
 def _included():
     return or_(AnalyticsEvent.excluded.is_(False), AnalyticsEvent.excluded.is_(None))
+
+
+def _has_session(row: AnalyticsEvent) -> bool:
+    return isinstance(row.anonymous_session_id, str) and bool(row.anonymous_session_id.strip())
+
+
+def _has_tool_field(value: str | None) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _attach_diagnostics(report: Report, start_dt: datetime, end_dt: datetime) -> None:
+    """Fill aggregate funnel diagnostics. Does not copy identifiers onto the report."""
+    rows = (
+        AnalyticsEvent.query.filter(
+            AnalyticsEvent.occurred_at >= start_dt,
+            AnalyticsEvent.occurred_at < end_dt,
+        )
+        .order_by(AnalyticsEvent.id.asc())
+        .all()
+    )
+    stats = {name: EventDiagnostics(event_name=name) for name in _DIAGNOSTIC_EVENTS}
+    sessions: dict[str, set[str]] = defaultdict(set)
+    users: dict[str, set[int]] = defaultdict(set)
+    for row in rows:
+        stat = stats.get(row.event_name)
+        if stat is None:
+            continue
+        stat.total += 1
+        has_session = _has_session(row)
+        has_user = row.user_id is not None
+        if has_session:
+            stat.with_session += 1
+            sessions[row.event_name].add(row.anonymous_session_id)
+        if has_user:
+            stat.with_user += 1
+            users[row.event_name].add(row.user_id)
+        if has_session and has_user:
+            stat.with_both += 1
+        if not has_session and not has_user:
+            stat.with_neither += 1
+        if _has_tool_field(row.source):
+            stat.with_source += 1
+        if _has_tool_field(row.target):
+            stat.with_target += 1
+        if row.first_captured is not None or row.latest_captured is not None:
+            stat.with_capture_flag += 1
+        if row.excluded is True:
+            stat.excluded += 1
+    for name, stat in stats.items():
+        stat.distinct_sessions = len(sessions[name])
+        stat.distinct_users = len(users[name])
+    report.event_diagnostics = [stats[name] for name in _DIAGNOSTIC_EVENTS]
+    included = [row for row in rows if row.excluded is not True]
+    report.link_diagnostics = _completion_view_diagnostics(included)
+
+
+def _completion_view_diagnostics(rows: list[AnalyticsEvent]) -> LinkDiagnostics:
+    completes = [
+        row for row in rows
+        if row.event_name == "calculator_complete" and row.tool in FREE_TOOLS
+    ]
+    views = [row for row in rows if row.event_name == "pro_cta_view"]
+    result = LinkDiagnostics()
+    result.cta_without_source = sum(1 for view in views if not _has_tool_field(view.source))
+    matched_views: set[int] = set()
+    for complete in completes:
+        ordered = False
+        cta_first = False
+        source_mismatch = False
+        user_session_differs = False
+        for view in views:
+            if _ordered_completion_view(complete, view):
+                ordered = True
+                matched_views.add(id(view))
+            if _cta_precedes_completion(complete, view):
+                cta_first = True
+            if _same_session_source_mismatch(complete, view):
+                source_mismatch = True
+            if _same_user_different_session(complete, view):
+                user_session_differs = True
+            if _outside_funnel_window(complete, view):
+                result.outside_window += 1
+        if ordered:
+            result.same_journey_ordered += 1
+        else:
+            result.completion_without_cta += 1
+        if cta_first:
+            result.same_journey_cta_first += 1
+        if source_mismatch:
+            result.same_session_source_mismatch += 1
+        if user_session_differs:
+            result.same_user_session_differs += 1
+    result.cta_without_completion = sum(1 for view in views if id(view) not in matched_views)
+    return result
+
+
+def _ordered_completion_view(complete: AnalyticsEvent, view: AnalyticsEvent) -> bool:
+    journey = _journey(complete)
+    if not journey or journey != _journey(view):
+        return False
+    if view.source != complete.tool:
+        return False
+    start_at = _aware(complete.occurred_at)
+    end_at = _aware(view.occurred_at)
+    return start_at < end_at <= start_at + FUNNEL_WINDOW
+
+
+def _cta_precedes_completion(complete: AnalyticsEvent, view: AnalyticsEvent) -> bool:
+    journey = _journey(complete)
+    if not journey or journey != _journey(view) or view.source != complete.tool:
+        return False
+    start_at = _aware(view.occurred_at)
+    end_at = _aware(complete.occurred_at)
+    return start_at < end_at <= start_at + FUNNEL_WINDOW
+
+
+def _same_session_source_mismatch(complete: AnalyticsEvent, view: AnalyticsEvent) -> bool:
+    session_id = complete.anonymous_session_id if _has_session(complete) else None
+    if not session_id or view.anonymous_session_id != session_id:
+        return False
+    return view.source != complete.tool
+
+
+def _same_user_different_session(complete: AnalyticsEvent, view: AnalyticsEvent) -> bool:
+    if complete.user_id is None or view.user_id != complete.user_id:
+        return False
+    complete_session = complete.anonymous_session_id if _has_session(complete) else None
+    view_session = view.anonymous_session_id if _has_session(view) else None
+    if complete_session is None and view_session is None:
+        return False
+    return complete_session != view_session
+
+
+def _outside_funnel_window(complete: AnalyticsEvent, view: AnalyticsEvent) -> bool:
+    journey = _journey(complete)
+    if not journey or journey != _journey(view) or view.source != complete.tool:
+        return False
+    gap = abs(_aware(view.occurred_at) - _aware(complete.occurred_at))
+    return gap > FUNNEL_WINDOW
 
 
 def _fill(report: Report, rows: list[AnalyticsEvent]) -> None:

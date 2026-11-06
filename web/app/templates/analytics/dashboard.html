@@ -58,6 +58,61 @@
   </section>
 
   <section class="analytics-panel">
+    <h2>Funnel diagnostics</h2>
+    <p class="analytics-note">Aggregate counts for this period. Session identifiers, user identifiers and other personal data are not shown. A row with a session includes rows that also have a user. Capture flag means the row stores a first-touch or latest-touch flag, including false. A null flag is from before that field existed.</p>
+    <div class="analytics-table-wrap">
+    <table class="analytics-table">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>Total</th>
+          <th>Session</th>
+          <th>User</th>
+          <th>Both</th>
+          <th>Neither</th>
+          <th>Distinct sessions</th>
+          <th>Distinct users</th>
+          <th>Source tool</th>
+          <th>Target tool</th>
+          <th>Capture flag</th>
+          <th>Excluded</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in report.event_diagnostics %}
+        <tr>
+          <td>{{ row.event_name }}</td>
+          <td>{{ row.total }}</td>
+          <td>{{ row.with_session }}</td>
+          <td>{{ row.with_user }}</td>
+          <td>{{ row.with_both }}</td>
+          <td>{{ row.with_neither }}</td>
+          <td>{{ row.distinct_sessions }}</td>
+          <td>{{ row.distinct_users }}</td>
+          <td>{{ row.with_source }}</td>
+          <td>{{ row.with_target }}</td>
+          <td>{{ row.with_capture_flag }}</td>
+          <td>{{ row.excluded }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <h3>Completion to CTA view</h3>
+    <p class="analytics-note">Included rows only. Internal and test rows stay in the table above. A completion can meet more than one condition. Same journey and correct order, plus completion with no matching CTA, equals included free completions. Outside the 7-day window counts completion–view pairs. The other rows count events.</p>
+    <div class="analytics-table-wrap">
+    <table class="analytics-table">
+      <thead><tr><th>Condition</th><th>Count</th></tr></thead>
+      <tbody>
+        {% for label, count in report.link_diagnostics.rows() %}
+        <tr><td>{{ label }}</td><td>{{ count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="analytics-panel">
     <h2>Week-on-week</h2>
     {% if report.comparison_note %}<p>{{ report.comparison_note }}</p>{% else %}<p>Previous period {{ report.previous_start }} to {{ report.previous_end }} ({{ report.timezone }}).</p>{% endif %}
     <ul class="coming-list">
