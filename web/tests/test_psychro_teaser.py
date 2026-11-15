@@ -17,13 +17,17 @@ def client(app):
     return app.test_client()
 
 
-def test_homepage_includes_teaser(client):
+def test_homepage_has_compare_table_not_teaser(client):
     res = client.get("/")
     assert res.status_code == 200
     html = res.get_data(as_text=True)
-    assert 'id="psychro-teaser"' in html
-    assert "Free psychrometric calculator" in html
-    assert "psychro_teaser.js" in html
+    assert 'id="psychro-teaser"' not in html
+    assert "psychro_teaser.js" not in html
+    assert "Free psychrometric calculator" not in html
+    assert 'id="compare"' in html
+    assert "pro-compare" in html
+    assert "Single-point psychrometrics" in html
+    assert "DX pipe sizing" in html
     assert "application/ld+json" in html
 
 

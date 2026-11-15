@@ -3055,9 +3055,10 @@ body.teaser-modal-open { overflow: hidden; }
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
   gap: 28px;
-  align-items: center;
+  align-items: start;
   padding: 12px 0 8px;
 }
+.home-hero-copy { min-width: 0; }
 .home-hero h1 {
   margin: 0 0 12px;
   color: var(--blue-ink);
@@ -3241,6 +3242,26 @@ a.tool-card.tool-access-free:hover { border-color: var(--green-ink); }
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+.home-compare {
+  margin: 16px 0 18px;
+  max-width: 34rem;
+}
+.home-compare-title {
+  margin: 0 0 8px;
+  color: var(--blue-ink);
+  font-size: 1.05rem;
+}
+.home-compare .pro-compare-wrap {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 2px 6px 0;
+  background: var(--panel, #fff);
+}
+.home-compare .pro-compare { font-size: 12.5px; }
+.home-compare .pro-compare th,
+.home-compare .pro-compare td { padding: 6px 8px; }
+.home-hero .coming-actions { margin-top: 4px; }
 .pro-compare {
   width: 100%;
   border-collapse: collapse;

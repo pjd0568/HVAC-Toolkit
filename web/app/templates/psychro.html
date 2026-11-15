@@ -18,20 +18,12 @@
 
       <div class="psychro-actions">
         <button class="btn-accent" type="submit" name="action" value="calculate">
-          {% if has_points %}Update Point A{% else %}Calculate{% endif %}
+          {% if has_points %}Recalculate{% else %}Calculate{% endif %}
         </button>
-        {% if can_add_b %}
-        <button class="btn-accent" type="submit" name="action" value="add_b">
-          {% if saved_points|length >= 2 %}Update Point B{% else %}Add Point B{% endif %}
-        </button>
-        {% endif %}
         {% if has_points %}
-        <button class="btn-ghost" type="submit" name="action" value="reset">Reset points</button>
+        <button class="btn-ghost" type="submit" name="action" value="reset">Clear</button>
         {% endif %}
       </div>
-      {% if can_add_b and saved_points|length < 2 %}
-      <p class="psychro-hint">Change the inputs, then <strong>Add Point B</strong> to plot a second state.</p>
-      {% endif %}
     </div>
   </form>
 
@@ -42,14 +34,12 @@
     </div>
   </div>
 
-  {# S — full-width results for each saved point #}
   {% if saved_points %}
+  {% set pt = saved_points[0] %}
   <div class="psychro-results panel">
-    <div class="panel-head">Resolved states</div>
+    <div class="panel-head">Resolved state</div>
     <div class="psychro-results-grid">
-      {% for pt in saved_points %}
       <div class="psychro-point-block">
-        <div class="psychro-point-label">Point {{ pt.label }}</div>
         <table class="results">
           <tr><th>Property</th><th>Value</th></tr>
           <tr><td>Dry-bulb temperature</td><td class="num">{{ U.html('temperature', pt.t_db, 2) }}</td></tr>
@@ -63,7 +53,6 @@
           <tr><td>Vapour pressure</td><td class="num">{{ U.html('pressure', pt.p_w, 4) }}</td></tr>
         </table>
       </div>
-      {% endfor %}
     </div>
   </div>
   {% endif %}

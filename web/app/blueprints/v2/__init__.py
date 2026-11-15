@@ -358,7 +358,7 @@ def interactive_chart():
 @bp.route("/psychrometrics/single-point", methods=["GET", "POST"])
 @require_module("psychro.single_point")
 def single_point():
-    """Classic Single Point — resolve a moist-air state (optional Point B)."""
+    """Classic Single Point — resolve one moist-air state."""
     from app.psychro_stage_cta import (
         dismiss_psychro_stage_cta,
         increment_psychro_single_calc,
@@ -383,21 +383,7 @@ def single_point():
             return redirect(request.path)
         try:
             pressure, result, _, _ = psy_mod._run_single_point(form, U)
-            entry = psy_mod._state_to_session("A", result)
-            if action == "add_b":
-                if not saved:
-                    psy_mod._set_saved_points([entry])
-                else:
-                    entry["label"] = "B"
-                    psy_mod._set_saved_points([saved[0], entry])
-            else:
-                entry["label"] = "A"
-                if len(saved) >= 2:
-                    b = dict(saved[1])
-                    b["label"] = "B"
-                    psy_mod._set_saved_points([entry, b])
-                else:
-                    psy_mod._set_saved_points([entry])
+            psy_mod._set_saved_points([psy_mod._state_to_session("State", result)])
             saved = psy_mod._get_saved_points()
             increment_psychro_single_calc()
             from app.analytics import note_calculator_complete
@@ -440,7 +426,6 @@ def single_point():
         error=error,
         chart=chart,
         pressure=pressure,
-        can_add_b=len(saved) >= 1,
         has_points=len(saved) >= 1,
         psychro_calc_count=psychro_single_calc_count(),
         show_psychro_stage_cta=should_show_psychro_stage_cta(),

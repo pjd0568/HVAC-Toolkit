@@ -33,8 +33,8 @@ bp = Blueprint("psychro", __name__)
 
 # Session-backed plotted points on Single Point (A, then optional B).
 _SINGLE_POINT_SESSION_KEY = "psychro_single_points"
-_SINGLE_POINT_MAX = 2
-_SINGLE_POINT_LABELS = ("A", "B")
+_SINGLE_POINT_MAX = 1
+_SINGLE_POINT_LABELS = ("State",)
 
 
 # Shared second-variable selector, consistent across every module. Dry-bulb
@@ -279,7 +279,7 @@ def _chart_or_blank(points=None, segments=None, pressure=None, system="SI"):
 def _run_single_point(form, U):
     pressure = _resolve_pressure(form, U)
     result = _state_from_form(form, "s", pressure, U)
-    points = [{"label": "A", "t": result.t_db, "w": result.w}]
+    points = [{"label": "State", "t": result.t_db, "w": result.w}]
     segments = []
     return pressure, result, points, segments
 
@@ -287,7 +287,7 @@ def _run_single_point(form, U):
 @bp.post("/hydrate-teaser")
 @login_required
 def hydrate_teaser():
-    """Apply homepage ``hvac_teaser_state`` into Single Point (units + Point A)."""
+    """Apply homepage ``hvac_teaser_state`` into Single Point (units + state)."""
     data = request.get_json(silent=True) or {}
     si = data.get("si")
     system = str(data.get("system") or "SI").upper()
@@ -297,7 +297,7 @@ def hydrate_teaser():
         set_unit_system(system)
         form = form_from_teaser_si(si, system)
         session[TEASER_FORM_SESSION_KEY] = form
-        _set_saved_points([session_point_from_si(si, "A")])
+        _set_saved_points([session_point_from_si(si, "State")])
     except (TypeError, ValueError, KeyError) as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
     return jsonify({"ok": True, "redirect": url_for("v2.single_point")})

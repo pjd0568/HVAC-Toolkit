@@ -4,7 +4,7 @@
 {% block body_class %}marketing-home{% endblock %}
 {% block content %}
 <section class="home-hero">
-  <div>
+  <div class="home-hero-copy">
     <h1>HVAC calculations without the spreadsheet</h1>
     <p class="home-lead">
       Practical psychrometrics, ductwork, hydronics and refrigeration tools built for
@@ -12,6 +12,10 @@
       Imperial units, with transparent engineering methods and professional workflows
       when you need them.
     </p>
+    <div class="home-compare" id="compare">
+      <h2 class="home-compare-title">Free and Pro</h2>
+      {% include "_pro_compare_table.html" %}
+    </div>
     <div class="coming-actions">
       <a class="btn-accent" href="{{ url_for('pages.tools_index') }}">Try calculators free</a>
       <a class="btn-ghost" href="{{ url_for('billing.subscribe') }}">Explore Pro</a>
@@ -35,8 +39,6 @@
     <a class="tool-card tool-access-free" href="{{ url_for('pages.tool_landing', slug='unit-converter') }}"><strong>Unit converter {% with level='free' %}{% include "_access_badge.html" %}{% endwith %}</strong><span>SI and imperial conversions used by the calculators.</span></a>
   </div>
 </section>
-
-{% include "marketing/_psychro_teaser.html" %}
 
 <section class="home-section">
   <h2>Four disciplines</h2>
@@ -82,34 +84,6 @@
   <p class="public-disclaimer">Results are a design aid. Verify critical selections against licensed data, manufacturer information and the project specification.</p>
 </section>
 
-<section class="home-section" id="compare">
-  <h2>Free and Pro</h2>
-  <div class="compare-grid">
-    <article class="compare-card">
-      <h3>Free</h3>
-      <p>Quick standalone HVAC calculations</p>
-      <ul>
-        <li>Selected single calculations</li>
-        <li>No account required</li>
-        <li>SI and Imperial</li>
-        <li>Transparent methods</li>
-        <li>Useful results without a trial countdown</li>
-      </ul>
-    </article>
-    <article class="compare-card featured">
-      <h3>Pro</h3>
-      <p>Complete engineering workflows</p>
-      <p class="pricing-amount">£{{ access.price_monthly }}<span>/month</span></p>
-      <ul>
-        <li>Psychrometric processes, AHU analysis and the multi-point chart</li>
-        <li>Duct index leg and hydronic pump-head workflows</li>
-        <li>DX pipe sizing</li>
-        <li>PDF, CSV and chart exports</li>
-      </ul>
-    </article>
-  </div>
-</section>
-
 <section class="home-section">
   <h2>Pricing</h2>
   <p>Pro is £{{ access.price_monthly }}/month{% if registration_open %}, with a 14-day trial when you create an account{% endif %}. The launch price is the current price. It is not a promise that the amount never changes.</p>
@@ -127,16 +101,12 @@
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "HVAC-CALCS free psychrometric calculator",
-  "url": {{ (public_base_url ~ '/#psychro-teaser')|tojson }},
+  "name": "HVAC-CALCS",
+  "url": {{ public_base_url|tojson }},
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" }
 }
 </script>
-{% endblock %}
-
-{% block extra_scripts %}
-<script src="{{ url_for('static', filename='js/psychro_teaser.js') }}?v=teaser-4" defer></script>
 {% endblock %}
