@@ -14,13 +14,13 @@ def approx(a, b, tol=1e-9):
 
 # ── Catalogue shape ──────────────────────────────────────────────────────────
 
-def test_catalog_counts_match_spec():
-    # 11 round-family + 8 rectangular-family = 19 total (SPEC-duct-sizing.md).
+def test_catalog_counts_match_extended_set():
+    # Extended visual picker set: 17 round-family + 12 rectangular-family.
     round_fittings = [x for x in f.FITTINGS if x.family == f.ROUND_FAMILY]
     rect_fittings = [x for x in f.FITTINGS if x.family == f.RECTANGULAR_FAMILY]
-    assert len(round_fittings) == 11
-    assert len(rect_fittings) == 8
-    assert len(f.FITTINGS) == 19
+    assert len(round_fittings) == 17
+    assert len(rect_fittings) == 12
+    assert len(f.FITTINGS) == 29
 
 
 def test_all_keys_are_unique():
@@ -39,9 +39,12 @@ def test_every_fitting_has_positive_k():
         assert fitting.k > 0
 
 
-def test_every_fitting_has_a_thumbnail_key():
+def test_every_fitting_has_category_and_icon():
+    known = {c for c, _ in f.CATEGORIES}
     for fitting in f.FITTINGS:
-        assert fitting.thumbnail_key
+        assert fitting.category in known
+        assert fitting.icon
+        assert fitting.thumbnail_key == fitting.category
 
 
 # ── fittings_for_shape ───────────────────────────────────────────────────────
@@ -112,30 +115,40 @@ def test_accessory_pressure_drop_rejects_negative():
         f.accessory_pressure_drop(-5.0)
 
 
-# ── Specific K-factor spot checks (against SPEC-duct-sizing.md's tables) ────
+# ── Specific K-factor spot checks (SMACNA / ASHRAE typical planning values) ─
 
 @pytest.mark.parametrize(
     "key,expected_k",
     [
-        ("round_elbow_90_smooth_r1.5", 0.22),
-        ("round_elbow_90_smooth_r1.0", 0.33),
+        ("round_elbow_90_smooth_r1.5", 0.15),
+        ("round_elbow_90_smooth_r1.0", 0.22),
         ("round_elbow_90_mitred", 1.20),
-        ("round_elbow_45_smooth", 0.15),
-        ("round_tee_branch_90", 1.00),
-        ("round_tee_straight", 0.15),
-        ("round_reducer_gradual", 0.05),
-        ("round_enlarger_gradual", 0.20),
+        ("round_elbow_90_5piece", 0.24),
+        ("round_elbow_45_smooth", 0.09),
+        ("round_flex_elbow_90", 0.50),
+        ("round_tee_branch_90", 1.20),
+        ("round_tee_straight", 0.20),
+        ("round_wye_45_branch", 0.40),
+        ("round_reducer_gradual", 0.15),
+        ("round_enlarger_gradual", 0.40),
+        ("round_to_rect_transition", 0.30),
         ("round_damper_open", 0.20),
         ("round_entry_sharp", 0.50),
+        ("round_entry_bellmouth", 0.05),
         ("round_exit", 1.00),
-        ("rect_elbow_90_mitred_no_vanes", 1.30),
-        ("rect_elbow_90_mitred_vanes", 0.40),
-        ("rect_elbow_90_radiused", 0.25),
+        ("round_screen_grille", 0.50),
+        ("rect_elbow_90_mitred_no_vanes", 1.20),
+        ("rect_elbow_90_mitred_vanes", 0.25),
+        ("rect_elbow_90_radiused", 0.20),
         ("rect_tee_branch_90", 1.00),
         ("rect_tee_straight", 0.15),
-        ("rect_transition_contraction", 0.05),
-        ("rect_transition_expansion", 0.20),
+        ("rect_transition_contraction", 0.15),
+        ("rect_transition_expansion", 0.40),
+        ("rect_to_round_transition", 0.30),
+        ("rect_entry_abrupt", 0.50),
+        ("rect_exit_abrupt", 1.00),
         ("rect_damper_open", 0.25),
+        ("rect_screen_grille", 0.50),
     ],
 )
 def test_spot_check_k_factors(key, expected_k):

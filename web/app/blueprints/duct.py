@@ -447,11 +447,17 @@ def _row_type_options():
 
 
 def _fitting_options(shape: str):
-    """Fitting-picker entries for the given shape, grouped the way the
-    template renders its collapsible categories (SPEC-duct-sizing.md's
-    Phase C section) -- one thumbnail per category, not per fitting."""
+    """Fitting-picker entries for the given shape — category + per-fitting
+    icon for the visual selector (SPEC-duct-sizing.md Phase C)."""
     return [
-        {"key": f.key, "label": f.label, "k": f.k, "thumbnail_key": f.thumbnail_key}
+        {
+            "key": f.key,
+            "label": f.label,
+            "k": f.k,
+            "category": f.category,
+            "icon": f.icon,
+            "thumbnail_key": f.thumbnail_key,
+        }
         for f in fit.fittings_for_shape(shape)
     ]
 
@@ -708,6 +714,9 @@ def _compute_leg_state(args, U):
         "fittings_by_shape": {
             s: _fitting_options(s) for s in ROW_SHAPE_LABELS
         },
+        "fitting_categories": [
+            {"key": key, "label": label} for key, label in fit.CATEGORIES
+        ],
         "stage": stage,
         "stage_raw": stage_raw,
         "stage_error": stage_error,

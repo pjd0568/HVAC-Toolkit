@@ -655,43 +655,50 @@ shape-agnostic, so a round-family K can still be applied against a
 rectangular duct's velocity pressure if the user picks one; the web layer
 tags each added row with its family so this stays visible, not hidden.
 
-**Round family** (circular + flat oval), 11 fittings:
+**Round family** (circular + flat oval), 17 fittings — typical SMACNA/ASHRAE
+single-point planning K values:
 
-| key | label | K |
-|---|---|---|
-| `round_elbow_90_smooth_r1.5` | 90° Smooth Bend (r/D 1.5) | 0.22 |
-| `round_elbow_90_smooth_r1.0` | 90° Smooth Bend (r/D 1.0) | 0.33 |
-| `round_elbow_90_mitred` | 90° Mitred Elbow | 1.20 |
-| `round_elbow_45_smooth` | 45° Smooth Bend | 0.15 |
-| `round_tee_branch_90` | Tee — 90° Branch Takeoff | 1.00 |
-| `round_tee_straight` | Tee — Straight-Through Main | 0.15 |
-| `round_reducer_gradual` | Gradual Reducer (Contraction) | 0.05 |
-| `round_enlarger_gradual` | Gradual Enlarger (Expansion) | 0.20 |
-| `round_damper_open` | Butterfly Damper (Fully Open) | 0.20 |
-| `round_entry_sharp` | Duct Entry (Sharp-Edged) | 0.50 |
-| `round_exit` | Duct Exit to Space/Plenum | 1.00 |
+| key | label | K | category |
+|---|---|---|---|
+| `round_elbow_90_smooth_r1.5` | 90° Smooth Elbow (r/D 1.5) | 0.15 | elbow |
+| `round_elbow_90_smooth_r1.0` | 90° Smooth Elbow (r/D 1.0) | 0.22 | elbow |
+| `round_elbow_90_mitred` | 90° Mitred Elbow | 1.20 | elbow |
+| `round_elbow_90_5piece` | 90° 5-Piece Elbow (r/D 1.5) | 0.24 | elbow |
+| `round_elbow_45_smooth` | 45° Smooth Elbow | 0.09 | elbow |
+| `round_flex_elbow_90` | Flexible Duct 90° Elbow | 0.50 | elbow |
+| `round_tee_branch_90` | Tee — 90° Branch Takeoff | 1.20 | junction |
+| `round_tee_straight` | Tee — Straight-Through Main | 0.20 | junction |
+| `round_wye_45_branch` | 45° Wye — Branch Flow | 0.40 | junction |
+| `round_reducer_gradual` | Conical Transition — Converging | 0.15 | transition |
+| `round_enlarger_gradual` | Conical Transition — Diverging | 0.40 | transition |
+| `round_to_rect_transition` | Round → Rectangular Transition | 0.30 | transition |
+| `round_entry_sharp` | Abrupt / Flush Entrance | 0.50 | entry |
+| `round_entry_bellmouth` | Bellmouth Entrance | 0.05 | entry |
+| `round_exit` | Abrupt Exit / Free Discharge | 1.00 | exit |
+| `round_damper_open` | Butterfly Damper (Fully Open) | 0.20 | obstruction |
+| `round_screen_grille` | Screen / Grille / Mesh | 0.50 | obstruction |
 
-**Rectangular family**, 8 fittings:
+**Rectangular family**, 12 fittings:
 
-| key | label | K |
-|---|---|---|
-| `rect_elbow_90_mitred_no_vanes` | 90° Mitred Elbow (No Vanes) | 1.30 |
-| `rect_elbow_90_mitred_vanes` | 90° Mitred Elbow (Turning Vanes) | 0.40 |
-| `rect_elbow_90_radiused` | 90° Radiused Elbow (r/W 1.0) | 0.25 |
-| `rect_tee_branch_90` | Tee — 90° Branch Takeoff | 1.00 |
-| `rect_tee_straight` | Tee — Straight-Through Main | 0.15 |
-| `rect_transition_contraction` | Transition (Contraction) | 0.05 |
-| `rect_transition_expansion` | Transition (Expansion) | 0.20 |
-| `rect_damper_open` | Blade Damper (Fully Open) | 0.25 |
+| key | label | K | category |
+|---|---|---|---|
+| `rect_elbow_90_mitred_no_vanes` | 90° Mitred Elbow (No Vanes) | 1.20 | elbow |
+| `rect_elbow_90_mitred_vanes` | 90° Mitred Elbow (Turning Vanes) | 0.25 | elbow |
+| `rect_elbow_90_radiused` | 90° Smooth Radius Elbow | 0.20 | elbow |
+| `rect_tee_branch_90` | Tee — 90° Branch Takeoff | 1.00 | junction |
+| `rect_tee_straight` | Tee — Straight-Through Main | 0.15 | junction |
+| `rect_transition_contraction` | Pyramidal Transition — Converging | 0.15 | transition |
+| `rect_transition_expansion` | Pyramidal Transition — Diverging | 0.40 | transition |
+| `rect_to_round_transition` | Rectangular → Round Transition | 0.30 | transition |
+| `rect_entry_abrupt` | Abrupt Entrance | 0.50 | entry |
+| `rect_exit_abrupt` | Abrupt Exit | 1.00 | exit |
+| `rect_damper_open` | Blade Damper (Fully Open) | 0.25 | obstruction |
+| `rect_screen_grille` | Screen / Grille / Mesh | 0.50 | obstruction |
 
-19 fittings total. Each also carries a `thumbnail_key` (one of
-`elbow_smooth`/`elbow_mitred`/`elbow_vaned`/`tee_branch`/`tee_straight`/
-`transition`/`damper`/`entry`/`exit`) — a small shared original inline SVG
-per *category*, not per fitting (19 bespoke drawings would be disproportionate
-to a first-pass common set; the thumbnail's job is distinguishing categories
-at a glance in the picker list, which a shared category icon already does).
-All original line diagrams, drawn fresh for this app — same clean-room
-approach as the design-guide article's diagrams.
+29 fittings total. Each carries `category` (filter chip) and `icon` (static
+PNG under `web/app/static/images/duct-fittings/`). The Index Leg composer
+opens a visual card picker (thumbnail + name + K) filtered by category —
+not a bare dropdown.
 
 ### Functions
 
@@ -701,7 +708,8 @@ approach as the design-guide article's diagrams.
   float` — `length_m * friction_rate_pa_per_m`. Rejects a non-positive length.
 - `fittings_for_shape(shape: str) -> tuple[Fitting, ...]` — round family for
   `"circular"`/`"flat_oval"`, rectangular family for `"rectangular"`.
-- `Fitting` (frozen dataclass): `key`, `label`, `family`, `k`, `thumbnail_key`.
+- `Fitting` (frozen dataclass): `key`, `label`, `family`, `k`, `category`,
+  `icon` (`thumbnail_key` is an alias of `category`).
 
 ### Web architecture — extends the existing duct-sizing page, no new route
 

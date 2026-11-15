@@ -1311,6 +1311,172 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   flex: 2 1 180px;
   max-width: 360px;
 }
+.leg-composer-row-item .leg-field-fitting {
+  flex: 2 1 220px;
+  max-width: 420px;
+  position: relative;
+}
+.leg-fitting-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+.leg-fitting-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.leg-fitting-trigger:hover,
+.leg-fitting-trigger:focus-visible {
+  border-color: var(--accent, #1a5fb4);
+  outline: none;
+}
+.leg-fitting-trigger[aria-expanded="true"] {
+  border-color: var(--accent, #1a5fb4);
+  box-shadow: 0 0 0 2px rgba(26, 95, 180, 0.15);
+}
+.leg-fitting-trigger-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  object-fit: contain;
+  background: #f7f8fa;
+  border: 1px solid #eceff3;
+  border-radius: 4px;
+  image-rendering: crisp-edges;
+}
+.leg-fitting-trigger-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.leg-fitting-trigger-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.leg-fitting-trigger-k {
+  font-size: 11px;
+  color: var(--muted);
+}
+.leg-fitting-trigger-chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+.leg-fitting-picker {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.leg-fitting-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.leg-fitting-filter {
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11.5px;
+  cursor: pointer;
+  color: #333;
+}
+.leg-fitting-filter:hover {
+  border-color: var(--accent, #1a5fb4);
+}
+.leg-fitting-filter.active {
+  background: var(--accent, #1a5fb4);
+  border-color: var(--accent, #1a5fb4);
+  color: #fff;
+}
+.leg-fitting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 2px;
+}
+.leg-fitting-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #e3e6eb;
+  border-radius: 8px;
+  background: #fafbfc;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.leg-fitting-card:hover {
+  border-color: var(--accent, #1a5fb4);
+  background: #fff;
+}
+.leg-fitting-card.is-selected {
+  border-color: var(--accent, #1a5fb4);
+  box-shadow: 0 0 0 2px rgba(26, 95, 180, 0.18);
+  background: #fff;
+}
+.leg-fitting-card-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+.leg-fitting-card-thumb img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  image-rendering: crisp-edges;
+}
+.leg-fitting-card-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  min-height: 2.6em;
+}
+.leg-fitting-card-k {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent, #1a5fb4);
+}
+.leg-fitting-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
 .leg-composer-preview {
   flex: 2 1 180px;
   min-width: 150px;
@@ -1355,9 +1521,14 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   }
   .leg-composer-row-item .leg-field,
   .leg-composer-row-item .leg-field-wide,
+  .leg-composer-row-item .leg-field-fitting,
   .leg-composer-preview {
     flex: 1 1 100%;
     max-width: none;
+  }
+  .leg-fitting-grid {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    max-height: 280px;
   }
   .leg-composer-actions {
     margin-left: 0;

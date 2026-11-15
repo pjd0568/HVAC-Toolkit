@@ -47,6 +47,8 @@
     var TYPE_OPTIONS = INITIAL.type_options || [];
     var SHAPE_OPTIONS = INITIAL.shape_options || [];
     var FITTINGS_BY_SHAPE = INITIAL.fittings_by_shape || {};
+    var FITTING_ICON_BASE = INITIAL.fitting_icon_base || "/static/images/duct-fittings/";
+    var fittingFilter = "all";
     var DEFAULT_RAW = INITIAL.default_row_raw || {
       type: "straight", shape: "circular", volume: "1800", diameter: "200",
       width: "400", height: "200", major: "400", minor: "200", length: "3.0",
@@ -102,6 +104,101 @@
         return '<option value="' + f.key + '"' + (f.key === selectedKey ? " selected" : "") +
           ">" + f.label + "</option>";
       }).join("");
+    }
+
+    function fittingByKey(shape, key) {
+      var list = FITTINGS_BY_SHAPE[shape] || [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].key === key) return list[i];
+      }
+      return list[0] || null;
+    }
+
+    function fittingIconUrl(fitting) {
+      if (!fitting || !fitting.icon) return "";
+      return FITTING_ICON_BASE + encodeURIComponent(fitting.icon) + ".png";
+    }
+
+    function syncFittingTrigger(container) {
+      if (!container) return;
+      var sel = container.querySelector('[data-row-field="fitting"]');
+      var shapeSel = container.querySelector('[data-row-field="shape"]');
+      var shape = shapeSel ? shapeSel.value : "circular";
+      var fitting = fittingByKey(shape, sel ? sel.value : "");
+      var labelEl = container.querySelector("[data-fitting-trigger-label]");
+      var kEl = container.querySelector("[data-fitting-trigger-k]");
+      var iconEl = container.querySelector("[data-fitting-trigger-icon]");
+      if (labelEl) labelEl.textContent = fitting ? fitting.label : "Choose fitting…";
+      if (kEl) kEl.textContent = fitting ? ("K = " + Number(fitting.k).toFixed(2)) : "";
+      if (iconEl) {
+        if (fitting) {
+          iconEl.src = fittingIconUrl(fitting);
+          iconEl.alt = fitting.label;
+          iconEl.hidden = false;
+        } else {
+          iconEl.removeAttribute("src");
+          iconEl.alt = "";
+          iconEl.hidden = true;
+        }
+      }
+    }
+
+    function renderFittingPicker(container) {
+      var grid = document.getElementById("leg-fitting-grid");
+      if (!grid || !container) return;
+      var shapeSel = container.querySelector('[data-row-field="shape"]');
+      var sel = container.querySelector('[data-row-field="fitting"]');
+      var shape = shapeSel ? shapeSel.value : "circular";
+      var selected = sel ? sel.value : "";
+      var list = (FITTINGS_BY_SHAPE[shape] || []).filter(function (f) {
+        return fittingFilter === "all" || f.category === fittingFilter;
+      });
+      grid.innerHTML = "";
+      list.forEach(function (f) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "leg-fitting-card" + (f.key === selected ? " is-selected" : "");
+        btn.setAttribute("role", "option");
+        btn.setAttribute("aria-selected", f.key === selected ? "true" : "false");
+        btn.dataset.fittingKey = f.key;
+        btn.innerHTML =
+          '<span class="leg-fitting-card-thumb"><img src="' + fittingIconUrl(f) +
+          '" alt="" width="48" height="48"></span>' +
+          '<span class="leg-fitting-card-name"></span>' +
+          '<span class="leg-fitting-card-k"></span>';
+        btn.querySelector(".leg-fitting-card-name").textContent = f.label;
+        btn.querySelector(".leg-fitting-card-k").textContent = "K = " + Number(f.k).toFixed(2);
+        grid.appendChild(btn);
+      });
+      if (!list.length) {
+        var empty = document.createElement("p");
+        empty.className = "leg-fitting-note";
+        empty.textContent = "No fittings in this category for the selected shape.";
+        grid.appendChild(empty);
+      }
+    }
+
+    function setFittingPickerOpen(open) {
+      var picker = document.getElementById("leg-fitting-picker");
+      var trigger = stage && stage.querySelector("[data-fitting-trigger]");
+      if (!picker || !trigger) return;
+      var typeSel = stage.querySelector('[data-row-field="type"]');
+      var isFitting = typeSel && typeSel.value === "fitting";
+      var show = !!open && isFitting;
+      picker.hidden = !show;
+      trigger.setAttribute("aria-expanded", show ? "true" : "false");
+      if (show) renderFittingPicker(stage);
+    }
+
+    function selectFitting(key) {
+      if (!stage) return;
+      var sel = stage.querySelector('[data-row-field="fitting"]');
+      if (!sel) return;
+      sel.value = key;
+      syncFittingTrigger(stage);
+      renderFittingPicker(stage);
+      setFittingPickerOpen(false);
+      fetchLegState(null, { previewOnly: true });
     }
 
     function parseSizeEdit(text, shape) {
@@ -247,6 +344,11 @@
     function refreshFittingOptions(container, shape) {
       var sel = container.querySelector('[data-row-field="fitting"]');
       if (sel) sel.innerHTML = fittingOptionsHtml(shape, null);
+      syncFittingTrigger(container);
+      if (container === stage) {
+        var picker = document.getElementById("leg-fitting-picker");
+        if (picker && !picker.hidden) renderFittingPicker(container);
+      }
     }
 
     function showError(msg) {
@@ -691,6 +793,7 @@
     // -- Composer: live preview; Add commits into the grid -----------------
     if (stage) {
       updateFieldVisibility(stage);
+      syncFittingTrigger(stage);
       stage.addEventListener("change", function (evt) {
         var target = evt.target;
         if (!target.hasAttribute("data-row-field")) return;
@@ -700,11 +803,44 @@
         if (target.getAttribute("data-row-field") === "type" ||
             target.getAttribute("data-row-field") === "shape") {
           updateFieldVisibility(stage);
+          if (target.getAttribute("data-row-field") === "type") {
+            setFittingPickerOpen(target.value === "fitting");
+          }
+        }
+        if (target.getAttribute("data-row-field") === "fitting") {
+          syncFittingTrigger(stage);
         }
         fetchLegState(null, { previewOnly: true });
       });
       stage.addEventListener("input", function (evt) {
         if (evt.target.hasAttribute("data-row-field")) debouncedPreview();
+      });
+
+      var fittingTrigger = stage.querySelector("[data-fitting-trigger]");
+      if (fittingTrigger) {
+        fittingTrigger.addEventListener("click", function () {
+          var picker = document.getElementById("leg-fitting-picker");
+          setFittingPickerOpen(picker ? picker.hidden : true);
+        });
+      }
+      var fittingGrid = document.getElementById("leg-fitting-grid");
+      if (fittingGrid) {
+        fittingGrid.addEventListener("click", function (evt) {
+          var card = evt.target.closest("[data-fitting-key]");
+          if (!card) return;
+          selectFitting(card.getAttribute("data-fitting-key"));
+        });
+      }
+      stage.querySelectorAll("[data-fit-filter]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          fittingFilter = btn.getAttribute("data-fit-filter") || "all";
+          stage.querySelectorAll("[data-fit-filter]").forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle("active", on);
+            b.setAttribute("aria-selected", on ? "true" : "false");
+          });
+          renderFittingPicker(stage);
+        });
       });
     }
 
@@ -725,6 +861,7 @@
           input.value = "";
         }
       });
+      syncFittingTrigger(stage);
     }
 
     if (addBtn) {

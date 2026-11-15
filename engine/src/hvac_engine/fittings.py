@@ -26,6 +26,9 @@ value here as a first-pass planning figure, not a certified design value, and
 cross-check against a real ASHRAE/CIBSE copy (or a manufacturer's own published
 K-factor data) before relying on a result for a real job. Disclosed in the
 duct Index Leg UI.
+
+Typical K figures align with SMACNA HVAC Systems Duct Design / ASHRAE
+supplemental fitting-loss tables (single-point planning values).
 """
 
 from __future__ import annotations
@@ -34,6 +37,23 @@ from dataclasses import dataclass
 
 ROUND_FAMILY = "round"          # serves circular AND flat oval (round-equivalent)
 RECTANGULAR_FAMILY = "rectangular"
+
+# Picker filter categories (also used as shared schematic groups).
+CATEGORY_ELBOW = "elbow"
+CATEGORY_JUNCTION = "junction"
+CATEGORY_TRANSITION = "transition"
+CATEGORY_ENTRY = "entry"
+CATEGORY_EXIT = "exit"
+CATEGORY_OBSTRUCTION = "obstruction"
+
+CATEGORIES: tuple[tuple[str, str], ...] = (
+    (CATEGORY_ELBOW, "Elbows"),
+    (CATEGORY_JUNCTION, "Junctions"),
+    (CATEGORY_TRANSITION, "Transitions"),
+    (CATEGORY_ENTRY, "Entries"),
+    (CATEGORY_EXIT, "Exits"),
+    (CATEGORY_OBSTRUCTION, "Obstructions"),
+)
 
 
 @dataclass(frozen=True)
@@ -46,43 +66,59 @@ class Fitting:
     user picks one; the web layer tags the row with its family so this stays
     visible rather than hidden.
 
-    `thumbnail_key` groups fittings onto a shared category icon (one drawing
-    per category, not per fitting -- see SPEC-duct-sizing.md's Phase C
-    section for why).
+    `category` drives the visual picker filter chips. `icon` is the static
+    image stem under ``images/duct-fittings/{icon}.png`` (one drawing per
+    fitting). `thumbnail_key` remains as an alias of `category` for older
+    callers.
     """
 
     key: str
     label: str
     family: str
     k: float
-    thumbnail_key: str
+    category: str
+    icon: str
+
+    @property
+    def thumbnail_key(self) -> str:
+        return self.category
 
 
 # ── Round family (circular + flat oval) ──────────────────────────────────────
 _ROUND_FITTINGS: tuple[Fitting, ...] = (
-    Fitting("round_elbow_90_smooth_r1.5", "90° Smooth Bend (r/D 1.5)", ROUND_FAMILY, 0.22, "elbow_smooth"),
-    Fitting("round_elbow_90_smooth_r1.0", "90° Smooth Bend (r/D 1.0)", ROUND_FAMILY, 0.33, "elbow_smooth"),
-    Fitting("round_elbow_90_mitred", "90° Mitred Elbow", ROUND_FAMILY, 1.20, "elbow_mitred"),
-    Fitting("round_elbow_45_smooth", "45° Smooth Bend", ROUND_FAMILY, 0.15, "elbow_smooth"),
-    Fitting("round_tee_branch_90", "Tee — 90° Branch Takeoff", ROUND_FAMILY, 1.00, "tee_branch"),
-    Fitting("round_tee_straight", "Tee — Straight-Through Main", ROUND_FAMILY, 0.15, "tee_straight"),
-    Fitting("round_reducer_gradual", "Gradual Reducer (Contraction)", ROUND_FAMILY, 0.05, "transition"),
-    Fitting("round_enlarger_gradual", "Gradual Enlarger (Expansion)", ROUND_FAMILY, 0.20, "transition"),
-    Fitting("round_damper_open", "Butterfly Damper (Fully Open)", ROUND_FAMILY, 0.20, "damper"),
-    Fitting("round_entry_sharp", "Duct Entry (Sharp-Edged)", ROUND_FAMILY, 0.50, "entry"),
-    Fitting("round_exit", "Duct Exit to Space/Plenum", ROUND_FAMILY, 1.00, "exit"),
+    Fitting("round_elbow_90_smooth_r1.5", "90° Smooth Elbow (r/D 1.5)", ROUND_FAMILY, 0.15, CATEGORY_ELBOW, "round_elbow_90_smooth_r1.5"),
+    Fitting("round_elbow_90_smooth_r1.0", "90° Smooth Elbow (r/D 1.0)", ROUND_FAMILY, 0.22, CATEGORY_ELBOW, "round_elbow_90_smooth_r1.0"),
+    Fitting("round_elbow_90_mitred", "90° Mitred Elbow", ROUND_FAMILY, 1.20, CATEGORY_ELBOW, "round_elbow_90_mitred"),
+    Fitting("round_elbow_90_5piece", "90° 5-Piece Elbow (r/D 1.5)", ROUND_FAMILY, 0.24, CATEGORY_ELBOW, "round_elbow_90_5piece"),
+    Fitting("round_elbow_45_smooth", "45° Smooth Elbow", ROUND_FAMILY, 0.09, CATEGORY_ELBOW, "round_elbow_45_smooth"),
+    Fitting("round_flex_elbow_90", "Flexible Duct 90° Elbow", ROUND_FAMILY, 0.50, CATEGORY_ELBOW, "round_flex_elbow_90"),
+    Fitting("round_tee_branch_90", "Tee — 90° Branch Takeoff", ROUND_FAMILY, 1.20, CATEGORY_JUNCTION, "round_tee_branch_90"),
+    Fitting("round_tee_straight", "Tee — Straight-Through Main", ROUND_FAMILY, 0.20, CATEGORY_JUNCTION, "round_tee_straight"),
+    Fitting("round_wye_45_branch", "45° Wye — Branch Flow", ROUND_FAMILY, 0.40, CATEGORY_JUNCTION, "round_wye_45_branch"),
+    Fitting("round_reducer_gradual", "Conical Transition — Converging", ROUND_FAMILY, 0.15, CATEGORY_TRANSITION, "round_reducer_gradual"),
+    Fitting("round_enlarger_gradual", "Conical Transition — Diverging", ROUND_FAMILY, 0.40, CATEGORY_TRANSITION, "round_enlarger_gradual"),
+    Fitting("round_to_rect_transition", "Round → Rectangular Transition", ROUND_FAMILY, 0.30, CATEGORY_TRANSITION, "round_to_rect_transition"),
+    Fitting("round_entry_sharp", "Abrupt / Flush Entrance", ROUND_FAMILY, 0.50, CATEGORY_ENTRY, "round_entry_sharp"),
+    Fitting("round_entry_bellmouth", "Bellmouth Entrance", ROUND_FAMILY, 0.05, CATEGORY_ENTRY, "round_entry_bellmouth"),
+    Fitting("round_exit", "Abrupt Exit / Free Discharge", ROUND_FAMILY, 1.00, CATEGORY_EXIT, "round_exit"),
+    Fitting("round_damper_open", "Butterfly Damper (Fully Open)", ROUND_FAMILY, 0.20, CATEGORY_OBSTRUCTION, "round_damper_open"),
+    Fitting("round_screen_grille", "Screen / Grille / Mesh", ROUND_FAMILY, 0.50, CATEGORY_OBSTRUCTION, "screen_grille"),
 )
 
 # ── Rectangular family ────────────────────────────────────────────────────────
 _RECTANGULAR_FITTINGS: tuple[Fitting, ...] = (
-    Fitting("rect_elbow_90_mitred_no_vanes", "90° Mitred Elbow (No Vanes)", RECTANGULAR_FAMILY, 1.30, "elbow_mitred"),
-    Fitting("rect_elbow_90_mitred_vanes", "90° Mitred Elbow (Turning Vanes)", RECTANGULAR_FAMILY, 0.40, "elbow_vaned"),
-    Fitting("rect_elbow_90_radiused", "90° Radiused Elbow (r/W 1.0)", RECTANGULAR_FAMILY, 0.25, "elbow_smooth"),
-    Fitting("rect_tee_branch_90", "Tee — 90° Branch Takeoff", RECTANGULAR_FAMILY, 1.00, "tee_branch"),
-    Fitting("rect_tee_straight", "Tee — Straight-Through Main", RECTANGULAR_FAMILY, 0.15, "tee_straight"),
-    Fitting("rect_transition_contraction", "Transition (Contraction)", RECTANGULAR_FAMILY, 0.05, "transition"),
-    Fitting("rect_transition_expansion", "Transition (Expansion)", RECTANGULAR_FAMILY, 0.20, "transition"),
-    Fitting("rect_damper_open", "Blade Damper (Fully Open)", RECTANGULAR_FAMILY, 0.25, "damper"),
+    Fitting("rect_elbow_90_mitred_no_vanes", "90° Mitred Elbow (No Vanes)", RECTANGULAR_FAMILY, 1.20, CATEGORY_ELBOW, "rect_elbow_90_mitred_no_vanes"),
+    Fitting("rect_elbow_90_mitred_vanes", "90° Mitred Elbow (Turning Vanes)", RECTANGULAR_FAMILY, 0.25, CATEGORY_ELBOW, "rect_elbow_90_mitred_vanes"),
+    Fitting("rect_elbow_90_radiused", "90° Smooth Radius Elbow", RECTANGULAR_FAMILY, 0.20, CATEGORY_ELBOW, "rect_elbow_90_radiused"),
+    Fitting("rect_tee_branch_90", "Tee — 90° Branch Takeoff", RECTANGULAR_FAMILY, 1.00, CATEGORY_JUNCTION, "rect_tee_branch_90"),
+    Fitting("rect_tee_straight", "Tee — Straight-Through Main", RECTANGULAR_FAMILY, 0.15, CATEGORY_JUNCTION, "rect_tee_straight"),
+    Fitting("rect_transition_contraction", "Pyramidal Transition — Converging", RECTANGULAR_FAMILY, 0.15, CATEGORY_TRANSITION, "rect_transition_contraction"),
+    Fitting("rect_transition_expansion", "Pyramidal Transition — Diverging", RECTANGULAR_FAMILY, 0.40, CATEGORY_TRANSITION, "rect_transition_expansion"),
+    Fitting("rect_to_round_transition", "Rectangular → Round Transition", RECTANGULAR_FAMILY, 0.30, CATEGORY_TRANSITION, "round_to_rect_transition"),
+    Fitting("rect_entry_abrupt", "Abrupt Entrance", RECTANGULAR_FAMILY, 0.50, CATEGORY_ENTRY, "rect_entry_abrupt"),
+    Fitting("rect_exit_abrupt", "Abrupt Exit", RECTANGULAR_FAMILY, 1.00, CATEGORY_EXIT, "rect_exit_abrupt"),
+    Fitting("rect_damper_open", "Blade Damper (Fully Open)", RECTANGULAR_FAMILY, 0.25, CATEGORY_OBSTRUCTION, "rect_damper_open"),
+    Fitting("rect_screen_grille", "Screen / Grille / Mesh", RECTANGULAR_FAMILY, 0.50, CATEGORY_OBSTRUCTION, "screen_grille"),
 )
 
 FITTINGS: tuple[Fitting, ...] = _ROUND_FITTINGS + _RECTANGULAR_FITTINGS
@@ -136,6 +172,9 @@ def accessory_pressure_drop(dp_pa: float) -> float:
 
 __all__ = [
     "ROUND_FAMILY", "RECTANGULAR_FAMILY", "Fitting",
+    "CATEGORY_ELBOW", "CATEGORY_JUNCTION", "CATEGORY_TRANSITION",
+    "CATEGORY_ENTRY", "CATEGORY_EXIT", "CATEGORY_OBSTRUCTION",
+    "CATEGORIES",
     "FITTINGS", "FITTINGS_BY_KEY", "fittings_for_shape",
     "fitting_pressure_drop", "straight_pressure_drop", "accessory_pressure_drop",
 ]

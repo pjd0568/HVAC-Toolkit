@@ -19,8 +19,8 @@
       Fill the compact form above (type, size, length or fitting), check the
       live preview, then press <strong>Add</strong> to commit a row into the
       spreadsheet table. Committed rows can still be edited in-place.
-      Straight / flex show friction rate (Pa/m); fittings show K
-      (ΔP = K × VP). Accessories take a manual pressure drop.
+      Straight / flex show friction rate (Pa/m); fittings use the visual
+      picker (K × VP). Accessories take a manual pressure drop.
       Dia/AxB is one size for circular, or enter both dimensions for
       rectangular / flat oval.
       You can switch to <strong>Duct Sizing</strong> and back — this table is
@@ -89,13 +89,21 @@
           <input id="stage_length" data-row-field="length" data-type-for="straight flex" name="stage_length"
                  value="{{ stage.length or defaults.length }}" inputmode="decimal">
         </div>
-        <div class="leg-field leg-field-wide" data-type-for="fitting">
-          <label for="stage_fitting">Fitting</label>
-          <select id="stage_fitting" data-row-field="fitting" data-fitting-select data-type-for="fitting" name="stage_fitting">
+        <div class="leg-field leg-field-fitting" data-type-for="fitting">
+          <label for="stage_fitting_btn">Fitting</label>
+          <select id="stage_fitting" data-row-field="fitting" data-fitting-select data-type-for="fitting" name="stage_fitting" class="leg-fitting-native" aria-hidden="true" tabindex="-1">
             {% for f in leg.fittings_by_shape.get(stage_shape, []) %}
             <option value="{{ f.key }}" {{ 'selected' if stage_fitting == f.key }}>{{ f.label }}</option>
             {% endfor %}
           </select>
+          <button type="button" id="stage_fitting_btn" class="leg-fitting-trigger" data-fitting-trigger aria-haspopup="listbox" aria-expanded="false" aria-controls="leg-fitting-picker">
+            <img class="leg-fitting-trigger-icon" data-fitting-trigger-icon alt="" width="40" height="40">
+            <span class="leg-fitting-trigger-text">
+              <span class="leg-fitting-trigger-label" data-fitting-trigger-label>Choose fitting…</span>
+              <span class="leg-fitting-trigger-k" data-fitting-trigger-k></span>
+            </span>
+            <span class="leg-fitting-trigger-chevron" aria-hidden="true">▾</span>
+          </button>
         </div>
         <div class="leg-field leg-field-wide" data-type-for="accessory">
           <label for="stage_label">Description</label>
@@ -129,6 +137,17 @@
         <div class="leg-composer-actions">
           <button type="button" class="btn-accent leg-add-btn" id="leg-add-row">+ Add</button>
         </div>
+      </div>
+
+      <div id="leg-fitting-picker" class="leg-fitting-picker" data-type-for="fitting" hidden>
+        <div class="leg-fitting-filters" role="tablist" aria-label="Fitting categories">
+          <button type="button" class="leg-fitting-filter active" data-fit-filter="all" role="tab" aria-selected="true">All</button>
+          {% for cat in leg.fitting_categories %}
+          <button type="button" class="leg-fitting-filter" data-fit-filter="{{ cat.key }}" role="tab" aria-selected="false">{{ cat.label }}</button>
+          {% endfor %}
+        </div>
+        <div class="leg-fitting-grid" id="leg-fitting-grid" role="listbox" aria-label="Fitting catalogue"></div>
+        <p class="leg-fitting-note">K values are typical planning figures (SMACNA / ASHRAE). Geometry-specific correlations may differ — verify critical runs.</p>
       </div>
     </div>
 
@@ -198,6 +217,8 @@
     "type_options": leg.type_options,
     "shape_options": leg.shape_options,
     "fittings_by_shape": leg.fittings_by_shape,
+    "fitting_categories": leg.fitting_categories,
+    "fitting_icon_base": url_for('static', filename='images/duct-fittings/'),
     "duct_flow_sym": leg.duct_flow_sym,
     "duct_dimension_sym": leg.duct_dimension_sym,
     "duct_run_length_sym": leg.duct_run_length_sym,
@@ -207,7 +228,7 @@
 </script>
 <script src="{{ url_for('static', filename='vendor/tabulator/tabulator.min.js') }}?v=6.3.1"></script>
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
-<script src="{{ url_for('static', filename='js/leggrid.js') }}?v=13"></script>
+<script src="{{ url_for('static', filename='js/leggrid.js') }}?v=14"></script>
 {% endmacro %}
 
 {% macro index_leg_styles() %}
