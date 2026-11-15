@@ -642,13 +642,11 @@ def adiabatic_cool():
 @require_module("psychro.ahu")
 def ahu():
     U = current_view()
+    ahu = None
     result = None
     error = None
-    m_da = None
     pressure = None
-    oa_frac = None
     pts, segs = [], []
-    initial_step = 1
     if request.method != "POST":
         form = psy_mod._display_defaults(psy_mod._AHU_DEFAULTS, psy_mod._AHU_FIELD_UNITS, U)
         psy_mod._paste_slot_into(form, "oa", U)
@@ -658,23 +656,20 @@ def ahu():
             pressure = psy_mod._resolve_pressure(form, U)
         except ValueError:
             pressure = None
-        try:
-            initial_step = int(request.args.get("step") or 1)
-        except ValueError:
-            initial_step = 1
     else:
         form = {k: request.form.get(k, d) for k, d in psy_mod._AHU_DEFAULTS.items()}
         try:
-            pressure, m_da, result, pts, segs, oa_frac = psy_mod._run_ahu(form, U)
-            initial_step = 6
-            if result is not None:
-                from app.analytics import note_pro_tool_use
+            ahu = psy_mod._run_ahu(form, U)
+            result = ahu.result
+            pressure = ahu.pressure
+            pts, segs = ahu.pts, ahu.segs
+            from app.analytics import note_pro_tool_use
 
-                note_pro_tool_use("ahu_design")
+            note_pro_tool_use("ahu_design")
         except ValueError as exc:
+            ahu = None
             result = None
             error = str(exc)
-            initial_step = 5
             try:
                 pressure = psy_mod._resolve_pressure(form, U)
             except ValueError:
@@ -686,12 +681,11 @@ def ahu():
         nav="psychro",
         form=form,
         second_properties=psy_mod._second_properties(U),
+        ahu=ahu,
         result=result,
-        m_da=m_da,
         chart=chart,
         error=error,
         pressure=pressure,
-        oa_frac=oa_frac,
-        season_defaults=psy_mod._ahu_season_defaults_display(U),
-        initial_step=initial_step,
+        sfp_presets=psy_mod.SFP_PRESETS,
+        fan_preset=psy_mod._fan_preset_key(form.get("fan_sfp", "")),
     )

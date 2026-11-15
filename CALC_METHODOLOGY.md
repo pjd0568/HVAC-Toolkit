@@ -636,16 +636,22 @@ then sensible(state_in, m_da, t_db + ΔT)
 2. Optional blow-through fan raises on-coil T.
 3. Draw-through: reheat targets `t_sup − ΔT_fan`.
 4. If `|W_sup − W_on| ≤ 1e−5`: sensible cool/heat/no-op only.
-5. Else dehumidification: off-coil at supply moisture and `coil_rh_off` (default **0.90**); `coil_rh_off=1.0` is CF = 1 (saturated at supply dew point); optional SAT waypoint at on-coil dew point; reheat to target when needed; condensate `m_da · (W_on − W_sup)`.
+5. Else dehumidification: require `t_adp` below on-coil dew point; solve
+   `BF = (W_sup − W_s(t_adp)) / (W_on − W_s(t_adp))` and run `cooling_coil`
+   on the ON→ADP chord; reheat to target when needed. No SAT waypoint.
 6. Warn if delivered supply differs by > 0.1 °C or > 5×10⁻⁵ kg/kg.
 
 **Fan ΔT:** same `c_p = 1.006 + 1.86·W` as `fan_gain`.
 
-**Assumptions / simplifications:** Default off-coil RH 90% (aligned with `simulate_ahu`); when W_sup > W_on the inverse path sizes heating then steam humidification; no frost/preheat coil stage in this inverse path.
+**Assumptions / simplifications:** ADP from CHW/DX fluid + approach (web) or entered
+directly; when W_sup > W_on the inverse path sizes heating then steam humidification;
+no frost/preheat coil stage in this inverse path.
 
 **Source:** `ahu_design.design_ahu_to_supply`
 
-**Validation:** `m_da > 0`; OA fraction; `coil_rh_off` in (0, 1]; fan_position ∈ {`none`,`blow`,`draw`}; moisture reachability.
+**Validation:** `m_da > 0`; `oa_fraction` in [0, 1] (`0` = all return air); `t_adp`
+below on-coil dew point when dehumidifying; fan_position ∈ {`none`,`blow`,`draw`};
+moisture reachability (`W_sup ≥ W_s(t_adp)`).
 
 **Reference:** SPEC-ahu-processes (`design_ahu_to_supply`) — stated in module docstring.
 

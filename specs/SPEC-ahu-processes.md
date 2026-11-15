@@ -53,7 +53,11 @@ supersaturated (for cooling, t_out ≥ dew point; otherwise the caller wants
 ### `cooling_coil(state_on, m_da, *, t_adp, t_off | bypass_factor) -> CoilResult`
 Real-world apparatus-dew-point / bypass-factor coil. A cooling coil cannot set
 dry-bulb and moisture independently: air-on `(T1, W1)` and ADP on the saturation
-curve lock a straight process chord; off-coil air sits on that chord.
+curve lock a straight process chord; off-coil air sits on that chord. ADP may be
+estimated as chilled-water flow or DX evaporating temperature plus an approach
+(`apparatus_dew_point_from_fluid`). Moisture falls from the start of a wet-coil
+process (not only after the entering dew point); the chord approaches the
+saturation curve and leaves above it because of bypass.
 
 Provide **`t_adp`** plus either **`t_off`** (how far along the chord) or
 **`bypass_factor`** in `[0, 1)`:
@@ -211,7 +215,8 @@ reach it. This is the everyday design question ("I need to supply air at X; what
 the coil do?").
 
 Intake is identical to `simulate_ahu`: outdoor state (+ return + %OA by dry-air mass)
-mix to the on-coil condition A. Given the required supply state D, compare its moisture
+mix to the on-coil condition A. `oa_fraction` is in `[0, 1]`; `0` is all return air
+(no outdoor stage). Given the required supply state D, compare its moisture
 content w_sup with the on-coil w_on:
 
 - **w_sup > w_on** (supply wetter than on-coil — typical winter with cold dry OA):
@@ -222,20 +227,20 @@ content w_sup with the on-coil w_on:
 - **w_sup ≈ w_on** (within ~0.01 g/kg, no net moisture change): a purely sensible duty.
   If t_sup < t_A it is sensible (dry) cooling A→D; if t_sup > t_A it is heating-only
   A→D; if equal, no duty.
-- **w_sup < w_on** (dehumidification — typical summer): off-coil C holds the supply
-  moisture at a target off-coil RH (`coil_rh_off`, default **0.90** — matching
-  `simulate_ahu` and typical wet-coil practice). `coil_rh_off=1.0` recovers the
-  idealised CF = 1 case (saturated at the supply dew point). The path is:
-  A → B saturation onset (sensible cooling at constant w_on to the on-coil dew point) →
-  C off-coil (at w_sup and coil_rh_off) →
-  D supply (sensible reheat at constant w_sup to the supply dry bulb when needed).
-  B is a zero-duty chart waypoint; the whole coil duty A→C is reported on the CC
-  stage; the reheat C→D on the HC stage when t_off < t_sup.
+- **w_sup < w_on** (dehumidification — typical summer): apparatus dew point
+  `t_adp` (from chilled-water flow or DX evaporating temperature plus approach)
+  on the saturation curve. Bypass factor is solved so off-coil moisture equals
+  `w_sup`:
+  `BF = (w_sup − W_s(t_adp)) / (w_on − W_s(t_adp))`, then
+  `t_off = t_adp + BF · (t_on − t_adp)` via the shared `cooling_coil` model.
+  Reheat C→D at constant `w_sup` when `t_off < t_sup`. There is **no**
+  saturation-onset waypoint — moisture falls from the start along the straight
+  ON→ADP chord; off-coil sits above saturation because of bypass.
+  `t_adp` must be below the on-coil dew point (otherwise the coil is dry and
+  cannot dehumidify). `w_sup` must not be below `W_s(t_adp)`.
 
-Coil duty (dehumidification): q_total = m_da·(h_C − h_A) (negative); q_sensible =
-m_da·(h(t_C, w_on) − h(t_A, w_on)); q_latent = q_total − q_sensible; condensate =
-m_da·(w_on − w_sup). **frost_risk = True if the off-coil temperature (supply dew point)
-≤ 0 °C.**
+Coil duty (dehumidification): from `cooling_coil` on the ADP chord.
+**frost_risk = True if ADP ≤ 0 °C.**
 
 Optional supply fan gain (same SFP/kW basis as `fan_gain`): a **draw-through** fan sits
 after reheat / humidifier, so its rise is added last and the heating coil targets
@@ -244,9 +249,10 @@ the on-coil condition A before the coil. Reachability note added if the fan gain
 overshoots the reheat requirement.
 
 Output is the same `AhuResult` shape as `simulate_ahu` — ordered labelled stages
-(`OA`, `RA`, `MA`, `FAN`, `SAT`, `CC`, `HC`, `HUM`, `SUP`) with per-stage duty, totals,
+(`OA`, `RA`, `MA`, `FAN`, `CC`, `HC`, `HUM`, `SUP`) with per-stage duty, totals,
 and any frost/fog/reachability warnings. The final `SUP` stage equals the requested
-supply state (within tolerance); a warning is raised if it cannot.
+supply state (within tolerance); a warning is raised if it cannot. The chart may
+also plot the ADP so the CC point is seen on the ON→ADP chord.
 
 ## Second-variable input convention (web layer)
 
@@ -257,6 +263,33 @@ These map to the `state()` property pairs (`rh`, `twb`, `w`, `tdp`) in
 SPEC-psychrometrics.md. The selector is identical on the single-point, mixed-air,
 cooling-coil (on- and off-coil) and AHU (outdoor, return, required-supply) inputs so
 the interaction is consistent everywhere.
+
+### AHU design page
+
+One page, in this order. There is no season selector and no separate supply flow.
+The process is predicted from the moisture balance.
+
+1. **Fresh air** — altitude (barometric pressure derived), dry-bulb plus one second
+   property, and fresh-air volume at that state. Zero fresh air is full recirculation.
+2. **Return air** — dry-bulb plus one second property, and return volume. Zero return
+   is 100% fresh air.
+3. **Mixed air** (stated, not entered) — system volume = fresh-air volume + return
+   volume, and the mixed state from the dry-air mass and enthalpy balance. That
+   system volume is the airflow through the unit.
+4. **Off AHU** — required leaving state. The solver picks the path: dehumidification
+   and reheat, cooling and dehumidification, sensible cooling only, heating,
+   humidification, or heating and humidification.
+5. **Fan gain** — specific fan power, default **2.0 W/(l/s)** (Approved Document L
+   Volume 2, England, 2021, Table 6.9, new building, central balanced system with
+   heating and cooling). Other Table 6.9 new-building types can be selected
+   (1.9 / 1.5 / 1.1 / 0.5). The number is editable. Power = SFP × system volume
+   (l/s). An entered fan kW overrides SFP. Draw-through is the default position.
+6. **Cooling coil ADP** — from chilled-water flow or DX evaporating temperature
+   plus approach (or ADP directly). Used when the off-AHU air is drier than
+   mixed air; bypass factor is solved for the required off-AHU moisture.
+
+Results: process name, each stage (state, sensible, latent, total), total cooling,
+total heat added (including fan gain), and fan gain on its own.
 
 ## Acceptance tests
 
@@ -292,9 +325,10 @@ the interaction is consistent everywhere.
   inlet = previous stage's outlet, net heating > 0, moisture added > 0.
 - **AHU summer case:** OA 28/50%, RA 23/50%, 30% OA, coil to 12/90%, reheat 14 °C:
   cooling negative, reheat positive, supply state = reheat outlet.
-- **Supply-driven cool+reheat:** on-coil 28/50%, required supply 14 °C/90%: w_sup <
-  w_on → dehumidification; off-coil = supply dew point saturated; cooling < 0, reheat > 0,
-  condensate > 0; final SUP within 0.1 K / 0.05 g/kg of the requested supply.
+- **Supply-driven cool+reheat:** on-coil 28/50%, ADP 9 °C, required supply on the
+  ADP chord then reheated: w_sup < w_on → dehumidification on the ON→ADP chord
+  (no SAT waypoint); cooling < 0, reheat > 0, condensate > 0; final SUP within
+  0.1 K / 0.05 g/kg of the requested supply.
 - **Supply-driven sensible cooling:** on-coil 26 °C/8 g/kg, supply 18 °C at the same
   moisture (both above the dew point): single sensible CC stage, no reheat, no condensate.
 - **Supply-driven heating only:** on-coil 15 °C/50%, supply 22 °C at the same moisture:

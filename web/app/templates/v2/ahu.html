@@ -11,235 +11,279 @@
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-<div data-v2-wizard data-initial-step="{{ initial_step|default(1) }}">
-  <div class="v2-stepper">
-    <span data-step-label>Step 1 of 6</span>
+<form method="post" id="ahu-form" class="psychro-layout">
+  <div class="panel">
+    <div class="panel-head">Fresh air</div>
+    <div class="panel-body">
+      {{ site_conditions(form, pressure) }}
+      {{ state_input("oa", "Fresh air", form, second_properties, flow_name="oa_flow", flow_value=form.oa_flow, flow_title="Fresh-air volume at the outdoor condition.") }}
+    </div>
   </div>
 
-  <form method="post" id="ahu-form">
-    <div class="v2-step" data-step="1" data-step-title="Site &amp; season">
-      <div class="panel">
-        <div class="panel-head">Site &amp; season</div>
-        <div class="panel-body">
-          {{ site_conditions(form, pressure) }}
-          <fieldset class="compact-group">
-            <legend>Season</legend>
-            <div class="compact-row cols-2">
-              <div class="compact-field">
-                <label for="ahu-season">Design season</label>
-                <select name="season" id="ahu-season">
-                  <option value="summer" {{ 'selected' if form.season != 'winter' }}>Summer — cool / dehumidify / reheat</option>
-                  <option value="winter" {{ 'selected' if form.season == 'winter' }}>Winter — heat / humidify</option>
-                </select>
-              </div>
-              <div class="compact-field compact-field-empty" aria-hidden="true"></div>
-            </div>
-          </fieldset>
-        </div>
-      </div>
+  <div class="panel">
+    <div class="panel-head">Return air</div>
+    <div class="panel-body">
+      {{ state_input("ra", "Return air", form, second_properties, flow_name="ra_flow", flow_value=form.ra_flow, flow_title="Return-air volume at the return condition. Use 0 for 100% fresh air.") }}
     </div>
+  </div>
 
-    <div class="v2-step" data-step="2" data-step-title="Outdoor air">
-      <div class="panel">
-        <div class="panel-head">Outdoor air</div>
-        <div class="panel-body">
-          {{ state_input("oa", "Outdoor air", form, second_properties, flow_name="oa_flow", flow_value=form.oa_flow, flow_title="Fresh-air volume at the outdoor condition.") }}
-        </div>
-      </div>
-    </div>
-
-    <div class="v2-step" data-step="3" data-step-title="Return air">
-      <div class="panel">
-        <div class="panel-head">Return air</div>
-        <div class="panel-body">
-          {{ state_input("ra", "Return air", form, second_properties) }}
-        </div>
-      </div>
-    </div>
-
-    <div class="v2-step" data-step="4" data-step-title="Supply">
-      <div class="panel">
-        <div class="panel-head">Required supply</div>
-        <div class="panel-body">
-          <p class="suffix" style="margin-bottom:10px;">Off-unit condition delivered into the room.</p>
-          {{ state_input("sup", "Supply", form, second_properties, flow_name="flow", flow_value=form.flow) }}
-        </div>
-      </div>
-    </div>
-
-    <div class="v2-step" data-step="5" data-step-title="Coil &amp; fan">
-      <div class="panel">
-        <div class="panel-head" id="ahu-coil-fan-head">
-          {% if form.season == 'winter' %}Heating / humidification &amp; fan{% else %}Cooling coil &amp; fan{% endif %}
-        </div>
-        <div class="panel-body">
-          <fieldset class="compact-group" id="ahu-coil-fields" {% if form.season == 'winter' %}hidden{% endif %}>
-            <legend id="ahu-coil-label">Cooling coil model</legend>
-            <div class="compact-row cols-2">
-              <div class="compact-field">
-                <label for="coil_rh_off" title="Default 90% — typical wet-coil practice.">Off RH %</label>
-                <input id="coil_rh_off" name="coil_rh_off" value="{{ form.coil_rh_off }}" inputmode="decimal">
-              </div>
-              <div class="compact-field compact-field-empty" aria-hidden="true"></div>
-            </div>
-          </fieldset>
-          <p class="suffix" id="ahu-winter-hint" style="margin:10px 0;" {% if form.season != 'winter' %}hidden{% endif %}>
-            Winter path: heating coil then steam humidification when on-coil is drier than supply.
-          </p>
-          <fieldset class="compact-group">
-            <legend>Supply fan</legend>
-            <div class="compact-row cols-2">
-              <div class="compact-field">
-                <label for="fan_pos">Fan position</label>
-                <select name="fan_pos" id="fan_pos">
-                  <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
-                  <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before coil</option>
-                  <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after last stage</option>
-                </select>
-              </div>
-              <div class="compact-field">
-                <label for="fan_sfp" title="Specific fan power">SFP W/(l/s)</label>
-                <input id="fan_sfp" name="fan_sfp" value="{{ form.fan_sfp }}" inputmode="decimal">
-              </div>
-            </div>
-            <div class="compact-row cols-2">
-              <div class="compact-field">
-                <label for="fan_kw" title="Overrides SFP when set">Fan kW</label>
-                <input id="fan_kw" name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP" inputmode="decimal">
-              </div>
-              <div class="compact-field compact-field-empty" aria-hidden="true"></div>
-            </div>
-          </fieldset>
-          <div class="psychro-actions">
-            <button class="btn-accent" type="submit">Design</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </form>
-
-  <div class="v2-step" data-step="6" data-step-title="Results">
-    {% if result %}
-      {% for w in result.warnings %}
-      <div class="warn-banner">{{ w }}</div>
-      {% endfor %}
-
-      <div class="panel">
-        <div class="panel-head">Totals</div>
-        <div class="panel-body">
-          <dl class="v2-kv">
-            <dt>Total cooling</dt><dd><strong>{{ U.html('power', -result.cooling_total) }}</strong></dd>
-            <dt>Total heating</dt><dd><strong>{{ U.html('power', result.heating_total) }}</strong></dd>
-            <dt>Moisture added / removed</dt>
-            <dd>{{ U.fmt('moisture_rate', result.moisture_added) }} / {{ U.fmt('moisture_rate', result.moisture_removed) }} {{ U.sym('moisture_rate') }}</dd>
-            <dt>Dry-air mass flow</dt><dd>{{ U.html('mass_flow', result.m_da) }}</dd>
-            {% if oa_frac is not none %}
-            <dt>Outdoor air fraction</dt><dd>{{ '%.1f'|format(oa_frac * 100) }}%</dd>
-            {% endif %}
-          </dl>
-        </div>
-      </div>
-
-      <div class="section-label">Derived stages</div>
+  <div class="panel" id="ahu-mixed">
+    <div class="panel-head">Mixed air</div>
+    <div class="panel-body">
+      {% if ahu %}
+      {% set ns = namespace(mixed=none) %}
       {% for s in result.stages %}
-      <article class="v2-stage-card">
-        <h3>{{ s.label }} — {{ s.name }}{% if s.note %} <span title="{{ s.note }}">!</span>{% endif %}</h3>
-        <dl class="v2-kv">
-          <dt>{{ U.sym('temperature') }} db</dt><dd>{{ U.html('temperature', s.state.t_db) }}</dd>
-          <dt>% RH</dt><dd>{{ '%.0f'|format(s.state.rh * 100) }}%</dd>
-          <dt>{{ U.sym('humidity_ratio') }}</dt><dd>{{ U.html('humidity_ratio', s.state.w) }}</dd>
-          <dt>{{ U.sym('enthalpy') }}</dt><dd>{{ U.html('enthalpy', s.state.h) }}</dd>
-          <dt>Duty</dt><dd>{% if s.q_total %}{{ U.html('power', s.q_total, sign=True) }}{% else %}—{% endif %}</dd>
-          <dt>Moisture</dt><dd>{% if s.moisture %}{{ U.html('moisture_rate', s.moisture, sign=True) }}{% else %}—{% endif %}</dd>
-        </dl>
-      </article>
+        {% if s.label == 'MA' %}{% set ns.mixed = s %}{% endif %}
       {% endfor %}
-
-      <div class="panel">
-        <div class="panel-head">Psychrometric chart</div>
-        <div class="panel-body">
-          {% include "_psychro_chart_embed.html" %}
-        </div>
-      </div>
-
-      <div class="note-banner">
-        {% if result.moisture_removed > 0 %}
-        Coil duty assumes {{ form.coil_rh_off }}% off-coil RH at the supply moisture content.
-        {% elif result.moisture_added > 0 %}
-        Winter path: heating coil then isothermal steam humidification.
-        {% else %}
-        Sensible-only duty — no net moisture change between on-coil and supply.
+      {% if ns.mixed is none %}
+        {% for s in result.stages %}
+          {% if s.label == 'OA' or s.label == 'RA' %}{% set ns.mixed = s %}{% endif %}
+        {% endfor %}
+      {% endif %}
+      {% set v_total = ahu.v_fa_m3h + ahu.v_ra_m3h %}
+      <table class="results">
+        <tr><td>Fresh air</td><td class="num">{{ U.html('vol_flow', ahu.v_fa_m3h) }}</td></tr>
+        <tr><td>Return air</td><td class="num">{{ U.html('vol_flow', ahu.v_ra_m3h) }}</td></tr>
+        <tr><td>System volume</td><td class="num"><strong>{{ U.html('vol_flow', v_total) }}</strong></td></tr>
+        <tr>
+          <td>Fresh air share</td>
+          <td class="num"><span class="valunit"><span class="v">{{ '%.1f'|format(ahu.v_fa_m3h / v_total * 100) }}</span><span class="u">% by volume</span></span></td>
+        </tr>
+        {% if ns.mixed %}
+        <tr><td>{{ U.sym('temperature') }} db</td><td class="num">{{ U.html('temperature', ns.mixed.state.t_db) }}</td></tr>
+        <tr><td>Relative humidity</td><td class="num"><span class="valunit"><span class="v">{{ '%.0f'|format(ns.mixed.state.rh * 100) }}</span><span class="u">%</span></span></td></tr>
+        <tr><td>{{ U.sym('humidity_ratio') }}</td><td class="num">{{ U.html('humidity_ratio', ns.mixed.state.w) }}</td></tr>
+        <tr><td>{{ U.sym('enthalpy') }}</td><td class="num">{{ U.html('enthalpy', ns.mixed.state.h) }}</td></tr>
         {% endif %}
-      </div>
+      </table>
+      {% if ns.mixed and ns.mixed.note %}
+      <p class="suffix">{{ ns.mixed.note }}</p>
+      {% elif ahu.oa_frac >= 1 %}
+      <p class="suffix">100% fresh air — the mixed condition is the fresh-air state.</p>
+      {% elif ahu.oa_frac <= 0 %}
+      <p class="suffix">No fresh air — the on-coil condition is the return air.</p>
+      {% endif %}
+      {% else %}
+      <p class="suffix" style="margin:0;">System volume is the fresh-air flow plus the return flow. Calculate to see the mixed condition.</p>
+      {% endif %}
+    </div>
+  </div>
 
-      {{ report_form(url_for('psychro.ahu_report'), form, url_for('psychro.ahu_chart_png')) }}
-    {% else %}
-      <div class="panel">
-        <div class="panel-head">Results</div>
-        <div class="panel-body">
-          <p class="suffix">Complete the previous steps and tap <strong>Design</strong> to see stages and chart.</p>
-          <div class="psychro-chart panel" style="margin-top:12px;border:none;padding:0;">
-            {% include "_psychro_chart_embed.html" %}
+  <div class="panel">
+    <div class="panel-head">Off AHU</div>
+    <div class="panel-body">
+      <p class="suffix" style="margin-top:0;">Condition the unit delivers. Airflow is the system volume above.</p>
+      {{ state_input("sup", "Off AHU", form, second_properties) }}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">Fan gain</div>
+    <div class="panel-body">
+      <fieldset class="compact-group">
+        <legend>Supply fan</legend>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="fan_preset" title="Approved Document L Volume 2 (England, 2021) Table 6.9, new buildings. Existing buildings are higher.">Part L type</label>
+            <select id="fan_preset">
+              {% for key, label in sfp_presets %}
+              <option value="{{ key }}" {{ 'selected' if fan_preset == key }}>{{ label }}</option>
+              {% endfor %}
+              <option value="custom" {{ 'selected' if fan_preset == 'custom' }}>Custom</option>
+            </select>
+          </div>
+          <div class="compact-field">
+            <label for="fan_sfp" title="Watts per litre per second of system volume (fresh air + return). Edit to match the fan, or to add allowances such as HEPA.">SFP W/(l/s)</label>
+            <input id="fan_sfp" name="fan_sfp" value="{{ form.fan_sfp }}" inputmode="decimal">
           </div>
         </div>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="fan_pos">Position</label>
+            <select name="fan_pos" id="fan_pos">
+              <option value="draw" {{ 'selected' if form.fan_pos == 'draw' }}>Draw-through — after the coil</option>
+              <option value="blow" {{ 'selected' if form.fan_pos == 'blow' }}>Blow-through — before the coil</option>
+              <option value="none" {{ 'selected' if form.fan_pos == 'none' }}>No fan gain</option>
+            </select>
+          </div>
+          <div class="compact-field">
+            <label for="fan_kw" title="Electrical input in kW. When filled in, this replaces the SFP estimate.">Fan kW</label>
+            <input id="fan_kw" name="fan_kw" value="{{ form.fan_kw }}" placeholder="from SFP" inputmode="decimal">
+          </div>
+        </div>
+      </fieldset>
+      <p class="suffix">2.0 W/(l/s) is the new-building limit for a central balanced system with heating and cooling, applied to the system volume. It is an upper estimate of fan heat — a balanced limit includes the extract fan. Type a lower SFP, or enter fan kW.</p>
+
+      <fieldset class="compact-group">
+        <legend>Cooling coil ADP</legend>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="coil_kind" title="Apparatus dew point is the mean coil-surface temperature. Below the on-coil dew point the coil is wet; at or above it the coil is dry (sensible only).">From</label>
+            <select id="coil_kind" name="coil_kind">
+              <option value="chw" {{ 'selected' if form.coil_kind == 'chw' }}>CHW flow + approach</option>
+              <option value="dx" {{ 'selected' if form.coil_kind == 'dx' }}>DX Tevap + approach</option>
+              <option value="adp" {{ 'selected' if form.coil_kind == 'adp' }}>ADP directly</option>
+            </select>
+          </div>
+          <div class="compact-field" data-coil-fluid>
+            <label for="fluid_t" id="fluid_t_label">CHW {{ U.sym('temperature') }}</label>
+            <input id="fluid_t" name="fluid_t" value="{{ form.fluid_t }}" inputmode="decimal">
+          </div>
+        </div>
+        <div class="compact-row cols-2">
+          <div class="compact-field" data-coil-fluid>
+            <label for="approach" title="ADP = fluid + approach.">Approach {% if U.system == 'SI' %}K{% else %}°F{% endif %}</label>
+            <input id="approach" name="approach" value="{{ form.approach }}" inputmode="decimal">
+          </div>
+          <div class="compact-field">
+            <label for="adp_t" title="Used when the off-AHU air is drier than mixed air. Bypass factor is solved so off-coil moisture matches the off-AHU moisture.">ADP {{ U.sym('temperature') }}</label>
+            <input id="adp_t" name="adp_t" value="{{ form.adp_t }}" inputmode="decimal">
+          </div>
+        </div>
+        <p class="suffix" style="margin:8px 0 0;">Dehumidification uses the ADP / bypass coil: the chart path curves toward saturation. Off-coil moisture is the off-AHU moisture; leaving RH and bypass factor follow. Not used for heating-only paths.</p>
+      </fieldset>
+
+      <div class="psychro-actions">
+        <button class="btn-accent" type="submit">Calculate</button>
       </div>
-    {% endif %}
+    </div>
+  </div>
+</form>
+
+{% if result %}
+  {% for w in result.warnings %}
+  <div class="warn-banner">{{ w }}</div>
+  {% endfor %}
+
+  <div class="v2-banner" id="ahu-process"><strong>{{ ahu.process }}</strong></div>
+
+  <div class="panel">
+    <div class="panel-head">Loads</div>
+    <div class="panel-body">
+      <table class="results">
+        <tr><td>Total cooling</td><td class="num"><strong>{{ U.html('power', -result.cooling_total) }}</strong></td></tr>
+        <tr><td>Total heat added</td><td class="num"><strong>{{ U.html('power', result.heating_total) }}</strong></td></tr>
+        <tr>
+          <td>Fan gain{% if ahu.fan_from_sfp %} (from SFP){% elif form.fan_kw %} (entered kW){% endif %}</td>
+          <td class="num">{{ U.html('power', ahu.fan_power_kw) }}</td>
+        </tr>
+        <tr>
+          <td>Moisture added / removed</td>
+          <td class="num"><span class="valunit"><span class="v">{{ U.fmt('moisture_rate', result.moisture_added) }} / {{ U.fmt('moisture_rate', result.moisture_removed) }}</span><span class="u">{{ U.sym('moisture_rate') }}</span></span></td>
+        </tr>
+        <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', result.m_da) }}</td></tr>
+      </table>
+      {% if result.moisture_removed > 0 %}
+      <p class="suffix">Dehumidifying coil on ADP {{ form.adp_t }} {{ U.sym('temperature') }} — path curves toward saturation (bypass holds it off the sat line); off-coil moisture matches the off-AHU moisture. Fan gain is included in total heat added.</p>
+      {% elif result.moisture_added > 0 %}
+      <p class="suffix">Heating coil, then steam humidification. Fan gain is included in total heat added.</p>
+      {% else %}
+      <p class="suffix">No moisture change between mixed air and the off-AHU condition. Fan gain is included in total heat added.</p>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="v2-step-nav">
-    <button type="button" class="btn-ghost" data-step-back>Back</button>
-    <button type="button" class="btn-accent" data-step-next>Continue</button>
+  <div class="panel">
+    <div class="panel-head">Stages</div>
+    <div class="panel-body psychro-results-scroll">
+      <table class="results">
+        <tr>
+          <th>Stage</th>
+          <th class="num">{{ U.sym('temperature') }} db</th>
+          <th class="num">% RH</th>
+          <th class="num">{{ U.sym('humidity_ratio') }}</th>
+          <th class="num">Sensible</th>
+          <th class="num">Latent</th>
+          <th class="num">Total</th>
+        </tr>
+        {% for s in result.stages %}
+        <tr>
+          <td>{{ s.label }} — {{ s.name }}{% if s.note %} <span title="{{ s.note }}">!</span>{% endif %}</td>
+          <td class="num">{{ U.fmt('temperature', s.state.t_db) }}</td>
+          <td class="num">{{ '%.0f'|format(s.state.rh * 100) }}</td>
+          <td class="num">{{ U.fmt('humidity_ratio', s.state.w) }}</td>
+          <td class="num">{% if s.q_sensible %}{{ U.html('power', s.q_sensible, sign=True) }}{% else %}—{% endif %}</td>
+          <td class="num">{% if s.q_latent %}{{ U.html('power', s.q_latent, sign=True) }}{% else %}—{% endif %}</td>
+          <td class="num">{% if s.q_total %}{{ U.html('power', s.q_total, sign=True) }}{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
   </div>
-  <div class="v2-step-spacer" aria-hidden="true"></div>
-</div>
 
-<script type="application/json" id="ahu-season-defaults">{{ season_defaults | tojson }}</script>
+  <div class="panel">
+    <div class="panel-head">Psychrometric chart</div>
+    <div class="panel-body">
+      {% include "_psychro_chart_embed.html" %}
+    </div>
+  </div>
+
+  {{ report_form(url_for('psychro.ahu_report'), form, url_for('psychro.ahu_chart_png')) }}
+{% endif %}
+
 <script>
 (function () {
-  var sel = document.getElementById("ahu-season");
-  var raw = document.getElementById("ahu-season-defaults");
-  if (!sel || !raw) return;
-  var defaults = JSON.parse(raw.textContent);
-  var head = document.getElementById("ahu-coil-fan-head");
-  var coilLabel = document.getElementById("ahu-coil-label");
-  var coilFields = document.getElementById("ahu-coil-fields");
-  var winterHint = document.getElementById("ahu-winter-hint");
-
-  function applySeasonUi(season) {
-    var winter = season === "winter";
-    if (head) {
-      head.textContent = winter
-        ? "Heating / humidification & fan"
-        : "Cooling coil & fan";
+  var preset = document.getElementById("fan_preset");
+  var sfp = document.getElementById("fan_sfp");
+  if (preset && sfp) {
+    function matchPreset(raw) {
+      var val = parseFloat(raw);
+      if (!isFinite(val)) return "custom";
+      for (var i = 0; i < preset.options.length; i++) {
+        var opt = preset.options[i];
+        if (opt.value !== "custom" && Math.abs(parseFloat(opt.value) - val) < 1e-6) {
+          return opt.value;
+        }
+      }
+      return "custom";
     }
-    if (coilLabel) coilLabel.hidden = winter;
-    if (coilFields) coilFields.hidden = winter;
-    if (winterHint) winterHint.hidden = !winter;
-  }
-
-  function applySeasonDefaults(season) {
-    var d = defaults[season];
-    if (!d) return;
-    var form = document.getElementById("ahu-form");
-    if (!form) return;
-    [["oa", "oa"], ["ra", "ra"], ["sup", "sup"]].forEach(function (pair) {
-      var prefix = pair[0];
-      var key = pair[1];
-      var t = form.querySelector('[name="' + prefix + '_t"]');
-      var prop = form.querySelector('[name="' + prefix + '_prop"]');
-      var val = form.querySelector('[name="' + prefix + '_val"]');
-      if (t) t.value = d[key + "_t"];
-      if (prop) prop.value = d[key + "_prop"];
-      if (val) val.value = d[key + "_val"];
+    preset.addEventListener("change", function () {
+      if (preset.value !== "custom") sfp.value = preset.value;
+    });
+    sfp.addEventListener("input", function () {
+      preset.value = matchPreset(sfp.value);
     });
   }
 
-  sel.addEventListener("change", function () {
-    applySeasonDefaults(sel.value);
-    applySeasonUi(sel.value);
+  var form = document.getElementById("ahu-form");
+  var kind = document.getElementById("coil_kind");
+  var fluid = document.getElementById("fluid_t");
+  var approach = document.getElementById("approach");
+  var adp = document.getElementById("adp_t");
+  var fluidLabel = document.getElementById("fluid_t_label");
+  if (!form || !kind || !adp) return;
+  var fluidBlocks = form.querySelectorAll("[data-coil-fluid]");
+  var defaults = { chw: { fluid: "6", approach: "3" }, dx: { fluid: "5", approach: "6" } };
+
+  function syncAdp() {
+    if (kind.value === "adp") return;
+    var f = parseFloat(fluid && fluid.value);
+    var a = parseFloat(approach && approach.value);
+    if (!isFinite(f) || !isFinite(a)) return;
+    adp.value = (f + a).toFixed(1);
+  }
+  function applyKind() {
+    var direct = kind.value === "adp";
+    fluidBlocks.forEach(function (el) { el.hidden = direct; });
+    adp.readOnly = !direct;
+    if (fluidLabel) {
+      fluidLabel.textContent = kind.value === "dx"
+        ? "Tevap {{ U.sym('temperature') }}"
+        : "CHW {{ U.sym('temperature') }}";
+    }
+    if (!direct) syncAdp();
+  }
+  kind.addEventListener("change", function () {
+    var d = defaults[kind.value];
+    if (d) { fluid.value = d.fluid; approach.value = d.approach; }
+    applyKind();
   });
+  ["input", "change"].forEach(function (ev) {
+    if (fluid) fluid.addEventListener(ev, syncAdp);
+    if (approach) approach.addEventListener(ev, syncAdp);
+  });
+  applyKind();
 })();
 </script>
-<script src="{{ url_for('static', filename='js/v2_wizard.js') }}?v=2"></script>
 
 {% endblock %}

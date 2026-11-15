@@ -211,34 +211,35 @@
     <section class="help-section" id="cooling-coil" data-help-section
              data-keywords="cooling coil dehumidification chilled water dx on coil off coil duty sensible latent shr sensible heat ratio apparatus dew point adp contact factor bypass factor condensate frost face velocity">
       <h2 class="help-h">Psychrometrics — Cooling Coil</h2>
-      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Enter air-on, apparatus dew point and off-coil dry bulb. The coil locks moisture to the ON→ADP chord and reports duty, leaving RH, condensate and contact/bypass factor.</p>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Enter air-on, set the apparatus dew point from chilled-water flow or DX evaporating temperature (plus approach), and the off-coil dry bulb. The coil locks moisture to the straight ON→ADP chord. If ADP is at or above the entering dew point the coil is dry — sensible only.</p>
 
       <h3 class="help-sub">When to use it</h3>
-      <p>To size or check a chilled-water or DX cooling coil once you know the entering air and the coil surface temperature (ADP), and you have chosen how cold the air should leave.</p>
+      <p>To size or check a chilled-water or DX cooling coil once you know the entering air, the coil fluid temperature, and how cold the air should leave.</p>
 
       <h3 class="help-sub">Inputs</h3>
       <dl class="help-io">
         <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure.</dd>
         <dt>On-coil — Dry Bulb, Second Property, Second Value</dt><dd>The air condition entering the coil (often the mixed-air result).</dd>
         <dt>On-coil Flow</dt><dd>The volume flow through the coil.</dd>
-        <dt>Apparatus Dew Point</dt><dd>Mean coil surface temperature on the saturation curve — sets the process chord with air-on.</dd>
-        <dt>Off-coil Dry Bulb</dt><dd>How far along that chord the air travels before leaving. Leaving moisture and RH are calculated, not entered.</dd>
+        <dt>ADP from</dt><dd><strong>CHW flow + approach</strong>, <strong>DX Tevap + approach</strong>, or <strong>ADP directly</strong>. ADP = fluid temperature + approach — the mean coil-surface temperature on the saturation curve.</dd>
+        <dt>Off-coil Dry Bulb</dt><dd>How far along the ON→ADP chord the air travels. Leaving moisture and RH are calculated, not entered.</dd>
       </dl>
 
       <h3 class="help-sub">How to use it</h3>
       <ol class="help-steps">
         <li>Set the site Altitude.</li>
         <li>Enter the On-coil condition and flow.</li>
-        <li>Enter the Apparatus Dew Point and Off-coil Dry Bulb.</li>
-        <li>Press <strong>Calculate</strong>. Read the duty table and the ON→ADP chord on the chart, and expand <strong>Coil application notes</strong> for selection guidance.</li>
+        <li>Choose CHW or DX, enter the fluid temperature and approach (or enter ADP directly).</li>
+        <li>Enter the Off-coil Dry Bulb.</li>
+        <li>Press <strong>Calculate</strong>. Read whether the coil is wet or dry, the duty table, and the ON→ADP chord on the chart.</li>
       </ol>
 
       <h3 class="help-sub">Reading the results</h3>
       <dl class="help-io">
+        <dt>Wet vs dry coil</dt><dd>ADP below the on-coil dew point → wet (moisture falls along the chord). ADP at or above the dew point → dry (constant moisture, sensible only).</dd>
         <dt>Total / sensible / latent cooling</dt><dd>The heat removed, split into the part that lowers temperature (sensible) and the part that removes moisture (latent).</dd>
         <dt>Sensible heat ratio (SHR)</dt><dd>Sensible ÷ total. Near 1.0 means little dehumidification; lower means a wetter duty.</dd>
-        <dt>Off-coil RH</dt><dd>A result of the chord geometry — typically ~90–95% for a wet coil, not a free input.</dd>
-        <dt>Apparatus dew point (ADP)</dt><dd>The coil surface condition you entered — the end of the process chord on saturation.</dd>
+        <dt>Off-coil RH</dt><dd>A result of the chord geometry — above saturation because of bypass, typically ~90–95% for a wet coil.</dd>
         <dt>Contact / bypass factor</dt><dd>From BF = (T₂ − T_ADP)/(T₁ − T_ADP). Deep coils have a high contact factor.</dd>
         <dt>Condensate</dt><dd>The rate of water wrung out — size the drain and trap for it.</dd>
       </dl>
@@ -338,40 +339,37 @@
 
     <!-- ═══════════════ AHU DESIGN ═══════════════ -->
     <section class="help-section" id="ahu" data-help-section
-             data-keywords="ahu air handling unit supply condition off-unit outdoor return mix on-coil off-coil reheat preheat coil duty fan gain blow through draw through sfp specific fan power reachability frost stages summer winter humidification outdoor air flow">
+             data-keywords="ahu air handling unit off ahu fresh air return mix mixed air system volume coil duty fan gain blow through draw through sfp specific fan power part l building regulations dehumidification reheat sensible cooling heating humidification">
       <h2 class="help-h">Psychrometrics — AHU Design</h2>
-      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> Work backwards from the condition you need to deliver into the room. Give the required supply (off-unit) air; the tool mixes outdoor and return air, then derives the cooling/reheat or heating/humidification needed to get there.</p>
+      <p class="help-lead"><span class="help-badge air">Psychrometrics</span> One page from fresh air and return air to the condition leaving the unit. The tool mixes the two streams, then predicts the process — cooling and dehumidification, dehumidification and reheat, sensible cooling, heating, or heating and humidification — and lists each stage and the total load.</p>
 
       <h3 class="help-sub">When to use it</h3>
-      <p>When you know the supply condition the space needs and want the coil duties that produce it — the inverse of specifying the off-coil condition and reading the result. It chains mixing → cool/reheat (summer) or heat/humidify (winter) into one staged process.</p>
+      <p>When you know the fresh-air and return flows and the condition the unit must deliver, and you want the coil and fan loads. The other psychrometric tools still do one process at a time (mixed air, cooling coil, heating and humidification, and so on).</p>
 
       <h3 class="help-sub">Inputs</h3>
       <dl class="help-io">
-        <dt>Site Conditions</dt><dd>Altitude → derived barometric pressure.</dd>
-        <dt>Design season</dt><dd>Summer or Winter — loads typical OA / RA / supply defaults. The process path still follows the moisture balance (cool+reheat vs heat+humidify).</dd>
-        <dt>Outdoor Air — condition + Outdoor Air Flow</dt><dd>The fresh-air state and its volume flow (at the outdoor condition). The outdoor-air fraction of supply is derived from dry-air mass flows and shown in the results.</dd>
-        <dt>Return Air — condition</dt><dd>The air coming back from the space (used when outdoor air is less than 100% of supply).</dd>
-        <dt>Required Supply — condition + Supply Flow</dt><dd>The off-unit condition to deliver into the room, and the total supply volume flow.</dd>
-        <dt>Off-coil RH target (%)</dt><dd>Default <strong>90%</strong> — same wet-coil leaving assumption as the Cooling Coil tool. Use <strong>100%</strong> for idealised contact factor = 1. Applies when the supply is drier than on-coil (dehumidification).</dd>
-        <dt>Supply Fan — Position, SFP, Power</dt><dd>Optional fan heat gain. <em>Blow-through</em> sits before the coil (adds to coil duty); <em>draw-through</em> sits after the last coil/humidifier. Give the fan power directly (kW) or let it be estimated from Specific Fan Power (W per l/s). Leave Position on "No fan gain" to ignore it.</dd>
+        <dt>Fresh air</dt><dd>Altitude (barometric pressure is derived), dry-bulb plus one other property, and the fresh-air volume at that condition. Use 0 fresh air for full recirculation.</dd>
+        <dt>Return air</dt><dd>Return dry-bulb plus one other property, and the return volume. Use 0 return for 100% fresh air.</dd>
+        <dt>Mixed air</dt><dd>Stated after Calculate. System volume is fresh air plus return. The mixed condition is the mass and energy balance of the two streams.</dd>
+        <dt>Off AHU</dt><dd>The condition delivered by the unit. There is no separate supply flow — the system volume is the airflow.</dd>
+        <dt>Fan gain</dt><dd>Specific fan power starts at the Approved Document L Volume 2 (England, 2021) Table 6.9 new-building limit for a central balanced system with heating and cooling: <strong>2.0 W/(l/s)</strong> of system volume. Pick another Part L type or type a different SFP. Fan kW overrides the estimate. Draw-through is after the coil; blow-through is before it. Choose “No fan gain” to leave it out. A balanced Part L limit includes the extract fan, so supply-air heat is often lower than 2.0.</dd>
+        <dt>Cooling coil ADP</dt><dd>From chilled-water flow or DX evaporating temperature plus approach (or ADP directly). Used when the off-AHU air is drier than mixed air. Bypass factor is solved so off-coil moisture matches the off-AHU moisture. If ADP is at or above the mixed-air dew point the coil is dry and cannot dehumidify.</dd>
       </dl>
 
       <h3 class="help-sub">How to use it</h3>
       <ol class="help-steps">
-        <li>Set the site Altitude.</li>
-        <li>Choose Summer or Winter (optional — sets typical defaults).</li>
-        <li>Enter the Outdoor Air condition and outdoor air volume flow.</li>
-        <li>Enter the Return Air condition.</li>
-        <li>Enter the Required Supply condition and supply flow.</li>
-        <li>For summer / dehumidification duties, confirm the off-coil RH target (90% default).</li>
-        <li>Optionally set the fan position and power/SFP.</li>
-        <li>Press <strong>Design</strong>. The derived stages, total cooling and total heating are listed and drawn on the chart; expand <strong>Design method &amp; notes</strong> for the assumptions.</li>
+        <li>Enter altitude, the fresh-air condition, and the fresh-air flow.</li>
+        <li>Enter the return-air condition and the return flow.</li>
+        <li>Enter the off-AHU condition.</li>
+        <li>Set the coil ADP from CHW or DX (plus approach), or enter ADP directly.</li>
+        <li>Leave the fan at 2.0 W/(l/s), or change the Part L type, the SFP, or the fan kW.</li>
+        <li>Press <strong>Calculate</strong>. Mixed air appears between return and off AHU. Below the form: the process name, total cooling, total heat added, fan gain, and a row for each stage.</li>
       </ol>
 
       <h3 class="help-sub">Reading the results</h3>
-      <p>Each stage (mix, cool, reheat, humidify) is a row with its state and the duty/moisture change at that step. Totals give cooling duty, heating duty, and moisture added/removed. The derived outdoor-air fraction (%) is shown under the totals. A note under the totals states which path was used.</p>
+      <p>The process name is chosen from the moisture balance. Total cooling is heat removed. Total heat added includes reheat, humidification and fan gain. Each stage row is the air state at that point and the sensible, latent and total duty of that step. On a wet coil the chart shows the straight ON→ADP chord; off-coil sits above saturation because of bypass.</p>
 
-      <div class="help-note">Process path is chosen from moisture: supply drier than on-coil → cool / dehumidify / reheat; supply wetter → heat then steam humidify; equal moisture → sensible cool or heat only. Frost is flagged when the off-coil temperature is at or below 0 °C.</div>
+      <div class="help-note">Off-AHU drier than mixed air → wet-coil dehumidification on the ADP chord, with reheat if the coil leaves colder than the target. Wetter → heating then steam. Equal moisture → sensible cooling or heating only. Frost is flagged when the ADP is at or below 0 °C.</div>
     </section>
 
     <!-- ═══════════════ DUCT SIZING ═══════════════ -->

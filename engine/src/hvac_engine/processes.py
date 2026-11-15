@@ -44,6 +44,7 @@ class CoilResult:
     contact_factor: float | None
     bypass_factor: float | None
     frost_risk: bool
+    wet_coil: bool = True  # False when ADP ≥ entering dew point (sensible only)
 
 
 @dataclass(frozen=True)
@@ -356,7 +357,70 @@ def cooling_coil(
         contact_factor=cf,
         bypass_factor=bf,
         frost_risk=frost,
+        wet_coil=wet,
     )
+
+
+def apparatus_dew_point_from_fluid(t_fluid: float, approach: float) -> float:
+    """Estimate ADP from chilled-water flow or DX evaporating temperature.
+
+    Mean coil-surface temperature (apparatus dew point) sits above the fluid
+    temperature by an approach: ``T_ADP = T_fluid + approach``. Typical design
+    approaches are a few kelvin for chilled-water coils and a larger step for
+    DX evaporators.
+    """
+    if approach < 0.0:
+        raise ValueError("coil approach must be >= 0")
+    return t_fluid + approach
+
+
+def wet_coil_chart_curve(
+    state_on: PsychroState,
+    state_off: PsychroState,
+    t_adp: float,
+    *,
+    n: int = 16,
+    shape: float = 2.2,
+) -> list[tuple[float, float]]:
+    """Psychrometric path for a wet cooling coil (chart display).
+
+    Duties still use the ADP / bypass-factor end state. The plotted path is not
+    the straight ON→OFF chord: moisture removal is delayed (mostly sensible at
+    first), then steepens so the path drops toward the off-coil state and runs
+    close to saturation in the cold end — never above entering ``w`` and never
+    above ``W_s(T)``.
+
+    ``shape`` > 1 controls the bow (larger → more sensible early). ``t_adp`` is
+    accepted for call-site symmetry with the duty model; the display curve is
+    anchored on the on/off states only.
+
+    Returns ``n + 1`` ``(t_db, w)`` points from on-coil to off-coil. Dry coils
+    should not call this — use a constant-``w`` line instead.
+    """
+    if n < 2:
+        raise ValueError("curve needs at least 2 steps")
+    if shape < 1.0:
+        raise ValueError("curve shape exponent must be >= 1")
+    if state_off.t_db > state_on.t_db + 1e-9:
+        raise ValueError("off-coil temperature must be at or below on-coil")
+    p = state_on.p
+    t_on, w_on = state_on.t_db, state_on.w
+    t_off, w_off = state_off.t_db, state_off.w
+    _ = t_adp  # duty / ADP marker; curve ends on the BF off-coil state
+
+    out: list[tuple[float, float]] = []
+    for i in range(n + 1):
+        u = i / n
+        t = t_on + u * (t_off - t_on)
+        # u^shape < u for shape>1 → less Δw early (sensible), steeper late.
+        w = w_on + (w_off - w_on) * (u ** shape)
+        w_s = psy.saturation_humidity_ratio(t, p)
+        # Coil air cannot gain moisture or go foggy.
+        w = min(max(w, 0.0), w_on, w_s)
+        out.append((t, w))
+    out[0] = (t_on, w_on)
+    out[-1] = (t_off, w_off)
+    return out
 
 
 def _solve_adp_for_leaving_rh(

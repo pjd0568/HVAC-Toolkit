@@ -229,6 +229,8 @@ any scope wideners before coding.
 
 | Date | Change |
 |------|--------|
+| 15 Nov 2026 | Cooling coils (standalone + AHU) use ADP from CHW/DX fluid + approach; wet = ON→ADP chord with bypass, dry = sensible only when ADP ≥ dew point. AHU no longer uses SAT waypoint / off-coil RH. |
+| 15 Nov 2026 | AHU design is one page: fresh air + return flows, stated mixed air and system volume, predicted process, stage loads. Fan gain defaults to ADL Vol 2 SFP (editable). |
 | 25 Aug 2026 | Plan created. Epics 1–4 added. Refrigeration REF-01/02 Done; REF-03/04 Soon. Mapped Epic 3 to pipe Stage 4. |
 | 25 Aug 2026 | Added traffic-light Cursor Canvas board (`development-plan.canvas.tsx`); agent keeps it synced with this plan. |
 | 25 Aug 2026 | Wired Coming Soon links into suite menus, pickers, hamburger, and dashboard for Epics 1–4 + Acoustics. |

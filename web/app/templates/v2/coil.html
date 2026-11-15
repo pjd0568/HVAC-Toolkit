@@ -13,7 +13,7 @@
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="psychro-layout">
-  <form method="post" class="psychro-inputs panel">
+  <form method="post" class="psychro-inputs panel" id="coil-form">
     <div class="panel-head">Coil conditions</div>
     <div class="panel-body">
       {{ site_conditions(form, pressure) }}
@@ -21,16 +21,42 @@
       {{ state_input("on", "On-coil", form, second_properties, flow_name="flow", flow_value=form.flow) }}
 
       <fieldset class="compact-group">
-        <legend>Coil</legend>
+        <legend>Apparatus dew point</legend>
         <div class="compact-row cols-2">
           <div class="compact-field">
-            <label for="adp_t" title="Apparatus dew point">ADP {{ U.sym('temperature') }}</label>
-            <input id="adp_t" name="adp_t" value="{{ form.adp_t }}" inputmode="decimal">
+            <label for="coil_kind" title="ADP is the mean coil-surface temperature on the saturation curve.">From</label>
+            <select id="coil_kind" name="coil_kind">
+              <option value="chw" {{ 'selected' if form.coil_kind == 'chw' }}>CHW flow + approach</option>
+              <option value="dx" {{ 'selected' if form.coil_kind == 'dx' }}>DX Tevap + approach</option>
+              <option value="adp" {{ 'selected' if form.coil_kind == 'adp' }}>ADP directly</option>
+            </select>
+          </div>
+          <div class="compact-field" data-coil-fluid>
+            <label for="fluid_t" id="fluid_t_label" title="Chilled-water flow temperature or DX evaporating temperature.">Fluid {{ U.sym('temperature') }}</label>
+            <input id="fluid_t" name="fluid_t" value="{{ form.fluid_t }}" inputmode="decimal">
+          </div>
+        </div>
+        <div class="compact-row cols-2">
+          <div class="compact-field" data-coil-fluid>
+            <label for="approach" title="ADP = fluid temperature + approach. Typical CHW approach is a few kelvin; DX is often larger.">Approach {% if U.system == 'SI' %}K{% else %}°F{% endif %}</label>
+            <input id="approach" name="approach" value="{{ form.approach }}" inputmode="decimal">
           </div>
           <div class="compact-field">
-            <label for="off_t" title="Off-coil dry bulb">Off Tdb {{ U.sym('temperature') }}</label>
+            <label for="adp_t" title="Apparatus dew point on the saturation curve. Filled from fluid + approach unless you choose ADP directly.">ADP {{ U.sym('temperature') }}</label>
+            <input id="adp_t" name="adp_t" value="{{ form.adp_t }}" inputmode="decimal">
+          </div>
+        </div>
+        <p class="suffix" style="margin:8px 0 0;">If ADP is at or above the on-coil dew point the coil is dry — sensible cooling only, no moisture removal.</p>
+      </fieldset>
+
+      <fieldset class="compact-group">
+        <legend>Leaving air</legend>
+        <div class="compact-row cols-2">
+          <div class="compact-field">
+            <label for="off_t" title="How far along the ON→ADP chord the air travels (sets bypass factor).">Off Tdb {{ U.sym('temperature') }}</label>
             <input id="off_t" name="off_t" value="{{ form.off_t }}" inputmode="decimal">
           </div>
+          <div class="compact-field compact-field-empty" aria-hidden="true"></div>
         </div>
       </fieldset>
 
@@ -47,7 +73,7 @@
   {% endif %}
 
   <div class="psychro-results panel">
-    <div class="panel-head">Coil duty</div>
+    <div class="panel-head">Coil duty — {% if result.wet_coil %}wet coil{% else %}dry coil (sensible only){% endif %}</div>
     <table class="results">
       <tr><th></th><th class="num">{{ U.sym('temperature') }} db</th><th class="num">% RH</th><th class="num">{{ U.sym('humidity_ratio') }}</th><th class="num">{{ U.sym('enthalpy') }}</th></tr>
       <tr><td>On coil</td>{{ state_cells(on) }}</tr>
@@ -61,16 +87,22 @@
       <tr><td>Condensate</td><td class="num">{{ U.html('moisture_rate', result.condensate) }}</td></tr>
       {% if result.t_adp is not none %}
       <tr><td>Apparatus dew point</td><td class="num">{{ U.html('temperature', result.t_adp) }}</td></tr>
+      <tr><td>On-coil dew point</td><td class="num">{{ U.html('temperature', on.t_dp) }}</td></tr>
       <tr><td>Contact / bypass factor</td><td class="num">{{ '%.2f'|format(result.contact_factor) }} / {{ '%.2f'|format(result.bypass_factor) }}</td></tr>
       {% endif %}
       <tr><td>Dry-air mass flow</td><td class="num">{{ U.html('mass_flow', m_da) }}</td></tr>
     </table>
     <div class="note-banner" style="margin:14px 16px 16px;">
-      Leaving moisture is locked to the straight ON→ADP chord.
-      Off-coil dry bulb only sets how far along that line the air travels
-      (bypass factor {{ '%.2f'|format(result.bypass_factor) }}), so off-coil RH
-      lands at {{ '%.0f'|format(result.state.rh * 100) }}% — typically ~90–95% for a wet coil,
-      not an independent input.
+      {% if result.wet_coil %}
+      Wet coil: the chart path is mostly sensible at first (little moisture
+      removal), then steepens toward the off-coil state near saturation — held
+      short of the ADP by bypass (BF {{ '%.2f'|format(result.bypass_factor) }}).
+      Leaving RH is {{ '%.0f'|format(result.state.rh * 100) }}%. Duties use the
+      ADP / bypass end state.
+      {% else %}
+      Dry coil: ADP is at or above the on-coil dew point, so the process is constant
+      moisture (sensible only). No condensate.
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -87,31 +119,77 @@
 <details class="notes">
   <summary>Coil application notes</summary>
   <div class="notes-body">
-    <p><strong>Why ADP + leaving dry bulb.</strong> A simple cooling coil cannot set
-    temperature and moisture independently. Once air-on and the apparatus dew point
-    (mean coil surface temperature) are fixed, the process is the straight line from
-    air-on to ADP on the saturation curve. Specifying off-coil dry bulb only chooses
-    how far along that chord the mixture leaves:</p>
+    <p><strong>ADP from the fluid.</strong> Apparatus dew point is the mean coil-surface
+    temperature. Estimate it as chilled-water flow temperature (or DX evaporating
+    temperature) plus an approach. Duties use the ADP / bypass-factor end state.</p>
+    <p><strong>Wet vs dry.</strong> If ADP is below the entering dew point, condensate
+    forms. The chart path stays nearly constant-moisture at first, then drops more
+    steeply toward the off-coil state near saturation (bypass holds it short of the
+    ADP). If ADP is at or above the dew point the coil is dry — straight sensible
+    cooling at constant moisture.</p>
     <p style="font-family:ui-monospace,monospace;">BF = (T₂ − T<sub>ADP</sub>) / (T₁ − T<sub>ADP</sub>)</p>
-    <p><strong>Off-coil RH.</strong> Because the chord sits slightly above the curved
-    saturation line, leaving air is rarely at 100% RH — typically ~90–95% for a wet
-    4–6 row coil. That RH is a result of the geometry, not a free design knob.</p>
     <p><strong>Contact and bypass factor.</strong> Contact factor is the fraction of
     air treated toward the ADP; bypass factor is the fraction that streams through
-    closer to air-on. Deep coils / low face velocity raise contact factor; shallow
-    high-velocity coils bypass more.</p>
+    closer to air-on. Deep coils / low face velocity raise contact factor.</p>
     <p><strong>Frost risk.</strong> An ADP at or below 0 °C means the coil surface can freeze
     condensate. Options: raise chilled water temperature or ADP, glycol, a defrost
     strategy on DX, or face-and-bypass control.</p>
-    <p><strong>Face velocity.</strong> Keep coil face velocity in the region of 2–2.5 m/s;
-    above ~2.75 m/s condensate carry-over from the fins becomes likely and an eliminator or
-    larger coil face is needed.</p>
-    <p><strong>Condensate.</strong> Size the drain and trap for the calculated rate; the trap depth
-    must exceed the fan pressure at the drain pan.</p>
   </div>
 </details>
 
 {{ report_form(url_for('psychro.cooling_coil_report'), form, url_for('psychro.cooling_coil_chart_png')) }}
 {% endif %}
+
+<script>
+(function () {
+  var form = document.getElementById("coil-form");
+  if (!form) return;
+  var kind = document.getElementById("coil_kind");
+  var fluid = document.getElementById("fluid_t");
+  var approach = document.getElementById("approach");
+  var adp = document.getElementById("adp_t");
+  var fluidLabel = document.getElementById("fluid_t_label");
+  var fluidBlocks = form.querySelectorAll("[data-coil-fluid]");
+  var defaults = { chw: { fluid: "6", approach: "3" }, dx: { fluid: "5", approach: "6" } };
+
+  function syncAdp() {
+    if (!kind || kind.value === "adp") return;
+    var f = parseFloat(fluid && fluid.value);
+    var a = parseFloat(approach && approach.value);
+    if (!isFinite(f) || !isFinite(a)) return;
+    adp.value = (f + a).toFixed(1);
+  }
+
+  function applyKind() {
+    var direct = kind.value === "adp";
+    fluidBlocks.forEach(function (el) { el.hidden = direct; });
+    adp.readOnly = !direct;
+    if (fluidLabel) {
+      fluidLabel.textContent = kind.value === "dx"
+        ? "Tevap {{ U.sym('temperature') }}"
+        : "CHW {{ U.sym('temperature') }}";
+    }
+    if (!direct && defaults[kind.value]) {
+      if (!fluid.value) fluid.value = defaults[kind.value].fluid;
+      if (!approach.value) approach.value = defaults[kind.value].approach;
+    }
+    if (!direct) syncAdp();
+  }
+
+  kind.addEventListener("change", function () {
+    var d = defaults[kind.value];
+    if (d) {
+      fluid.value = d.fluid;
+      approach.value = d.approach;
+    }
+    applyKind();
+  });
+  ["input", "change"].forEach(function (ev) {
+    fluid.addEventListener(ev, syncAdp);
+    approach.addEventListener(ev, syncAdp);
+  });
+  applyKind();
+})();
+</script>
 
 {% endblock %}

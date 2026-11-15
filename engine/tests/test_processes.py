@@ -127,6 +127,38 @@ def test_dry_coil_sensible_only():
     assert r.q_latent == pytest.approx(0.0, abs=1e-6)
     assert r.shr == pytest.approx(1.0, abs=1e-6)
     assert r.state.w == pytest.approx(on.w, abs=1e-12)
+    assert r.wet_coil is False
+
+
+def test_wet_coil_flag_and_adp_from_fluid():
+    on = psy.state(28.0, rh=0.5)
+    r = proc.cooling_coil(on, 1.0, t_adp=9.0, t_off=12.0)
+    assert r.wet_coil is True
+    assert proc.apparatus_dew_point_from_fluid(6.0, 3.0) == pytest.approx(9.0)
+    with pytest.raises(ValueError, match="approach"):
+        proc.apparatus_dew_point_from_fluid(6.0, -1.0)
+
+
+def test_wet_coil_chart_curve_bows_above_straight_chord():
+    on = psy.state(28.0, rh=0.5)
+    r = proc.cooling_coil(on, 1.0, t_adp=9.0, t_off=12.0)
+    curve = proc.wet_coil_chart_curve(on, r.state, 9.0, n=12)
+    assert curve[0] == pytest.approx((on.t_db, on.w))
+    assert curve[-1][0] == pytest.approx(r.state.t_db)
+    assert curve[-1][1] == pytest.approx(r.state.w)
+    # Mid-path moisture stays above the straight ON→OFF chord (more sensible early)
+    # and never exceeds entering moisture (coil cannot humidify).
+    mid = curve[len(curve) // 2]
+    u = (mid[0] - on.t_db) / (r.state.t_db - on.t_db)
+    w_chord = on.w + u * (r.state.w - on.w)
+    assert mid[1] > w_chord + 1e-5
+    assert mid[1] <= on.w + 1e-12
+    for t, w in curve:
+        assert w <= on.w + 1e-12
+        assert w <= psy.saturation_humidity_ratio(t) + 1e-9
+    # Moisture is monotonically non-increasing along the path.
+    for i in range(len(curve) - 1):
+        assert curve[i][1] >= curve[i + 1][1] - 1e-12
 
 
 # -- Humidification --------------------------------------------------------------

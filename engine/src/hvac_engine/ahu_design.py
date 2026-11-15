@@ -6,13 +6,15 @@ specifying the off-coil condition and reading off the supply, the user gives the
 stages that reach it: mix OA/RA to the on-coil condition, then choose a path
 from the moisture balance:
 
-- supply drier than on-coil → cool / dehumidify at a target off-coil RH (default
-  90%, matching ``simulate_ahu``) and reheat to the supply dry bulb;
+- supply drier than on-coil → cooling coil on the apparatus-dew-point /
+  bypass-factor chord (ADP from chilled water or DX evaporating temperature),
+  sized so off-coil moisture equals the supply moisture, then reheat to the
+  supply dry bulb when needed;
 - supply wetter than on-coil → heat then steam humidify (winter path);
 - equal moisture → purely sensible cool or heat.
 
-``coil_rh_off=1.0`` recovers the idealised CF = 1 model (saturated at the
-supply dew point).
+If the ADP is at or above the on-coil dew point the coil is dry (sensible only)
+and cannot dehumidify — the caller must lower ADP.
 
 Pure Python; depends only on ``hvac_engine.psychrometrics`` and the shared result
 types / elementary processes in ``hvac_engine.processes``.
@@ -25,6 +27,7 @@ from hvac_engine.psychrometrics import PsychroState
 from hvac_engine.processes import (
     AhuResult,
     AhuStage,
+    cooling_coil,
     heat_and_humidify,
     mix,
     sensible,
@@ -33,39 +36,6 @@ from hvac_engine.processes import (
 
 _W_TOL = 1e-5  # kg/kg (~0.01 g/kg): smaller differences are "no net moisture change"
 _T_TOL = 1e-3  # degC
-
-
-def _t_db_at_w_rh(w: float, rh: float, p: float) -> float:
-    """Dry-bulb temperature at which (w, rh) is a valid psychrometric state.
-
-    At rh = 1 the solution is the dew point. For rh < 1 the dry bulb sits above
-    the dew point; solved by bisection on humidity_ratio_from_rh(t, rh) − w.
-    """
-    if not (0.0 < rh <= 1.0):
-        raise ValueError("off-coil RH must be in (0, 1]")
-    if w < 0.0:
-        raise ValueError("humidity ratio must be >= 0")
-    t_dp = psy.dew_point(w, p)
-    if rh >= 1.0 - 1e-12:
-        return t_dp
-    # Upper bound: walk up until the RH isotherm carries at least w.
-    lo, hi = t_dp, t_dp + 1.0
-    while hi < psy.T_MAX and psy.humidity_ratio_from_rh(hi, rh, p) < w:
-        hi += max(hi - t_dp, 1.0)
-    if psy.humidity_ratio_from_rh(hi, rh, p) < w:
-        raise ValueError(
-            f"cannot reach humidity ratio {w * 1000:.2f} g/kg at "
-            f"{rh * 100:.0f}% RH within the valid temperature range"
-        )
-    for _ in range(80):
-        mid = 0.5 * (lo + hi)
-        if psy.humidity_ratio_from_rh(mid, rh, p) < w:
-            lo = mid
-        else:
-            hi = mid
-        if hi - lo < 1e-9:
-            break
-    return 0.5 * (lo + hi)
 
 
 def _ahu_totals(
@@ -95,19 +65,21 @@ def design_ahu_to_supply(
     outdoor: PsychroState,
     return_air: PsychroState | None = None,
     oa_fraction: float = 1.0,
-    coil_rh_off: float = 0.90,
+    t_adp: float | None = None,
     fan_position: str = "none",
     fan_power_kw: float | None = None,
     fan_pickup_dt: float = 0.0,
 ) -> AhuResult:
     """Design the AHU stages needed to deliver a required supply condition.
 
-    Mixes OA/RA to the on-coil condition A, then derives stages from the moisture
+    Mixes fresh air and return air to the on-coil condition A (``oa_fraction``
+    in ``[0, 1]``; ``0`` is all return air), then derives stages from the moisture
     balance between on-coil and supply:
 
-    - dehumidification (``W_sup < W_on``): off-coil C holds the supply moisture at
-      ``coil_rh_off`` (default 0.90, matching ``simulate_ahu``); reheat C→D to the
-      supply dry bulb. ``coil_rh_off=1.0`` is the idealised CF = 1 case;
+    - dehumidification (``W_sup < W_on``): apparatus dew point ``t_adp`` on the
+      saturation curve and the bypass-factor chord through air-on; bypass factor
+      is chosen so off-coil moisture equals ``W_sup``, then reheat to the supply
+      dry bulb when needed. ``t_adp`` must be below the on-coil dew point;
     - humidification (``W_sup > W_on``): heating coil then isothermal steam to the
       supply moisture (winter path);
     - equal moisture: purely sensible cooling or heating.
@@ -119,36 +91,41 @@ def design_ahu_to_supply(
     """
     if m_da <= 0:
         raise ValueError("mass flow must be positive")
-    if not (0.0 < oa_fraction <= 1.0):
-        raise ValueError("outdoor air fraction must be in (0, 1]")
+    if not (0.0 <= oa_fraction <= 1.0):
+        raise ValueError("outdoor air fraction must be in [0, 1]")
     if oa_fraction < 1.0 and return_air is None:
-        raise ValueError("return air state required when oa_fraction < 1")
-    if not (0.0 < coil_rh_off <= 1.0):
-        raise ValueError("off-coil RH must be in (0, 1]")
+        raise ValueError("return air state required when outdoor air fraction is below 1")
     if fan_position not in ("none", "blow", "draw"):
         raise ValueError("fan_position must be 'none', 'blow' or 'draw'")
 
-    p = outdoor.p
     stages: list[AhuStage] = []
     warnings: list[str] = []
     frost = False
 
     # 1. Intake / mixing -> on-coil condition A.
-    stages.append(AhuStage("OA", "Outdoor air", outdoor))
-    air_on = outdoor
-    if oa_fraction < 1.0:
+    # oa_fraction == 0 is all return air (no outdoor stage).
+    if oa_fraction <= 0.0:
         assert return_air is not None
         stages.append(AhuStage("RA", "Return air", return_air))
-        mx = mix(outdoor, m_da * oa_fraction, return_air, m_da * (1 - oa_fraction))
-        note = ""
-        if mx.fog:
-            note = "Mixed condition is in the fog region — settled to saturation."
-            warnings.append(note)
-        stages.append(
-            AhuStage("MA", "Mixed air (on-coil)", mx.state,
-                     moisture=-mx.condensate, note=note)
-        )
-        air_on = mx.state
+        air_on = return_air
+    else:
+        stages.append(AhuStage("OA", "Fresh air", outdoor))
+        air_on = outdoor
+        if oa_fraction < 1.0:
+            assert return_air is not None
+            stages.append(AhuStage("RA", "Return air", return_air))
+            mx = mix(outdoor, m_da * oa_fraction, return_air, m_da * (1 - oa_fraction))
+            note = ""
+            if mx.fog:
+                note = "Mixed condition is in the fog region — settled to saturation."
+                warnings.append(note)
+            stages.append(
+                AhuStage("MA", "Mixed air", mx.state,
+                         moisture=-mx.condensate, note=note)
+            )
+            air_on = mx.state
+
+    p = air_on.p
 
     # Fan temperature rise (constant moisture).
     def _fan_dt(s: PsychroState) -> float:
@@ -182,30 +159,46 @@ def design_ahu_to_supply(
         if fan_position == "draw" and dt_draw > 0.0:
             r = sensible(pre_fan, m_da, pre_fan.t_db + dt_draw)
             stages.append(
-                AhuStage("SUP", "Supply (after draw-through fan)", r.state,
+                AhuStage("SUP", "Off AHU (after draw-through fan)", r.state,
                          q_sensible=r.q_sensible, q_total=r.q_total,
                          note=f"Fan gain +{dt_draw:.2f} K")
             )
             return r.state
-        stages.append(AhuStage("SUP", "Supply", pre_fan))
+        stages.append(AhuStage("SUP", "Off AHU", pre_fan))
         return pre_fan
 
     if abs(W_sup - W_on) <= _W_TOL:
         # ── Purely sensible duty (no net moisture change) ───────────────────────
         if reheat_target < air_on.t_db - _T_TOL:
-            # Sensible (dry) cooling. sensible() guards against supersaturation.
-            c = sensible(air_on, m_da, reheat_target)
-            note = ""
-            if reheat_target <= 0.0:
-                frost = True
-                note = (f"Frost risk: off-coil temperature {reheat_target:.1f} degC is "
-                        "at or below freezing.")
-                warnings.append(note)
-            stages.append(
-                AhuStage("CC", "Cooling coil (sensible)", c.state,
-                         q_sensible=c.q_sensible, q_total=c.q_total, note=note)
-            )
-            final = _finish(c.state)
+            # Prefer the dry ADP coil when ADP is at/above the dew point; otherwise
+            # a plain sensible process (constant W) matches the required leaving T.
+            if t_adp is not None and t_adp >= air_on.t_dp - 1e-9:
+                c = cooling_coil(air_on, m_da, t_adp=t_adp, t_off=reheat_target)
+                frost = frost or c.frost_risk
+                note = (
+                    f"Dry coil — ADP {t_adp:.1f} °C is at or above the on-coil "
+                    f"dew point {air_on.t_dp:.1f} °C (sensible only)."
+                )
+                stages.append(
+                    AhuStage("CC", "Cooling coil (sensible)", c.state,
+                             q_sensible=c.q_sensible, q_total=c.q_total, note=note)
+                )
+                final = _finish(c.state)
+            else:
+                c = sensible(air_on, m_da, reheat_target)
+                note = ""
+                if reheat_target <= 0.0:
+                    frost = True
+                    note = (
+                        f"Frost risk: off-coil temperature {reheat_target:.1f} degC is "
+                        "at or below freezing."
+                    )
+                    warnings.append(note)
+                stages.append(
+                    AhuStage("CC", "Cooling coil (sensible)", c.state,
+                             q_sensible=c.q_sensible, q_total=c.q_total, note=note)
+                )
+                final = _finish(c.state)
         elif reheat_target > air_on.t_db + _T_TOL:
             r = sensible(air_on, m_da, reheat_target)
             stages.append(
@@ -253,51 +246,66 @@ def design_ahu_to_supply(
                 pre_fan = hh.state_x
             final = _finish(pre_fan)
     else:
-        # ── Dehumidification: off-coil at supply moisture + target RH ───────────
-        t_off = _t_db_at_w_rh(W_sup, coil_rh_off, p)
-        off = psy.state(t_off, w=W_sup, p=p)
-
-        # Saturation-onset waypoint B (constant-w_on sensible cooling to the on-coil
-        # dew point) — a zero-duty chart point when there is real sensible pre-cool.
-        t_b = air_on.t_dp
-        if air_on.t_db - t_b > _T_TOL:
-            b = psy.state(t_b, w=W_on, p=p)
-            stages.append(AhuStage("SAT", "Saturation onset", b,
-                                   note="Waypoint — cooling continues to the coil."))
-
-        q_total = m_da * (off.h - air_on.h)
-        q_sensible = m_da * (
-            psy.enthalpy(t_off, W_on) - psy.enthalpy(air_on.t_db, W_on)
-        )
-        q_latent = q_total - q_sensible
-        condensate = m_da * (W_on - W_sup)
+        # ── Dehumidification: ADP / bypass-factor chord to supply moisture ─────
+        if t_adp is None:
+            raise ValueError(
+                "apparatus dew point is required to dehumidify — enter chilled-water "
+                "flow or evaporating temperature (plus approach), or ADP directly"
+            )
+        if t_adp >= air_on.t_dp - 1e-9:
+            raise ValueError(
+                f"Apparatus dew point {t_adp:.1f} °C is at or above the on-coil "
+                f"dew point {air_on.t_dp:.1f} °C — the coil is dry (sensible only) "
+                "and cannot remove moisture. Lower the chilled-water or evaporating "
+                "temperature (or the approach) so ADP sits below the dew point."
+            )
+        w_adp = psy.saturation_humidity_ratio(t_adp, p)
+        if W_sup < w_adp - 1e-9:
+            raise ValueError(
+                f"Off-AHU moisture {W_sup * 1000:.2f} g/kg is below the ADP "
+                f"saturation moisture {w_adp * 1000:.2f} g/kg at {t_adp:.1f} °C. "
+                "Lower the apparatus dew point to dehumidify further."
+            )
+        denom = W_on - w_adp
+        if abs(denom) < 1e-12:
+            raise ValueError("on-coil moisture equals ADP saturation — no dehumidification margin")
+        # W_off = W_ADP + BF·(W_on − W_ADP) → BF for the required supply moisture.
+        bf = (W_sup - w_adp) / denom
+        if not (0.0 <= bf < 1.0):
+            raise ValueError(
+                f"bypass factor {bf:.3f} is outside [0, 1) for this ADP and "
+                "off-AHU moisture — check the apparatus dew point"
+            )
+        c = cooling_coil(air_on, m_da, t_adp=t_adp, bypass_factor=bf)
+        frost = frost or c.frost_risk
         note = (
-            f"Off-coil modelled at {coil_rh_off * 100:.0f}% RH "
-            f"(supply moisture {W_sup * 1000:.2f} g/kg)."
+            f"Wet coil on ADP {t_adp:.1f} °C, bypass factor {c.bypass_factor:.2f} "
+            f"(leaving RH {c.state.rh * 100:.0f}%). Process is the straight "
+            "ON→ADP chord — off-coil sits above saturation because of bypass."
         )
-        if t_off <= 0.0:
-            frost = True
+        if c.frost_risk:
             frost_note = (
-                f"Frost risk: off-coil temperature {t_off:.1f} degC is at "
-                "or below freezing — consider glycol, DX defrost or face-and-bypass."
+                f"Frost risk: apparatus dew point {t_adp:.1f} °C is at or below "
+                "freezing — consider glycol, DX defrost or face-and-bypass."
             )
             note = f"{note} {frost_note}"
             warnings.append(frost_note)
         stages.append(
-            AhuStage("CC", "Cooling coil", off,
-                     q_sensible=q_sensible, q_latent=q_latent, q_total=q_total,
-                     moisture=-condensate, note=note)
+            AhuStage("CC", "Cooling coil", c.state,
+                     q_sensible=c.q_sensible, q_latent=c.q_latent, q_total=c.q_total,
+                     moisture=-c.condensate, note=note)
         )
 
+        t_off = c.state.t_db
         if reheat_target > t_off + _T_TOL:
-            r = sensible(off, m_da, reheat_target)
+            r = sensible(c.state, m_da, reheat_target)
             stages.append(
                 AhuStage("HC", "Heating coil (reheat)", r.state,
                          q_sensible=r.q_sensible, q_total=r.q_total)
             )
             pre_fan = r.state
         else:
-            pre_fan = off
+            pre_fan = c.state
             if reheat_target < t_off - _T_TOL:
                 warnings.append(
                     "Draw-through fan gain exceeds the reheat requirement: the air "
@@ -315,3 +323,41 @@ def design_ahu_to_supply(
         )
 
     return _ahu_totals(stages, m_da, frost, warnings)
+
+
+def supply_process_title(result: AhuResult) -> str:
+    """Name the treatment path ``design_ahu_to_supply`` selected.
+
+    Fan gain is a stage duty, not part of this name. The title follows the
+    moisture balance: dehumidify (and reheat when the off-coil is colder than
+    the supply), sensible cooling, heating, humidification, or a combination.
+    """
+    cool_latent = False
+    cool_sensible = False
+    heat = False
+    humidify = False
+    for stage in result.stages:
+        if stage.label == "CC":
+            if stage.q_latent < -1e-6:
+                cool_latent = True
+            elif stage.q_total < -1e-6:
+                cool_sensible = True
+        elif stage.label == "HC" and stage.q_total > 1e-6:
+            heat = True
+        elif stage.label == "HUM" and (stage.moisture > 1e-9 or stage.q_total > 1e-6):
+            humidify = True
+    if cool_latent and heat:
+        return "Dehumidification and reheat"
+    if cool_latent:
+        return "Cooling and dehumidification"
+    if cool_sensible and humidify:
+        return "Sensible cooling and humidification"
+    if cool_sensible:
+        return "Sensible cooling only"
+    if heat and humidify:
+        return "Heating and humidification"
+    if heat:
+        return "Heating"
+    if humidify:
+        return "Humidification"
+    return "No coil duty — mixed air already meets the off-AHU condition"

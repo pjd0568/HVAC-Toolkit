@@ -63,15 +63,35 @@ def render_chart(payload: dict, *, width_in: float = 7.2, height_in: float = 4.4
                             xytext=(3, 0), textcoords="offset points", va="center")
                 break
 
-    # Process lines between points (drawn under the points/markers).
-    for i, j in segments:
-        p1, p2 = points[i], points[j]
-        ax.plot([p1["t"], p2["t"]], [p1["w"], p2["w"]], color=_PROCESS,
-                 linewidth=1.8, zorder=4)
+    # Process lines — chain consecutive segments into polylines (wet-coil curves).
+    used = [False] * len(segments)
+    for s, _seg in enumerate(segments):
+        if used[s]:
+            continue
+        chain = [segments[s][0], segments[s][1]]
+        used[s] = True
+        grew = True
+        while grew:
+            grew = False
+            for k, (a, b) in enumerate(segments):
+                if used[k]:
+                    continue
+                if a == chain[-1]:
+                    chain.append(b)
+                    used[k] = True
+                    grew = True
+                elif b == chain[0]:
+                    chain.insert(0, a)
+                    used[k] = True
+                    grew = True
+        xs = [points[i]["t"] for i in chain]
+        ys = [points[i]["w"] for i in chain]
+        ax.plot(xs, ys, color=_PROCESS, linewidth=1.8, zorder=4, solid_capstyle="round")
 
-    # Dashed red guide lines to both axes, one pair per point, each labelled with
-    # the pre-formatted, unit-aware value from the payload (SI or IP alike).
+    # Guides and markers — labelled points only (curve waypoints have empty labels).
     for pt in points:
+        if not pt.get("label"):
+            continue
         t, w = pt["t"], pt["w"]
         ax.plot([t_min, t], [w, w], color=_GUIDE, linewidth=0.9, linestyle="--", zorder=2)
         ax.plot([t, t], [0.0, w], color=_GUIDE, linewidth=0.9, linestyle="--", zorder=2)
@@ -80,8 +100,9 @@ def render_chart(payload: dict, *, width_in: float = 7.2, height_in: float = 4.4
         ax.annotate(pt["t_label"], (t, 0.0), fontsize=6.5, color=_GUIDE,
                     xytext=(3, 3), textcoords="offset points", ha="left", va="bottom")
 
-    # Points on top, labelled with the same tags used in the results table.
     for pt in points:
+        if not pt.get("label"):
+            continue
         ax.scatter([pt["t"]], [pt["w"]], color=_POINT, s=30, zorder=5,
                    edgecolors="white", linewidths=0.7)
         ax.annotate(pt["label"], (pt["t"], pt["w"]), fontsize=8, fontweight="bold",

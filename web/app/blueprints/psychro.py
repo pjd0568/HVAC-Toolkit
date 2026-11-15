@@ -7,12 +7,14 @@ for the actual calculation, so the numbers in the PDF can never drift from the
 numbers on screen -- one calculation, two consumers. See specs/SPEC-pdf-report.md.
 """
 
+from dataclasses import dataclass
+
 from flask import Blueprint, Response, current_app, jsonify, redirect, render_template, request, session, url_for
 from flask_login import login_required
 
 from hvac_engine import processes as proc
 from hvac_engine import psychrometrics as psy
-from hvac_engine.ahu_design import design_ahu_to_supply
+from hvac_engine.ahu_design import design_ahu_to_supply, supply_process_title
 
 from app.access_gate import require_module, require_suite_access
 from app.chart import chart_payload
@@ -463,22 +465,76 @@ def mixed_air_chart_png():
 
 _COOLING_COIL_DEFAULTS = {
     "on_t": "28", "on_prop": "rh", "on_val": "50", "flow": "5000",
+    "coil_kind": "chw", "fluid_t": "6", "approach": "3",
     "adp_t": "9", "off_t": "12",
     "altitude": "0",
 }
 _COOLING_COIL_FIELD_UNITS = {
-    "on_t": "temperature", "adp_t": "temperature", "off_t": "temperature",
+    "on_t": "temperature", "fluid_t": "temperature",
+    "adp_t": "temperature", "off_t": "temperature",
     "flow": "vol_flow", "altitude": "altitude",
 }
+# ``approach`` is a temperature *difference* (K under SI, °F under IP) — not an
+# absolute temperature — so it is kept out of _COOLING_COIL_FIELD_UNITS.
+
+
+def _approach_to_si(form, U) -> float:
+    """Coil approach as a positive kelvin difference."""
+    raw = _f(form, "approach")
+    if raw < 0:
+        raise ValueError("coil approach cannot be negative")
+    return raw if U.system == "SI" else raw * (5.0 / 9.0)
+
+
+def _resolve_coil_adp(form, U) -> float:
+    """ADP from the form: fluid + approach, or the ADP field when entered direct."""
+    kind = (form.get("coil_kind") or "adp").strip().lower()
+    if kind in ("chw", "dx"):
+        t_fluid = U.to_si("temperature", _f(form, "fluid_t"))
+        return proc.apparatus_dew_point_from_fluid(t_fluid, _approach_to_si(form, U))
+    return U.to_si("temperature", _f(form, "adp_t"))
 
 
 def _run_cooling_coil(form, U):
     pressure = _resolve_pressure(form, U)
     on = _state_from_form(form, "on", pressure, U)
-    t_adp = U.to_si("temperature", _f(form, "adp_t"))
+    t_adp = _resolve_coil_adp(form, U)
+    # Keep the displayed ADP in sync with the derived value for reports/forms.
+    form["adp_t"] = U.fmt("temperature", t_adp)
     t_off = U.to_si("temperature", _f(form, "off_t"))
     m_da = _m_da(U.to_si("vol_flow", _f(form, "flow")), on)
     result = proc.cooling_coil(on, m_da, t_adp=t_adp, t_off=t_off)
+    points, segments = _coil_chart_points(on, result, pressure)
+    return pressure, on, m_da, result, points, segments
+
+
+def _coil_chart_points(on, result, pressure):
+    """Build chart points/segments for a cooling-coil result.
+
+    Wet coil: curved path ON→OFF (mostly sensible first, then steeper latent
+    near saturation), with ADP marked separately. Dry coil: straight constant-W
+    ON→OFF.
+    Intermediate curve waypoints use an empty label so the chart skips
+    guides/markers for them.
+    """
+    if result.wet_coil and result.t_adp is not None:
+        curve = proc.wet_coil_chart_curve(on, result.state, result.t_adp)
+        points = []
+        for i, (t, w) in enumerate(curve):
+            if i == 0:
+                label = "ON"
+            elif i == len(curve) - 1:
+                label = "OFF"
+            else:
+                label = ""
+            points.append({"label": label, "t": t, "w": w})
+        segments = [(i, i + 1) for i in range(len(points) - 1)]
+        points.append({
+            "label": "ADP", "t": result.t_adp,
+            "w": psy.saturation_humidity_ratio(result.t_adp, pressure),
+        })
+        return points, segments
+
     points = [
         {"label": "ON", "t": on.t_db, "w": on.w},
         {"label": "OFF", "t": result.state.t_db, "w": result.state.w},
@@ -489,9 +545,7 @@ def _run_cooling_coil(form, U):
             "label": "ADP", "t": result.t_adp,
             "w": psy.saturation_humidity_ratio(result.t_adp, pressure),
         })
-        # Full chord ON→ADP with OFF sitting on the line.
-        segments = [(0, 2)]
-    return pressure, on, m_da, result, points, segments
+    return points, segments
 
 
 @bp.route("/cooling-coil", methods=["GET", "POST"])
@@ -518,6 +572,9 @@ def cooling_coil_report():
         _site_condition_rows(form, pressure, U)
         + _state_input_rows("on", "On-coil", form, sp, U)
         + [("On-coil Flow", form['flow'], U.sym('vol_flow'))]
+        + [("Coil fluid", form.get("coil_kind", "chw"), "")]
+        + [("Fluid temperature", form.get("fluid_t", ""), U.sym("temperature"))]
+        + [("Coil approach", form.get("approach", ""), "K" if U.system == "SI" else "°F")]
         + [("Apparatus Dew Point", form['adp_t'], U.sym('temperature'))]
         + [("Off-coil Dry Bulb", form['off_t'], U.sym('temperature'))]
     )
@@ -525,6 +582,7 @@ def cooling_coil_report():
         ("On-coil Dry Bulb", U.fmt('temperature', on.t_db), U.sym('temperature')),
         ("Off-coil Dry Bulb", U.fmt('temperature', result.state.t_db), U.sym('temperature')),
         ("Off-coil RH", f"{result.state.rh * 100:.1f}", "%"),
+        ("Coil regime", "Wet coil (dehumidifying)" if result.wet_coil else "Dry coil (sensible only)", ""),
         ("Total Cooling", U.fmt('power', -result.q_total), U.sym('power')),
         ("Sensible / Latent",
          f"{U.fmt('power', -result.q_sensible)} / {U.fmt('power', -result.q_latent)}", U.sym('power')),
@@ -561,86 +619,121 @@ def cooling_coil_chart_png():
 
 
 # -- AHU duty (supply-driven design) ---------------------------------------------------
+# Approved Document L Volume 2 (England, 2021, Table 6.9), new buildings, W/(l/s).
+# The number is a maximum. The user can type a different SFP.
 
-_AHU_SEASON_DEFAULTS = {
-    "summer": {
-        "oa_t": "28", "oa_prop": "rh", "oa_val": "50",
-        "ra_t": "22", "ra_prop": "rh", "ra_val": "50",
-        "sup_t": "14", "sup_prop": "rh", "sup_val": "90",
-    },
-    "winter": {
-        "oa_t": "-5", "oa_prop": "rh", "oa_val": "90",
-        "ra_t": "21", "ra_prop": "rh", "ra_val": "50",
-        "sup_t": "21", "sup_prop": "rh", "sup_val": "40",
-    },
-}
+SFP_PRESETS = (
+    ("2.0", "Central H&C — 2.0"),
+    ("1.9", "Central heat only — 1.9"),
+    ("1.5", "Other central — 1.5"),
+    ("1.1", "Zonal supply — 1.1"),
+    ("0.5", "Zonal extract — 0.5"),
+)
 
 _AHU_DEFAULTS = {
-    "season": "summer",
-    "flow": "5000",
     "oa_flow": "1500",
+    "ra_flow": "3500",
     "oa_t": "28", "oa_prop": "rh", "oa_val": "50",
     "ra_t": "22", "ra_prop": "rh", "ra_val": "50",
-    "sup_t": "14", "sup_prop": "rh", "sup_val": "90",
-    "coil_rh_off": "90",
-    "fan_pos": "none", "fan_sfp": "2.0", "fan_kw": "",
+    # 18 °C / ~58% RH sits on the ADP 9 °C chord after a typical bypass (~0.15).
+    "sup_t": "18", "sup_prop": "rh", "sup_val": "58",
+    "coil_kind": "chw", "fluid_t": "6", "approach": "3", "adp_t": "9",
+    "fan_pos": "draw", "fan_sfp": "2.0", "fan_kw": "",
     "altitude": "0",
 }
 _AHU_FIELD_UNITS = {
-    "flow": "vol_flow", "oa_flow": "vol_flow",
+    "oa_flow": "vol_flow", "ra_flow": "vol_flow",
     "oa_t": "temperature",
-    "ra_t": "temperature", "sup_t": "temperature", "altitude": "altitude",
+    "ra_t": "temperature", "sup_t": "temperature",
+    "fluid_t": "temperature", "adp_t": "temperature",
+    "altitude": "altitude",
 }
 
 
-def _ahu_season_defaults_display(U):
-    """Season OA/RA/SUP defaults rendered in the active unit system (for JS)."""
-    out = {}
-    for season, vals in _AHU_SEASON_DEFAULTS.items():
-        display = dict(vals)
-        for key in ("oa_t", "ra_t", "sup_t"):
-            display[key] = U.fmt("temperature", float(vals[key]))
-        out[season] = display
-    return out
+def _fan_preset_key(raw: str) -> str:
+    """Match an SFP entry to a Part L preset, or ``custom`` when it was edited."""
+    try:
+        val = float(str(raw).strip())
+    except (TypeError, ValueError):
+        return "custom"
+    for key, _label in SFP_PRESETS:
+        if abs(float(key) - val) < 1e-6:
+            return key
+    return "custom"
 
 
-def _run_ahu(form, U):
+def _fan_gain_kw(result) -> float:
+    """Heat added by the supply fan (blow-through FAN stage, or draw-through SUP)."""
+    total = 0.0
+    for stage in result.stages:
+        if stage.label == "FAN":
+            total += stage.q_total
+        elif stage.label == "SUP" and "fan" in stage.name.lower():
+            total += stage.q_total
+    return total
+
+
+@dataclass(frozen=True)
+class AhuView:
+    pressure: float
+    m_da: float
+    result: object
+    pts: list
+    segs: list
+    oa_frac: float
+    v_fa_m3h: float
+    v_ra_m3h: float
+    fan_power_kw: float
+    fan_from_sfp: bool
+    process: str
+
+
+def _run_ahu(form, U) -> AhuView:
     pressure = _resolve_pressure(form, U)
+    v_fa = U.to_si("vol_flow", _f(form, "oa_flow"))
+    v_ra = U.to_si("vol_flow", _f(form, "ra_flow"))
+    if v_fa < 0 or v_ra < 0:
+        raise ValueError("airflow cannot be negative")
+    if v_fa <= 0 and v_ra <= 0:
+        raise ValueError("Enter a fresh-air flow, a return flow, or both.")
+
+    oa = _state_from_form(form, "oa", pressure, U) if v_fa > 0 else None
+    ra = _state_from_form(form, "ra", pressure, U) if v_ra > 0 else None
     supply = _state_from_form(form, "sup", pressure, U)
-    oa = _state_from_form(form, "oa", pressure, U)
 
-    # Supply volumetric flow (converted to SI) at the known supply condition.
-    flow_m3h = U.to_si("vol_flow", _f(form, "flow"))
-    m_da = _m_da(flow_m3h, supply)
-
-    # Outdoor air as volume → dry-air mass fraction of supply.
-    oa_flow_m3h = U.to_si("vol_flow", _f(form, "oa_flow"))
-    m_oa = _m_da(oa_flow_m3h, oa)
-    if m_oa <= 0:
-        raise ValueError("outdoor air flow must be positive")
-    if m_oa > m_da * (1.0 + 1e-9):
-        raise ValueError(
-            "Outdoor air mass flow exceeds the supply mass flow. Reduce the outdoor "
-            "air volume, or raise the supply flow."
-        )
-    oa_frac = m_oa / m_da
+    m_oa = _m_da(v_fa, oa) if oa is not None else 0.0
+    m_ra = _m_da(v_ra, ra) if ra is not None else 0.0
+    m_da = m_oa + m_ra
+    if m_da <= 0:
+        raise ValueError("airflow must be positive")
+    oa_frac = 0.0 if m_oa <= 0.0 else m_oa / m_da
     if oa_frac >= 1.0 - 1e-12:
         oa_frac = 1.0
         ra = None
-    else:
-        ra = _state_from_form(form, "ra", pressure, U)
+        m_da = m_oa
+
+    outdoor = oa if oa is not None else ra
+    vol_ls = (max(v_fa, 0.0) + max(v_ra, 0.0)) / 3.6
+    sfp = _f(form, "fan_sfp", 0.0)
+    if sfp < 0:
+        raise ValueError("specific fan power cannot be negative")
+    estimated_kw = sfp * vol_ls / 1000.0
+    entered = (form.get("fan_kw") or "").strip()
+    fan_from_sfp = not bool(entered)
+    fan_power_kw = _f(form, "fan_kw") if entered else estimated_kw
+    if fan_power_kw < 0:
+        raise ValueError("fan power cannot be negative")
 
     kwargs = dict(
-        m_da=m_da, supply=supply, outdoor=oa,
+        m_da=m_da, supply=supply, outdoor=outdoor,
         return_air=ra, oa_fraction=oa_frac,
-        coil_rh_off=_f(form, "coil_rh_off") / 100.0,
+        t_adp=_resolve_coil_adp(form, U),
     )
-    if form["fan_pos"] in ("blow", "draw"):
-        kwargs["fan_position"] = form["fan_pos"]
-        if form["fan_kw"].strip():
-            kwargs["fan_power_kw"] = _f(form, "fan_kw")
-        elif form["fan_sfp"].strip():
-            kwargs["fan_power_kw"] = _f(form, "fan_sfp") * (flow_m3h / 3.6) / 1000.0
+    form["adp_t"] = U.fmt("temperature", kwargs["t_adp"])
+    fan_pos = form.get("fan_pos") or "draw"
+    if fan_pos in ("blow", "draw") and fan_power_kw > 0:
+        kwargs["fan_position"] = fan_pos
+        kwargs["fan_power_kw"] = fan_power_kw
 
     result = design_ahu_to_supply(**kwargs)
 
@@ -650,17 +743,63 @@ def _run_ahu(form, U):
     ]
     labels = [s.label for s in result.stages]
     segs = []
+    mixing = "MA" in labels
     chain_start = 0
-    if "MA" in labels:
+    if mixing:
         i_ma = labels.index("MA")
         segs += [(labels.index("OA"), i_ma), (labels.index("RA"), i_ma)]
         chain_start = i_ma
     for i in range(chain_start, len(labels) - 1):
-        if labels[i] == "RA" or labels[i + 1] == "RA":
+        if mixing and (labels[i] == "RA" or labels[i + 1] == "RA"):
             continue
         segs.append((i, i + 1))
 
-    return pressure, m_da, result, pts, segs, oa_frac
+    # Wet-coil process: replace the straight on-coil→CC segment with a curved
+    # path (small latent first, then near saturation), and mark ADP.
+    if result.moisture_removed > 0 and "CC" in labels:
+        for key in ("MA", "FAN", "OA", "RA"):
+            if key in labels:
+                i_on = labels.index(key)
+                break
+        else:
+            i_on = None
+        i_cc = labels.index("CC")
+        if i_on is not None:
+            t_adp = kwargs["t_adp"]
+            on_state = result.stages[i_on].state
+            off_state = result.stages[i_cc].state
+            # Drop the direct on→CC segment; rebuild as a curve.
+            segs = [s for s in segs if not (s[0] == i_on and s[1] == i_cc)]
+            curve = proc.wet_coil_chart_curve(on_state, off_state, t_adp)
+            # First curve point is on-coil (already in pts); append intermediates
+            # and connect through to CC.
+            prev = i_on
+            for t, w in curve[1:-1]:
+                pts.append({"label": "", "t": t, "w": w})
+                nxt = len(pts) - 1
+                segs.append((prev, nxt))
+                prev = nxt
+            segs.append((prev, i_cc))
+            pts.append({
+                "label": "ADP",
+                "t": t_adp,
+                "w": psy.saturation_humidity_ratio(t_adp, pressure),
+            })
+
+    applied = fan_pos in ("blow", "draw") and fan_power_kw > 0
+    return AhuView(
+        pressure=pressure,
+        m_da=result.m_da,
+        result=result,
+        pts=pts,
+        segs=segs,
+        oa_frac=oa_frac,
+        v_fa_m3h=max(v_fa, 0.0),
+        v_ra_m3h=max(v_ra, 0.0),
+        fan_power_kw=_fan_gain_kw(result) if applied else 0.0,
+        fan_from_sfp=fan_from_sfp and applied,
+        process=supply_process_title(result),
+    )
 
 
 @bp.route("/ahu", methods=["GET", "POST"])
@@ -677,31 +816,34 @@ def ahu_report():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
     try:
-        pressure, m_da, result, pts, segs, oa_frac = _run_ahu(form, U)
+        ahu = _run_ahu(form, U)
     except ValueError as exc:
         return Response(f"Cannot generate report: {exc}", status=400)
 
+    pressure, result, pts, segs = ahu.pressure, ahu.result, ahu.pts, ahu.segs
     chart_png = _safe_chart_png(pts, segs, U.system)
     sp = _second_properties(U)
-    season_label = "Winter" if form.get("season") == "winter" else "Summer"
     input_rows = (
         _site_condition_rows(form, pressure, U)
-        + [("Season", season_label, "")]
-        + _state_input_rows("oa", "Outdoor Air", form, sp, U)
-        + [("Outdoor Air Flow", form['oa_flow'], U.sym('vol_flow'))]
-        + [("Outdoor Air Fraction (derived)", f"{oa_frac * 100:.1f}", "%")]
+        + _state_input_rows("oa", "Fresh Air", form, sp, U)
+        + [("Fresh Air Flow", form['oa_flow'], U.sym('vol_flow'))]
         + _state_input_rows("ra", "Return Air", form, sp, U)
-        + _state_input_rows("sup", "Supply", form, sp, U)
-        + [("Supply Flow", form['flow'], U.sym('vol_flow'))]
-        + [("Off-coil RH target", form['coil_rh_off'], "%")]
+        + [("Return Air Flow", form['ra_flow'], U.sym('vol_flow'))]
+        + [("System Volume (fresh + return)",
+            U.fmt('vol_flow', ahu.v_fa_m3h + ahu.v_ra_m3h), U.sym('vol_flow'))]
+        + [("Fresh Air Fraction (dry air)", f"{ahu.oa_frac * 100:.1f}", "%")]
+        + _state_input_rows("sup", "Off AHU", form, sp, U)
+        + [("Coil fluid", form.get("coil_kind", "chw"), "")]
+        + [("Fluid temperature", form.get("fluid_t", ""), U.sym("temperature"))]
+        + [("Coil approach", form.get("approach", ""), "K" if U.system == "SI" else "°F")]
+        + [("Apparatus dew point", form["adp_t"], U.sym("temperature"))]
         + [("Fan Position", form["fan_pos"], "")]
+        + [("Specific Fan Power", form['fan_sfp'], "W/(l/s)")]
     )
-    if form["fan_pos"] in ("blow", "draw"):
-        input_rows.append(("Fan SFP", form['fan_sfp'], "W per l/s"))
-        if form["fan_kw"].strip():
-            input_rows.append(("Fan Power", form['fan_kw'], "kW"))
+    if form["fan_kw"].strip():
+        input_rows.append(("Fan Power (overrides SFP)", form['fan_kw'], "kW"))
 
-    result_rows = []
+    result_rows = [("Process", ahu.process, "")]
     for s in result.stages:
         name = s.name + (f" ({s.note})" if s.note else "")
         result_rows.append((
@@ -714,12 +856,13 @@ def ahu_report():
         ))
     result_rows += [
         ("Total Cooling (Coil Duty)", U.fmt('power', -result.cooling_total), U.sym('power')),
-        ("Total Heating (Reheat + Preheat)", U.fmt('power', result.heating_total), U.sym('power')),
+        ("Total Heating (coils, humidifier and fan)", U.fmt('power', result.heating_total), U.sym('power')),
         ("Moisture Added / Removed",
          f"{U.fmt('moisture_rate', result.moisture_added)} / "
          f"{U.fmt('moisture_rate', result.moisture_removed)}", U.sym('moisture_rate')),
         ("Dry-air Mass Flow", U.fmt('mass_flow', result.m_da), U.sym('mass_flow')),
-        ("Outdoor Air Fraction (derived)", f"{oa_frac * 100:.1f}", "%"),
+        ("Fresh Air Fraction (dry air)", f"{ahu.oa_frac * 100:.1f}", "%"),
+        ("Fan Gain", U.fmt('power', ahu.fan_power_kw), U.sym('power')),
     ]
     for w in result.warnings:
         result_rows.append(("Warning", w, ""))
@@ -734,9 +877,10 @@ def ahu_chart_png():
     U = current_view()
     form = {k: request.form.get(k, d) for k, d in _AHU_DEFAULTS.items()}
     try:
-        pressure, m_da, result, pts, segs, oa_frac = _run_ahu(form, U)
+        ahu = _run_ahu(form, U)
     except ValueError as exc:
         return Response(f"Cannot generate chart: {exc}", status=400)
+    pts, segs = ahu.pts, ahu.segs
 
     png, err = _chart_png_or_500(pts, segs, U.system)
     if png is None:

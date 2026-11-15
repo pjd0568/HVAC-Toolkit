@@ -68,20 +68,31 @@
   /* saturation curve */
   path(CHART.sat, { stroke: "#1A4F7A", "stroke-width": 2 }, plot);
 
-  /* process segments */
-  for (const seg of CHART.segments) {
-    const a = CHART.points[seg[0]], b = CHART.points[seg[1]];
-    add("line", {
-      x1: x(a.t), y1: y(a.w), x2: x(b.t), y2: y(b.w),
-      stroke: "#00A99D", "stroke-width": 2.5, "stroke-linecap": "round",
-    }, plot);
+  /* process segments — chain into polylines so wet-coil curves read as one path */
+  const processStroke = { stroke: "#00A99D", "stroke-width": 2.5, "stroke-linecap": "round", "stroke-linejoin": "round" };
+  const usedSeg = new Array(CHART.segments.length).fill(false);
+  for (let s = 0; s < CHART.segments.length; s++) {
+    if (usedSeg[s]) continue;
+    const chain = [CHART.segments[s][0], CHART.segments[s][1]];
+    usedSeg[s] = true;
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (let k = 0; k < CHART.segments.length; k++) {
+        if (usedSeg[k]) continue;
+        const a = CHART.segments[k][0], b = CHART.segments[k][1];
+        if (a === chain[chain.length - 1]) { chain.push(b); usedSeg[k] = true; grew = true; }
+        else if (b === chain[0]) { chain.unshift(a); usedSeg[k] = true; grew = true; }
+      }
+    }
+    const pts = chain.map(i => [CHART.points[i].t, CHART.points[i].w]);
+    path(pts, processStroke, plot);
   }
 
-  /* Dashed red guide lines to both axes, one pair per point, each labelled with
-     the pre-formatted value from the payload -- mirrors the PDF chart
-     (app.reports.chart) so the on-screen and downloaded charts read the same. */
+  /* Dashed red guide lines — labelled points only (skip curve waypoints). */
   const GUIDE = "#C94444";
   CHART.points.forEach(p => {
+    if (!p.label) return;
     const px = x(p.t), py = y(p.w), yAxisBottom = y(0);
     add("line", {
       x1: M.left, y1: py, x2: px, y2: py,
@@ -101,8 +112,9 @@
     });
   });
 
-  /* state points + labels */
+  /* state points + labels — labelled points only */
   CHART.points.forEach(p => {
+    if (!p.label) return;
     add("circle", { cx: x(p.t), cy: y(p.w), r: 5, fill: "#12151A", stroke: "#fff", "stroke-width": 1.5 });
     text(p.label, {
       x: x(p.t) + 8, y: y(p.w) - 8, "font-size": 12, "font-weight": 700, fill: "#12151A",
