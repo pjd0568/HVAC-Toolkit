@@ -240,40 +240,45 @@ _CARBON_STEEL_MM: tuple[tuple[int, float, float], ...] = (
     (300, 309.7, 323.9),
 )
 
-# BS EN 1057 R250 Table X — OD and bore (mm).
+# BS EN 1057 R250 Table X — (DN, bore/ID mm, OD mm). Same column order as steel.
 _COPPER_MM: tuple[tuple[int, float, float], ...] = (
-    (15, 15.0, 13.6),
-    (18, 18.0, 16.6),
-    (22, 22.0, 20.4),
-    (28, 28.0, 26.4),
-    (35, 35.0, 33.6),
-    (42, 42.0, 40.4),
-    (54, 54.0, 52.0),
-    (76, 76.1, 73.7),
-    (108, 108.0, 105.2),
-    (133, 133.0, 130.0),
-    (159, 159.0, 155.8),
-    (219, 219.1, 215.4),
+    (15, 13.6, 15.0),
+    (18, 16.6, 18.0),
+    (22, 20.4, 22.0),
+    (28, 26.4, 28.0),
+    (35, 33.6, 35.0),
+    (42, 40.4, 42.0),
+    (54, 52.0, 54.0),
+    (76, 73.7, 76.1),
+    (108, 105.2, 108.0),
+    (133, 130.0, 133.0),
+    (159, 155.8, 159.0),
+    (219, 215.4, 219.1),
 )
 
-# DIN 11850 — OD with 1.5 mm wall (ID = OD − 3 mm).
+# DIN 11850 — (DN, ID mm, OD mm); 1.5 mm wall ⇒ ID = OD − 3 mm.
 _DAIRY_SS_MM: tuple[tuple[int, float, float], ...] = (
-    (25, 25.0, 22.0),
-    (32, 32.0, 29.0),
-    (40, 40.0, 37.0),
-    (50, 50.0, 47.0),
-    (65, 65.0, 62.0),
-    (80, 80.0, 77.0),
-    (100, 100.0, 97.0),
-    (125, 125.0, 122.0),
-    (150, 150.0, 147.0),
-    (200, 200.0, 197.0),
+    (25, 22.0, 25.0),
+    (32, 29.0, 32.0),
+    (40, 37.0, 40.0),
+    (50, 47.0, 50.0),
+    (65, 62.0, 65.0),
+    (80, 77.0, 80.0),
+    (100, 97.0, 100.0),
+    (125, 122.0, 125.0),
+    (150, 147.0, 150.0),
+    (200, 197.0, 200.0),
 )
 
 
 def _entries_from_mm(rows: tuple[tuple[int, float, float], ...], prefix: str) -> tuple[PipeCatalogEntry, ...]:
+    """Build catalogue entries from ``(dn, id_mm, od_mm)`` rows."""
     out: list[PipeCatalogEntry] = []
     for dn, id_mm, od_mm in rows:
+        if od_mm <= id_mm:
+            raise ValueError(
+                f"catalogue row DN{dn}: OD ({od_mm}) must exceed ID ({id_mm})"
+            )
         out.append(
             PipeCatalogEntry(
                 dn=dn,

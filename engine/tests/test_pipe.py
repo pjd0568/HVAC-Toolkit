@@ -150,6 +150,28 @@ def test_dairy_ss_uses_dn_label():
   assert entry.label.startswith("DN")
 
 
+@pytest.mark.parametrize("material", ["carbon_steel", "copper", "dairy_ss"])
+def test_catalogue_od_exceeds_id_and_mass_positive(material):
+  """Every material must store (ID, OD) — not swapped — so wall/mass stay positive."""
+  for entry in p.catalogue_for(material):
+    assert entry.od_m > entry.id_m
+    assert p.wall_thickness_m(entry) > 0
+    assert p.pipe_mass_per_m(material, entry) > 0
+
+
+def test_dairy_ss_dn40_dimensions():
+  entry = next(e for e in p.catalogue_for("dairy_ss") if e.dn == 40)
+  assert entry.id_m == pytest.approx(0.037)
+  assert entry.od_m == pytest.approx(0.040)
+  assert p.wall_thickness_m(entry) == pytest.approx(0.0015)
+
+
+def test_copper_dn15_dimensions():
+  entry = next(e for e in p.catalogue_for("copper") if e.dn == 15)
+  assert entry.id_m == pytest.approx(0.0136)
+  assert entry.od_m == pytest.approx(0.015)
+
+
 @pytest.mark.parametrize(
     "value,min_i,max_i,abs_max,expected",
     [
