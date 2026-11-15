@@ -1355,8 +1355,8 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   height: 40px;
   flex: 0 0 40px;
   object-fit: contain;
-  background: #f7f8fa;
-  border: 1px solid #eceff3;
+  background: #111;
+  border: 1px solid #222;
   border-radius: 4px;
   image-rendering: crisp-edges;
 }
@@ -1450,13 +1450,13 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
   align-items: center;
   justify-content: center;
   height: 72px;
-  background: #fff;
-  border: 1px solid #eee;
+  background: #111;
+  border: 1px solid #222;
   border-radius: 6px;
 }
 .leg-fitting-card-thumb img {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
   image-rendering: crisp-edges;
 }

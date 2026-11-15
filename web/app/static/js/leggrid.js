@@ -116,7 +116,7 @@
 
     function fittingIconUrl(fitting) {
       if (!fitting || !fitting.icon) return "";
-      return FITTING_ICON_BASE + encodeURIComponent(fitting.icon) + ".png";
+      return FITTING_ICON_BASE + encodeURIComponent(fitting.icon) + ".png?v=2";
     }
 
     function syncFittingTrigger(container) {
