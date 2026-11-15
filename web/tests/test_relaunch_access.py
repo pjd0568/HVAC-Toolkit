@@ -155,8 +155,15 @@ def test_tool_badges_follow_entitlement_tier(app):
     app.config["ACCESS_DEV_TIER"] = "pro"
     paid = client.get(path).get_data(as_text=True)
     assert "access-badge" not in paid
+    assert "tool-access-free" not in paid
+
+    # Suite-access shell drops the Free-row teal highlight (body class).
+    suite_page = client.get("/v2/psychrometrics/single-point").get_data(as_text=True)
+    assert "v2-suite-access" in suite_page
 
     app.config["ACCESS_DEV_TIER"] = None
+    free_page = client.get("/v2/psychrometrics/single-point").get_data(as_text=True)
+    assert "v2-suite-access" not in free_page
 
 
 def test_trial_expired_and_subscribed_gates(app):

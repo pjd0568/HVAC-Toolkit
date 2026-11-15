@@ -815,7 +815,7 @@ a:hover { color: var(--v2-green-ink); }
 }
 .v2-card-links a:hover::after { color: var(--v2-green-ink); }
 
-/* Free tools — slightly elevated in the list and edged in teal */
+/* Free tools — teal edge for visitors without suite access (catalogue cue). */
 .v2-card-links a.tool-access-free,
 .v2-picker-list a.tool-access-free {
   border-color: var(--v2-green);
@@ -825,6 +825,17 @@ a:hover { color: var(--v2-green-ink); }
 .v2-picker-list a.tool-access-free:hover {
   border-color: var(--v2-green-ink);
   background: #d8f3ef;
+}
+/* Pro / trial: every tool is available — do not highlight Free rows. */
+.v2-suite-access .v2-card-links a.tool-access-free,
+.v2-suite-access .v2-picker-list a.tool-access-free {
+  border-color: var(--v2-line, #d7dee7);
+  background: transparent;
+}
+.v2-suite-access .v2-card-links a.tool-access-free:hover,
+.v2-suite-access .v2-picker-list a.tool-access-free:hover {
+  background: var(--v2-green-soft);
+  border-color: #99e0d9;
 }
 
 .v2-greeting {
