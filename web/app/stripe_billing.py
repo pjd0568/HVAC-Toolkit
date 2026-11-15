@@ -1,24 +1,31 @@
 """Stripe Managed Payments helpers for the full-suite subscription.
 
 Creates / resolves the GBP product+price, Checkout Sessions with
-``managed_payments[enabled]``, and maps webhook events onto ``User`` rows.
+``managed_payments[enabled]``, optional 14-day Stripe trials (card collected
+up front), Customer Portal sessions, and maps webhook events onto ``User``
+rows.
 
 API keys and Price IDs come from env (see Config / .env.example). Product
 creation uses the Managed Payments–eligible digital tax code ``txcd_10103100``.
 Monthly is the default Checkout plan; annual uses ``STRIPE_PRICE_ID_ANNUAL``.
+
+Do **not** run product creation against a live Stripe account from application
+code paths except the explicit ``flask ensure-stripe-product`` CLI (dev only).
 """
 
 from __future__ import annotations
 
 import logging
+from datetime import date, datetime, timezone
 from typing import Any, Literal
 
 import stripe
 from flask import current_app
+from sqlalchemy.exc import IntegrityError
 
 from app.access import PRICE_MONTHLY_GBP, TRIAL_DAYS, price_unit_amount_pence
 from app.extensions import db
-from app.models import User
+from app.models import StripeWebhookEvent, User
 
 logger = logging.getLogger(__name__)
 
@@ -42,22 +49,32 @@ PRODUCT_DESCRIPTION = (
 )
 
 # Stripe subscription.status → our User.subscription_status
+# Policy:
+# - trialing / active → suite access (see access.py)
+# - past_due → keep suite access while Stripe retries (grace)
+# - unpaid / incomplete / canceled → no suite access
 _STATUS_MAP = {
     "active": "active",
-    "trialing": "active",  # Stripe trial still unlocks the suite
-    "past_due": "active",  # grace: keep access while Stripe retries
+    "trialing": "trialing",
+    "past_due": "past_due",
     "canceled": "canceled",
-    "unpaid": "canceled",
-    "incomplete": "trialing",
+    "unpaid": "unpaid",
+    "incomplete": "incomplete",
     "incomplete_expired": "canceled",
     "paused": "canceled",
 }
+
+_SUITE_STATUSES = frozenset({"active", "trialing", "past_due"})
 
 
 def map_stripe_subscription_status(stripe_status: str | None) -> str:
     """Map a Stripe ``subscription.status`` string to our ``User.subscription_status``."""
     status = (stripe_status or "").lower()
     return _STATUS_MAP.get(status, "canceled")
+
+
+def status_grants_suite_access(status: str | None) -> bool:
+    return (status or "").lower() in _SUITE_STATUSES
 
 
 class StripeNotConfiguredError(RuntimeError):
@@ -83,6 +100,16 @@ def _id_of(value: Any) -> str | None:
     if isinstance(value, str):
         return value
     return _field(value, "id")
+
+
+def _ts_to_dt(value: Any) -> datetime | None:
+    """Convert a Stripe unix timestamp to an aware UTC datetime."""
+    if value is None or value == "":
+        return None
+    try:
+        return datetime.fromtimestamp(int(value), tz=timezone.utc)
+    except (TypeError, ValueError, OSError, OverflowError):
+        return None
 
 
 def stripe_configured() -> bool:
@@ -146,10 +173,12 @@ def normalise_checkout_plan(raw: object) -> CheckoutPlan:
 
 
 def resolve_price_id(plan: CheckoutPlan = "monthly") -> str:
-    """Return the Stripe Price ID for ``plan``.
+    """Return the configured Stripe Price ID for ``plan``.
 
-    Monthly may create the product+price once when ``STRIPE_PRICE_ID`` is unset.
-    Annual requires ``STRIPE_PRICE_ID_ANNUAL`` (no auto-create).
+    Checkout never creates Products or Prices. Set ``STRIPE_PRICE_ID`` (monthly
+    £4.50) and optionally ``STRIPE_PRICE_ID_ANNUAL`` in the environment. The
+    ``flask ensure-stripe-product`` CLI remains a separate, explicit local-only
+    helper and is not called from Checkout.
     """
     if plan == "annual":
         configured = (current_app.config.get("STRIPE_PRICE_ID_ANNUAL") or "").strip()
@@ -162,15 +191,10 @@ def resolve_price_id(plan: CheckoutPlan = "monthly") -> str:
     configured = (current_app.config.get("STRIPE_PRICE_ID") or "").strip()
     if configured:
         return configured
-    created = create_subscription_product()
-    current_app.config["STRIPE_PRICE_ID"] = created["price_id"]
-    logger.warning(
-        "Created Stripe product %s / price %s — set STRIPE_PRICE_ID in env "
-        "so this is not recreated on the next boot.",
-        created["product_id"],
-        created["price_id"],
+    raise StripeNotConfiguredError(
+        "Monthly checkout is not configured (STRIPE_PRICE_ID). "
+        "Use the existing live £4.50/month Price ID — do not auto-create."
     )
-    return created["price_id"]
 
 
 def ensure_stripe_customer(user: User) -> str:
@@ -191,6 +215,38 @@ def ensure_stripe_customer(user: User) -> str:
     return user.stripe_customer_id
 
 
+def has_open_stripe_subscription(user: User) -> bool:
+    """True when the user already has a Stripe-backed suite subscription."""
+    status = (user.subscription_status or "").lower()
+    if status in _SUITE_STATUSES and user.stripe_subscription_id:
+        return True
+    if status == "active" and user.stripe_customer_id:
+        # Paid subscriber even if subscription id was cleared unexpectedly.
+        return True
+    return False
+
+
+def is_eligible_for_checkout_trial(user: User) -> bool:
+    """Whether Checkout may attach ``trial_period_days``.
+
+    Rules (server-side, not cookies):
+    - Active / open Stripe subscription → not a new trial (caller should block Checkout).
+    - ``trial_started_at`` already set (legacy app trial or prior Stripe trial) → paid only.
+    - Prior ``stripe_subscription_id`` → paid only (no second free trial).
+    - Brand-new eligible account → trial allowed.
+    """
+    if has_open_stripe_subscription(user):
+        return False
+    if user.trial_started_at is not None:
+        return False
+    if user.stripe_subscription_id:
+        return False
+    status = (user.subscription_status or "none").lower()
+    if status in ("active", "past_due"):
+        return False
+    return True
+
+
 def create_checkout_session(
     *,
     user: User,
@@ -198,11 +254,32 @@ def create_checkout_session(
     cancel_url: str,
     plan: CheckoutPlan = "monthly",
 ) -> str:
-    """Create a Managed Payments subscription Checkout Session; return its URL."""
+    """Create a Managed Payments subscription Checkout Session; return its URL.
+
+    Eligible users get a 14-day Stripe trial with a payment method collected at
+    Checkout (£0 due today). Others get a normal paid subscription on the same
+    recurring Price (no second free trial).
+    """
+    if has_open_stripe_subscription(user):
+        raise StripeNotConfiguredError(
+            "An active subscription or trial is already on this account."
+        )
+
     client = _client()
     chosen = normalise_checkout_plan(plan)
     price_id = resolve_price_id(chosen)
     customer_id = ensure_stripe_customer(user)
+    with_trial = is_eligible_for_checkout_trial(user) and chosen == "monthly"
+
+    subscription_data: dict[str, Any] = {
+        "metadata": {
+            "user_id": str(user.id),
+            "plan": chosen,
+            "trial": "1" if with_trial else "0",
+        },
+    }
+    if with_trial:
+        subscription_data["trial_period_days"] = TRIAL_DAYS
 
     params: dict[str, Any] = {
         "mode": "subscription",
@@ -211,10 +288,14 @@ def create_checkout_session(
         "cancel_url": cancel_url,
         "customer": customer_id,
         "client_reference_id": str(user.id),
-        "metadata": {"user_id": str(user.id), "plan": chosen},
-        "subscription_data": {
-            "metadata": {"user_id": str(user.id), "plan": chosen},
+        "metadata": {
+            "user_id": str(user.id),
+            "plan": chosen,
+            "trial": "1" if with_trial else "0",
         },
+        "subscription_data": subscription_data,
+        # Always collect a payment method so the first post-trial invoice can bill.
+        "payment_method_collection": "always",
     }
     if current_app.config.get("STRIPE_MANAGED_PAYMENTS", True):
         params["managed_payments"] = {"enabled": True}
@@ -224,6 +305,36 @@ def create_checkout_session(
     if not url:
         raise RuntimeError("Stripe Checkout Session missing url")
     return str(url)
+
+
+def create_billing_portal_session(*, user: User, return_url: str) -> str:
+    """Create a Stripe Customer Portal session for the logged-in user."""
+    if not user.stripe_customer_id:
+        raise StripeNotConfiguredError(
+            "No Stripe customer is linked to this account yet."
+        )
+    client = _client()
+    session = client.v1.billing_portal.sessions.create(
+        {
+            "customer": user.stripe_customer_id,
+            "return_url": return_url,
+        },
+        options=_request_options(),
+    )
+    url = _field(session, "url")
+    if not url:
+        raise RuntimeError("Stripe Customer Portal session missing url")
+    return str(url)
+
+
+def retrieve_checkout_session(session_id: str) -> Any:
+    """Fetch a Checkout Session (success-page confirmation)."""
+    client = _client()
+    return client.v1.checkout.sessions.retrieve(
+        session_id,
+        params={"expand": ["subscription"]},
+        options=_request_options(),
+    )
 
 
 def _find_user_for_session(session: Any) -> User | None:
@@ -247,9 +358,8 @@ def _find_user_for_session(session: Any) -> User | None:
 
 
 def _apply_subscription_to_user(user: User, subscription: Any) -> None:
-    user.subscription_status = map_stripe_subscription_status(
-        _field(subscription, "status")
-    )
+    mapped = map_stripe_subscription_status(_field(subscription, "status"))
+    user.subscription_status = mapped
     sub_id = _field(subscription, "id")
     if sub_id:
         user.stripe_subscription_id = sub_id
@@ -257,9 +367,36 @@ def _apply_subscription_to_user(user: User, subscription: Any) -> None:
     if customer_id and not user.stripe_customer_id:
         user.stripe_customer_id = customer_id
 
+    trial_end = _ts_to_dt(_field(subscription, "trial_end"))
+    user.stripe_trial_end = trial_end
+    user.stripe_current_period_end = _ts_to_dt(
+        _field(subscription, "current_period_end")
+    )
+    user.cancel_at_period_end = bool(_field(subscription, "cancel_at_period_end") or False)
+
+    # Mark trial use so Checkout cannot grant another free trial later.
+    stripe_status = (_field(subscription, "status") or "").lower()
+    if stripe_status == "trialing" or trial_end is not None:
+        if user.trial_started_at is None:
+            user.trial_started_at = date.today()
+
+
+def claim_stripe_event(event_id: str, event_type: str) -> bool:
+    """Return True if this event id is new and claimed; False if already processed."""
+    if not event_id:
+        return True
+    row = StripeWebhookEvent(event_id=event_id, event_type=event_type or "")
+    db.session.add(row)
+    try:
+        db.session.commit()
+        return True
+    except IntegrityError:
+        db.session.rollback()
+        return False
+
 
 def handle_checkout_session_completed(session: Any) -> None:
-    """Fulfill ``checkout.session.completed`` — unlock suite for the user."""
+    """Fulfill ``checkout.session.completed`` from the related subscription."""
     from app.lifecycle_mail import notify_subscription_status_change
 
     user = _find_user_for_session(session)
@@ -277,6 +414,7 @@ def handle_checkout_session_completed(session: Any) -> None:
         user.stripe_customer_id = customer_id
 
     subscription_id = _id_of(_field(session, "subscription"))
+    subscription = None
 
     if subscription_id:
         client = _client()
@@ -287,17 +425,20 @@ def handle_checkout_session_completed(session: Any) -> None:
         )
         _apply_subscription_to_user(user, subscription)
     else:
-        # Payment mode fallback — treat completed checkout as subscribed.
-        user.subscription_status = "active"
+        # Do not grant permanent Pro from a session without a subscription.
+        logger.warning(
+            "checkout.session.completed %s has no subscription; leaving status=%s",
+            _field(session, "id"),
+            user.subscription_status,
+        )
+        db.session.commit()
+        return
 
     db.session.commit()
     notify_subscription_status_change(user, previous_status)
-    if subscription_id:
-        from app.analytics import note_confirmed_subscription
-
-        note_confirmed_subscription(user.id, _field(subscription, "status"))
+    _record_billing_analytics(user, previous_status, subscription)
     logger.info(
-        "Unlocked suite for user %s (status=%s, sub=%s)",
+        "Synced suite for user %s (status=%s, sub=%s)",
         user.id,
         user.subscription_status,
         user.stripe_subscription_id,
@@ -326,12 +467,70 @@ def handle_subscription_event(subscription: Any) -> None:
         return
 
     previous_status = user.subscription_status or ""
+    previous_cancel = bool(user.cancel_at_period_end)
     _apply_subscription_to_user(user, subscription)
     db.session.commit()
     notify_subscription_status_change(user, previous_status)
-    from app.analytics import note_confirmed_subscription
+    _record_billing_analytics(
+        user,
+        previous_status,
+        subscription,
+        previous_cancel_at_period_end=previous_cancel,
+    )
 
-    note_confirmed_subscription(user.id, _field(subscription, "status"))
+
+def handle_invoice_event(invoice: Any, *, paid: bool) -> None:
+    """Handle ``invoice.paid`` / ``invoice.payment_failed`` lightly."""
+    from app.analytics import note_invoice_payment_failed, note_confirmed_subscription
+
+    customer_id = _id_of(_field(invoice, "customer"))
+    user = (
+        User.query.filter_by(stripe_customer_id=customer_id).first()
+        if customer_id
+        else None
+    )
+    if user is None:
+        return
+
+    if not paid:
+        note_invoice_payment_failed(user.id)
+        # Keep access policy in sync if Stripe already flipped the subscription;
+        # otherwise leave status until the subscription webhook arrives.
+        return
+
+    billing_reason = (_field(invoice, "billing_reason") or "").lower()
+    if billing_reason in ("subscription_cycle", "subscription_update", "subscription_create"):
+        # First successful paid invoice after trial → confirm paid analytics.
+        if (user.subscription_status or "").lower() == "active":
+            note_confirmed_subscription(user.id, "active")
+
+
+def _record_billing_analytics(
+    user: User,
+    previous_status: str,
+    subscription: Any,
+    *,
+    previous_cancel_at_period_end: bool = False,
+) -> None:
+    from app.analytics import (
+        note_confirmed_subscription,
+        note_subscription_cancel_scheduled,
+        note_subscription_cancelled,
+        note_trial_started,
+    )
+
+    stripe_status = (_field(subscription, "status") or "").lower()
+    previous = (previous_status or "").lower()
+    current = (user.subscription_status or "").lower()
+
+    if current == "trialing" and previous != "trialing":
+        note_trial_started(user.id)
+    note_confirmed_subscription(user.id, stripe_status)
+
+    if user.cancel_at_period_end and not previous_cancel_at_period_end:
+        note_subscription_cancel_scheduled(user.id)
+    if previous in _SUITE_STATUSES and current in ("canceled", "unpaid"):
+        note_subscription_cancelled(user.id)
 
 
 def construct_webhook_event(payload: bytes, sig_header: str | None) -> stripe.Event:

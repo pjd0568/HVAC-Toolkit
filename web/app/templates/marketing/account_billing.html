@@ -1,0 +1,68 @@
+{% extends "marketing/base.html" %}
+{% block title %}Account billing — HVAC-CALCS{% endblock %}
+{% block content %}
+<section class="pricing-hero">
+  <h1>Account billing</h1>
+  <p class="coming-lead">Signed in as {{ current_user.email }}.</p>
+</section>
+
+<section class="home-section">
+  {% if access.tier == 'trial' %}
+  <h2>Trial active</h2>
+  <ul class="coming-list">
+    <li>Full Pro access is unlocked for your trial.</li>
+    {% if access.trial_ends %}
+    <li>Trial ends on {{ access.trial_ends.strftime('%d %B %Y') }}.</li>
+    {% elif access.trial_days_remaining is not none %}
+    <li>{{ access.trial_days_remaining }} day{{ 's' if access.trial_days_remaining != 1 else '' }} remaining.</li>
+    {% endif %}
+    <li>£{{ price_monthly }}/month after the trial unless you cancel.</li>
+    <li>Cancel before the trial ends and you will not be charged.</li>
+  </ul>
+  {% elif access.tier == 'pro' %}
+  <h2>Pro subscription</h2>
+  <ul class="coming-list">
+    <li>Your subscription is active{% if access.billing_issue %} — there is a billing issue on the payment method{% endif %}.</li>
+    {% if access.current_period_end %}
+    <li>Current period ends on {{ access.current_period_end.strftime('%d %B %Y') }}.</li>
+    {% endif %}
+    <li>£{{ price_monthly }}/month (or your chosen annual plan).</li>
+  </ul>
+  {% else %}
+  <h2>No active Pro plan</h2>
+  <p>
+    Start a {{ trial_days }}-day free trial to unlock the full suite. Add payment
+    details today and pay nothing until the trial ends.
+  </p>
+  <p><a class="btn-accent" href="{{ url_for('billing.subscribe', checkout=1, plan='monthly') }}">Start your 14-day free trial</a></p>
+  {% endif %}
+
+  {% if access.cancel_at_period_end %}
+  <p class="pricing-note">
+    Cancellation is scheduled. You keep access until the current trial or billing
+    period ends; you will not be charged again after that.
+  </p>
+  {% endif %}
+
+  {% if access.billing_issue %}
+  <p class="pricing-note">
+    We could not collect a payment. Update your payment method in Stripe’s
+    customer portal to keep Pro uninterrupted.
+  </p>
+  {% endif %}
+
+  {% if portal_ready %}
+  <form method="post" action="{{ url_for('billing.create_portal_session_route') }}" class="coming-actions">
+    <button type="submit" class="btn-accent">Manage or cancel subscription</button>
+  </form>
+  <p class="home-micro">Opens Stripe’s customer portal (not an in-app cancel button).</p>
+  {% elif access.has_suite_access %}
+  <p class="pricing-note">
+    Billing management will appear here once Stripe has linked a customer profile
+    to this account.
+  </p>
+  {% endif %}
+
+  <p><a href="{{ url_for('v2.dashboard') }}">Back to toolkit</a> · <a href="{{ url_for('billing.subscribe') }}">Pricing</a></p>
+</section>
+{% endblock %}

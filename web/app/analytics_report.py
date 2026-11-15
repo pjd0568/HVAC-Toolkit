@@ -115,7 +115,12 @@ _DIAGNOSTIC_EVENTS = (
     "login",
     "pro_tool_use",
     "checkout_start",
+    "checkout_cancelled",
+    "trial_started",
     "subscription_active",
+    "subscription_cancel_scheduled",
+    "subscription_cancelled",
+    "invoice_payment_failed",
 )
 
 _LINK_LABELS = (
@@ -266,7 +271,12 @@ class Report:
     registrations: int = 0
     pro_uses: int = 0
     checkouts: int = 0
+    checkout_cancelled: int = 0
+    trials_started: int = 0
     subscriptions: int = 0
+    cancel_scheduled: int = 0
+    cancellations: int = 0
+    payment_failures: int = 0
     funnel: list[FunnelStep] = field(default_factory=list)
     previous_start: date | None = None
     previous_end: date | None = None
@@ -475,7 +485,12 @@ def render_markdown(report: Report) -> str:
         f"Registrations: {report.registrations}",
         f"Successful Pro tool uses: {report.pro_uses}",
         f"Checkout starts: {report.checkouts}",
-        f"Active subscriptions: {report.subscriptions}",
+        f"Checkout cancelled: {report.checkout_cancelled}",
+        f"Trials started: {report.trials_started}",
+        f"Active paid subscriptions: {report.subscriptions}",
+        f"Cancel scheduled: {report.cancel_scheduled}",
+        f"Subscriptions cancelled: {report.cancellations}",
+        f"Invoice payment failures: {report.payment_failures}",
         "",
         "## 5. Sequenced conversion funnel",
         "A step counts only when the later event follows the earlier one on the same journey or linked user, within 7 days, inside this period.",
@@ -651,7 +666,12 @@ def render_email_text(report: Report) -> str:
         f"Registrations                     {report.registrations}",
         f"Pro tools used                    {report.pro_uses}",
         f"Checkout starts                   {report.checkouts}",
-        f"New subscriptions                 {report.subscriptions}",
+        f"Checkout cancelled                {report.checkout_cancelled}",
+        f"Trials started                    {report.trials_started}",
+        f"New paid subscriptions            {report.subscriptions}",
+        f"Cancel scheduled                  {report.cancel_scheduled}",
+        f"Subscriptions cancelled           {report.cancellations}",
+        f"Invoice payment failures          {report.payment_failures}",
         "",
         "PREVIOUS-PERIOD COMPARISON",
         report.comparison_note or f"Previous period: {report.previous_start} to {report.previous_end}",
@@ -1329,9 +1349,19 @@ def _fill(report: Report, rows: list[AnalyticsEvent]) -> None:
             pro_counts[row.tool] = pro_counts.get(row.tool, 0) + 1
         elif name == "checkout_start":
             report.checkouts += 1
+        elif name == "checkout_cancelled":
+            report.checkout_cancelled += 1
+        elif name == "trial_started":
+            report.trials_started += 1
         elif name == "subscription_active":
             report.subscriptions += 1
             point.subscriptions += 1
+        elif name == "subscription_cancel_scheduled":
+            report.cancel_scheduled += 1
+        elif name == "subscription_cancelled":
+            report.cancellations += 1
+        elif name == "invoice_payment_failed":
+            report.payment_failures += 1
 
     report.unique_free_journeys = len(free_journeys)
     for tool, per_journey in dones.items():
@@ -1781,7 +1811,7 @@ def _notes() -> list[str]:
         "First-touch is stored once. Latest-touch updates on a new UTM campaign or a new external referrer. Rows captured before this split stay unknown and are not guessed.",
         "A channel is direct only when capture ran and there was no campaign and no external referrer. Missing capture is unknown. Referrer privacy features can hide organic and referral visits, so some of them appear direct.",
         "Search queries are not read from the referrer. Google Search Console is a separate export.",
-        "subscription_active is written only when a verified Stripe subscription status is active. The checkout success page does not count. A second confirmation for the same user is not stored again.",
+        "subscription_active is written only when a verified Stripe subscription status is active (paid). trial_started is separate and does not count as a paid subscription. The checkout success page does not count either. A second confirmation for the same user is not stored again.",
         "Internal and test activity is excluded when the signed-in email is in ANALYTICS_ADMIN_EMAILS or ANALYTICS_INTERNAL_EMAILS. The flag is set on the server. Historical rows are not relabelled.",
         "Engineering calculation inputs and outputs are not stored. Full referring URLs are not stored.",
         "Week-on-week percentages use the unrounded counts. A zero baseline is shown as new this period or no comparable baseline, not as infinity. A period that includes the current London day is not compared.",

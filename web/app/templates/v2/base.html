@@ -127,6 +127,7 @@
     <ul class="v2-menu-list">
       {% if access.tier == 'trial' and access.trial_days_remaining is not none %}
       <li><span class="v2-menu-status">Trial · {{ access.trial_days_remaining }}d left</span></li>
+      <li><a href="{{ url_for('billing.account') }}">Account billing</a></li>
       {% elif access.tier == 'pro' %}
       <li><span class="v2-menu-status">Subscribed</span></li>
       {% endif %}

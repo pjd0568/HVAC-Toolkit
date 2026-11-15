@@ -292,7 +292,10 @@ def price_footer() -> dict[str, str]:
     return {
         "monthly": PRICE_MONTHLY_GBP,
         "annual": PRICE_ANNUAL_GBP,
-        "tagline": "Move from individual calculations to complete engineering workflows.",
+        "tagline": (
+            "14 days free, then £"
+            f"{PRICE_MONTHLY_GBP}/month. Cancel before the trial ends and pay nothing."
+        ),
     }
 
 

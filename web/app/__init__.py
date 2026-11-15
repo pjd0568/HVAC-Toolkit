@@ -190,7 +190,7 @@ def create_app(config_class: type = Config) -> Flask:
             "default_meta_description": (
                 f"{app.config['BRAND_NAME']} — HVAC calculators for engineers: "
                 "psychrometric, duct sizing, and pipe sizing tools. "
-                "SI and imperial. 14-day free trial."
+                "SI and imperial. 14-day Pro trial, then £4.50/month."
             ),
         }
 
@@ -214,19 +214,32 @@ def create_app(config_class: type = Config) -> Flask:
             landing = get_landing(slug) if slug else None
 
         def pro_cta(next_path: str | None = None) -> dict[str, str]:
+            checkout_next = url_for(
+                "billing.subscribe", checkout=1, plan="monthly"
+            )
             if current_user.is_authenticated:
+                from app.stripe_billing import has_open_stripe_subscription
+
+                if has_open_stripe_subscription(current_user):
+                    return {
+                        "label": "Manage billing",
+                        "href": url_for("billing.account"),
+                    }
                 return {
-                    "label": "Subscribe",
-                    "href": url_for("billing.subscribe"),
+                    "label": "Start your 14-day free trial",
+                    "href": checkout_next,
                 }
             if app.config.get("REGISTRATION_OPEN"):
-                href = (
-                    url_for("auth.register", next=next_path)
-                    if next_path
-                    else url_for("auth.register")
-                )
-                return {"label": "Try Pro free", "href": href}
-            return {"label": "Explore Pro", "href": url_for("billing.subscribe")}
+                # After register/login, continue into Checkout (not a dead-end account page).
+                dest = next_path or checkout_next
+                return {
+                    "label": "Start your 14-day free trial",
+                    "href": url_for("auth.register", next=dest),
+                }
+            return {
+                "label": "Start your 14-day free trial",
+                "href": url_for("auth.login", next=checkout_next),
+            }
 
         from app.analytics import resolve_tool, tool_for_endpoint
 

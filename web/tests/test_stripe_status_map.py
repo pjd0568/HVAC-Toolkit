@@ -1,22 +1,19 @@
-"""Billing status mapping — no Stripe network required."""
-
-import pytest
+"""Stripe subscription status → User.subscription_status mapping."""
 
 from app.stripe_billing import (
-    StripeNotConfiguredError,
     map_stripe_subscription_status,
     normalise_checkout_plan,
-    resolve_price_id,
+    status_grants_suite_access,
 )
 
 
 def test_map_stripe_subscription_status_known_values():
     assert map_stripe_subscription_status("active") == "active"
-    assert map_stripe_subscription_status("trialing") == "active"
-    assert map_stripe_subscription_status("past_due") == "active"
+    assert map_stripe_subscription_status("trialing") == "trialing"
+    assert map_stripe_subscription_status("past_due") == "past_due"
     assert map_stripe_subscription_status("canceled") == "canceled"
-    assert map_stripe_subscription_status("unpaid") == "canceled"
-    assert map_stripe_subscription_status("incomplete") == "trialing"
+    assert map_stripe_subscription_status("unpaid") == "unpaid"
+    assert map_stripe_subscription_status("incomplete") == "incomplete"
     assert map_stripe_subscription_status("incomplete_expired") == "canceled"
     assert map_stripe_subscription_status("paused") == "canceled"
 
@@ -29,7 +26,17 @@ def test_map_stripe_subscription_status_unknown_defaults_canceled():
 
 def test_map_stripe_subscription_status_is_case_insensitive():
     assert map_stripe_subscription_status("ACTIVE") == "active"
-    assert map_stripe_subscription_status("Past_Due") == "active"
+    assert map_stripe_subscription_status("Past_Due") == "past_due"
+    assert map_stripe_subscription_status("TRIALING") == "trialing"
+
+
+def test_status_grants_suite_access():
+    assert status_grants_suite_access("active")
+    assert status_grants_suite_access("trialing")
+    assert status_grants_suite_access("past_due")
+    assert not status_grants_suite_access("canceled")
+    assert not status_grants_suite_access("unpaid")
+    assert not status_grants_suite_access("incomplete")
 
 
 def test_normalise_checkout_plan():
@@ -37,16 +44,3 @@ def test_normalise_checkout_plan():
     assert normalise_checkout_plan("ANNUAL") == "annual"
     assert normalise_checkout_plan("") == "monthly"
     assert normalise_checkout_plan("weekly") == "monthly"
-
-
-def test_resolve_annual_price_id(app):
-    with app.app_context():
-        app.config["STRIPE_PRICE_ID_ANNUAL"] = "price_annual_test"
-        assert resolve_price_id("annual") == "price_annual_test"
-
-
-def test_resolve_annual_price_id_requires_config(app):
-    with app.app_context():
-        app.config["STRIPE_PRICE_ID_ANNUAL"] = ""
-        with pytest.raises(StripeNotConfiguredError):
-            resolve_price_id("annual")

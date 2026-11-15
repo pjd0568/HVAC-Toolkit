@@ -135,28 +135,29 @@ def register_post():
 
     user = User(
         email=email,
-        trial_started_at=date.today(),
-        subscription_status="trialing",
+        trial_started_at=None,
+        subscription_status="none",
     )
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
     login_user(user)
 
-    from app.lifecycle_mail import send_trial_started
-
-    send_trial_started(user)
-
     from app.analytics import link_session_to_user, track
 
     link_session_to_user(user.id)
     track("registration_complete", route="/register")
-    flash("Account created. Your 14-day free trial has started.", "success")
-    # Honour a validated next path (the Pro workflow that prompted signup).
-    # Otherwise land on Single Point so the homepage teaser can hand off.
+    flash(
+        "Account created. Start your 14-day Pro trial to unlock the full suite — "
+        "add payment details today and pay nothing until the trial ends.",
+        "success",
+    )
+    # Honour a validated next path (usually Stripe Checkout after a Pro CTA).
     if (nxt or "").strip():
-        return redirect(_safe_next(nxt, default=url_for("v2.single_point", from_teaser=1)))
-    return redirect(url_for("v2.single_point", from_teaser=1))
+        return redirect(_safe_next(nxt, default=url_for("billing.subscribe")))
+    return redirect(
+        url_for("billing.subscribe", checkout=1, plan="monthly")
+    )
 
 
 @bp.post("/logout")

@@ -103,23 +103,23 @@ Stripe subscription: {user.stripe_subscription_id or '—'}
 
 
 def send_trial_started(user: User) -> bool:
-    """Welcome email when a new account starts the free trial."""
+    """Welcome email when a Stripe (or mapped) Pro trial becomes active."""
     if not mail_configured():
         log.warning("Mail not configured; skipped trial welcome for user %s", user.id)
         return False
 
     brand = _brand()
-    subject = f"Welcome to {brand} — your {TRIAL_DAYS}-day trial has started"
+    subject = f"Welcome to {brand} — your {TRIAL_DAYS}-day Pro trial has started"
     body = f"""Hi,
 
-Thanks for creating an account with {brand}.
+Your {TRIAL_DAYS}-day free Pro trial of the full calculator suite is active now.
+You will not be charged until the trial ends. Cancel before then and you pay nothing.
 
-Your {TRIAL_DAYS}-day free trial of the full calculator suite is active now.
 Open the toolkit here:
 {_dashboard_url()}
 
-After the trial, continue with a subscription (£{PRICE_MONTHLY_GBP}/month or £{PRICE_ANNUAL_GBP}/year):
-{_subscribe_url()}
+Manage or cancel billing in Stripe’s customer portal (Account → Billing in the app).
+After the trial, the subscription continues at £{PRICE_MONTHLY_GBP}/month unless you cancel.
 
 Questions? Reply to this email or write to {_contact()}.
 
@@ -146,9 +146,8 @@ Your account now has full access to the calculator suite.
 Open the toolkit:
 {_dashboard_url()}
 
-Manage billing, invoices and cancellation through the email receipts Stripe / Link
-send you for this subscription (Help → Account, billing & cancel in the app).
-For support, reply here or email {_contact()}.
+Manage billing, invoices and cancellation through Account → Billing in the app
+(Stripe Customer Portal). For support, reply here or email {_contact()}.
 
 — {brand}
 """
@@ -185,7 +184,7 @@ Thanks for trying {brand}.
 
 
 def notify_subscription_status_change(user: User, previous_status: str) -> None:
-    """Send subscribed / cancelled mail only on meaningful status transitions.
+    """Send trial / subscribed / cancelled mail only on meaningful transitions.
 
     Avoids duplicate emails when Stripe retries webhooks or sends both
     ``checkout.session.completed`` and ``customer.subscription.updated``.
@@ -193,7 +192,9 @@ def notify_subscription_status_change(user: User, previous_status: str) -> None:
     previous = (previous_status or "").lower()
     current = (user.subscription_status or "").lower()
 
-    if previous != "active" and current == "active":
+    if previous != "trialing" and current == "trialing":
+        send_trial_started(user)
+    elif previous != "active" and current == "active":
         send_subscribed(user)
-    elif previous == "active" and current == "canceled":
+    elif previous in ("active", "trialing", "past_due") and current == "canceled":
         send_subscription_ended(user)

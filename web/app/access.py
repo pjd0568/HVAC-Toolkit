@@ -1,14 +1,18 @@
-"""Access — 14-day trial then subscription for the full suite.
+"""Access — Stripe trial / subscription for the full suite.
 
-See specs/SPEC-access.md and specs/SPEC-auth.md. Trial / subscription bind to
-the authenticated User row; ACCESS_DEV_TIER still forces tier for local UI
-testing.
+See specs/SPEC-access.md and specs/SPEC-auth.md. Suite access follows Stripe
+subscription state when a Stripe subscription exists. Legacy app-only trials
+(``trial_started_at`` without ``stripe_subscription_id``) remain valid until
+they expire so mid-trial accounts are not cut off. New accounts start without
+suite access until Checkout creates a Stripe trial or paid subscription.
+
+ACCESS_DEV_TIER still forces tier for local UI testing.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Literal
 
 from flask import current_app
@@ -121,6 +125,9 @@ class Entitlement:
     trial_days_remaining: int | None
     trial_started: date | None
     trial_ends: date | None
+    billing_issue: bool = False
+    cancel_at_period_end: bool = False
+    current_period_end: date | None = None
 
     @property
     def can_use_pro(self) -> bool:
@@ -130,6 +137,16 @@ class Entitlement:
 
 def _today() -> date:
     return date.today()
+
+
+def _as_date(value: date | datetime | None) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is not None:
+            return value.astimezone(timezone.utc).date()
+        return value.date()
+    return value
 
 
 def _entitlement_from_trial(started: date | None) -> Entitlement:
@@ -144,9 +161,69 @@ def _entitlement_from_trial(started: date | None) -> Entitlement:
 
 def _entitlement_for_user(user) -> Entitlement:
     status = (user.subscription_status or "none").lower()
+    cancel_scheduled = bool(getattr(user, "cancel_at_period_end", False))
+    period_end = _as_date(getattr(user, "stripe_current_period_end", None))
+    stripe_trial_end = _as_date(getattr(user, "stripe_trial_end", None))
+    has_stripe_sub = bool(getattr(user, "stripe_subscription_id", None))
+
     if status == "active":
-        return Entitlement("pro", True, None, user.trial_started_at, None)
-    return _entitlement_from_trial(user.trial_started_at)
+        return Entitlement(
+            "pro",
+            True,
+            None,
+            user.trial_started_at,
+            None,
+            billing_issue=False,
+            cancel_at_period_end=cancel_scheduled,
+            current_period_end=period_end,
+        )
+
+    if status == "past_due":
+        # Grace while Stripe retries the card — still suite access, flagged.
+        return Entitlement(
+            "pro",
+            True,
+            None,
+            user.trial_started_at,
+            None,
+            billing_issue=True,
+            cancel_at_period_end=cancel_scheduled,
+            current_period_end=period_end,
+        )
+
+    if status == "trialing":
+        if stripe_trial_end is not None:
+            remaining = (stripe_trial_end - _today()).days
+            if remaining > 0 or has_stripe_sub:
+                # Stripe is authoritative while the subscription is trialing;
+                # keep access even on the end day until Stripe flips status.
+                days = max(remaining, 0)
+                return Entitlement(
+                    "trial",
+                    True,
+                    days,
+                    user.trial_started_at,
+                    stripe_trial_end,
+                    billing_issue=False,
+                    cancel_at_period_end=cancel_scheduled,
+                    current_period_end=period_end or stripe_trial_end,
+                )
+        return _entitlement_from_trial(user.trial_started_at)
+
+    # Legacy app-only trial (no Stripe subscription yet).
+    if not has_stripe_sub:
+        return _entitlement_from_trial(user.trial_started_at)
+
+    return Entitlement(
+        "free",
+        False,
+        0,
+        user.trial_started_at,
+        stripe_trial_end,
+        billing_issue=status in ("unpaid", "incomplete"),
+        cancel_at_period_end=cancel_scheduled,
+        current_period_end=period_end,
+    )
 
 
 def get_entitlement() -> Entitlement:
@@ -234,6 +311,22 @@ class AccessView:
     @property
     def trial_days_remaining(self) -> int | None:
         return self.entitlement.trial_days_remaining
+
+    @property
+    def trial_ends(self) -> date | None:
+        return self.entitlement.trial_ends
+
+    @property
+    def billing_issue(self) -> bool:
+        return bool(self.entitlement.billing_issue)
+
+    @property
+    def cancel_at_period_end(self) -> bool:
+        return bool(self.entitlement.cancel_at_period_end)
+
+    @property
+    def current_period_end(self) -> date | None:
+        return self.entitlement.current_period_end
 
     @property
     def price_monthly(self) -> str:

@@ -16,7 +16,7 @@ specified in `SPEC-auth.md`.
 
 | Stage | Meaning |
 |-------|---------|
-| **Trial** | Full suite for 14 days from account registration. |
+| **Trial** | Full suite for 14 days via Stripe Checkout trial (payment method collected; £0 until trial ends). Legacy app-only trials without a Stripe subscription remain valid until their clock expires. |
 | **Subscribed** | Paid subscriber — full suite (`subscription_status == active`). Price: **£4.50/month** (`PRICE_MONTHLY_GBP`) or **£39.50/year** (`PRICE_ANNUAL_GBP`). |
 | **Trial ended** | No calculator access until subscribed. Soft gate: subscribe panel (not a raw 403). |
 
@@ -43,13 +43,15 @@ Nav and pages flag these with a **Coming Soon** chip only — no Pro tags.
 ## Trial clock
 
 - Duration: **14 days**.
-- Start: set on **register** (`User.trial_started_at`).
+- Start: Stripe Checkout with `trial_period_days` (sets `trial_started_at` and
+  `stripe_trial_end`). New registrations no longer auto-start a suite trial.
 - Persistence: Postgres user row (survives cookie clear).
-- While trial active: `tier == "trial"`, `has_suite_access == True`.
-- After expiry without subscription: `tier == "free"`, `has_suite_access == False`.
+- While Stripe `trialing`: `tier == "trial"`, `has_suite_access == True`.
+- After expiry without paid subscription: `tier == "free"`, `has_suite_access == False`.
 - Subscribed: `User.subscription_status == "active"` (Stripe Managed Payments
   Checkout + webhooks — see `SPEC-billing-stripe.md`); internal tier code
   remains `"pro"` for the `ACCESS_DEV_TIER` override.
+- `trial_started_at` once set blocks another free Stripe trial.
 
 ## Module flag API
 

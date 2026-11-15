@@ -28,12 +28,14 @@
       <strong>£{{ price_monthly }}/month</strong>.</p>
     {% elif current_user.is_authenticated %}
     <p>This workflow needs an active trial or subscription
-      (<strong>£{{ price_monthly }}/month</strong>).</p>
+      (<strong>£{{ price_monthly }}/month</strong> after a 14-day free trial).</p>
     {% elif registration_open %}
-    <p>The free calculators stay available without an account. A new account
-      includes 14 days of Pro, then <strong>£{{ price_monthly }}/month</strong>.</p>
+    <p>The free calculators stay available without an account. Pro starts with a
+      14-day free trial (payment details collected up front), then
+      <strong>£{{ price_monthly }}/month</strong>.</p>
     {% else %}
-    <p>This workflow is part of Pro at <strong>£{{ price_monthly }}/month</strong>.</p>
+    <p>This workflow is part of Pro at <strong>£{{ price_monthly }}/month</strong>
+      after a 14-day free trial.</p>
     {% endif %}
     <div class="access-gate-actions">
       {% set cta = pro_cta(request.path) %}

@@ -35,9 +35,14 @@
     <article><span>Registrations</span><strong>{{ report.registrations }}</strong></article>
     <article><span>Pro tool uses</span><strong>{{ report.pro_uses }}</strong></article>
     <article><span>Checkout starts</span><strong>{{ report.checkouts }}</strong></article>
-    <article><span>Active subscriptions</span><strong>{{ report.subscriptions }}</strong></article>
+    <article><span>Checkout cancelled</span><strong>{{ report.checkout_cancelled }}</strong></article>
+    <article><span>Trials started</span><strong>{{ report.trials_started }}</strong></article>
+    <article><span>Paid subscriptions</span><strong>{{ report.subscriptions }}</strong></article>
+    <article><span>Cancel scheduled</span><strong>{{ report.cancel_scheduled }}</strong></article>
+    <article><span>Cancelled</span><strong>{{ report.cancellations }}</strong></article>
+    <article><span>Payment failures</span><strong>{{ report.payment_failures }}</strong></article>
   </section>
-  <p class="analytics-note">The figures above are an activity summary. They are not a sequential cohort funnel.</p>
+  <p class="analytics-note">The figures above are an activity summary. Trials started are not paid subscriptions. They are not a sequential cohort funnel.</p>
 
   <section class="analytics-panel">
     <h2>Sequenced conversion funnel</h2>

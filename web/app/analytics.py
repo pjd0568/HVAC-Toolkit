@@ -33,7 +33,12 @@ ALLOWED_EVENTS = frozenset({
     "login",
     "pro_tool_use",
     "checkout_start",
+    "checkout_cancelled",
+    "trial_started",
     "subscription_active",
+    "subscription_cancel_scheduled",
+    "subscription_cancelled",
+    "invoice_payment_failed",
 })
 
 # The browser may signal intent. Result and billing events are server-only.
@@ -284,30 +289,75 @@ def note_calculator_complete(tool: str) -> None:
     record_analytics_event("calculator_complete", tool=tool)
 
 
+def _note_user_event_once(event_name: str, user_id: int) -> None:
+    """Write a webhook-derived event at most once per user."""
+    if event_name not in ALLOWED_EVENTS or not isinstance(user_id, int):
+        return
+    try:
+        from app.models.analytics import AnalyticsEvent
+
+        already = AnalyticsEvent.query.filter_by(
+            event_name=event_name,
+            user_id=user_id,
+        ).count()
+        if already:
+            return
+        record_analytics_event(
+            event_name,
+            route="/webhooks/stripe",
+            user_id=user_id,
+        )
+    except Exception:
+        logger.exception("analytics %s record failed", event_name)
+
+
 def note_confirmed_subscription(user_id: int, stripe_status: object) -> None:
     """Record one active subscription after Stripe's own status is ``active``.
 
     ``trialing`` and ``past_due`` do not count. A second webhook for the same
     user does not write another row. Checkout success pages must not call this.
     """
-    if stripe_status != "active" or not isinstance(user_id, int):
+    if stripe_status != "active":
+        return
+    _note_user_event_once("subscription_active", user_id)
+
+
+def note_trial_started(user_id: int) -> None:
+    """Record a Stripe (or mapped) trial start once per user."""
+    _note_user_event_once("trial_started", user_id)
+
+
+def note_subscription_cancel_scheduled(user_id: int) -> None:
+    _note_user_event_once("subscription_cancel_scheduled", user_id)
+
+
+def note_subscription_cancelled(user_id: int) -> None:
+    _note_user_event_once("subscription_cancelled", user_id)
+
+
+def note_invoice_payment_failed(user_id: int) -> None:
+    """Payment failures may recur — record each failure (not once-only)."""
+    if not isinstance(user_id, int):
         return
     try:
-        from app.models.analytics import AnalyticsEvent
-
-        already = AnalyticsEvent.query.filter_by(
-            event_name="subscription_active",
-            user_id=user_id,
-        ).count()
-        if already:
-            return
         record_analytics_event(
-            "subscription_active",
+            "invoice_payment_failed",
             route="/webhooks/stripe",
             user_id=user_id,
         )
     except Exception:
-        logger.exception("analytics subscription record failed")
+        logger.exception("analytics invoice_payment_failed record failed")
+
+
+def note_checkout_cancelled(user_id: int | None = None) -> None:
+    try:
+        record_analytics_event(
+            "checkout_cancelled",
+            route="/subscribe",
+            user_id=user_id,
+        )
+    except Exception:
+        logger.exception("analytics checkout_cancelled record failed")
 
 
 def link_session_to_user(user_id: int) -> None:

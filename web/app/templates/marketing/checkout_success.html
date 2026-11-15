@@ -1,0 +1,42 @@
+{% extends "marketing/base.html" %}
+{% block title %}Trial started — HVAC-CALCS{% endblock %}
+{% block content %}
+<section class="pricing-hero">
+  {% if confirmed and status == 'trialing' %}
+  <h1>Your 14-day Pro trial is active</h1>
+  <p class="coming-lead">
+    Full Pro access is available now. You pay nothing until the trial ends.
+    {% if trial_end %}
+    Trial ends on <strong>{{ trial_end.strftime('%d %B %Y') }}</strong>.
+    {% endif %}
+    After that, Pro continues at £{{ price_monthly }}/month unless you cancel.
+  </p>
+  {% elif confirmed and status in ('active', 'past_due') %}
+  <h1>Subscription confirmed</h1>
+  <p class="coming-lead">
+    Your Pro subscription is active. Open the toolkit to continue.
+  </p>
+  {% else %}
+  <h1>Confirming your checkout</h1>
+  <p class="coming-lead">
+    Payment details were submitted. If Pro is not unlocked yet, wait a moment and
+    refresh — we confirm access from Stripe, not from this page alone.
+  </p>
+  {% endif %}
+
+  <div class="coming-actions">
+    <a class="btn-accent" href="{{ url_for('v2.dashboard') }}">Open toolkit</a>
+    {% if has_portal %}
+    <form method="post" action="{{ url_for('billing.create_portal_session_route') }}">
+      <button type="submit" class="btn-ghost">Manage or cancel subscription</button>
+    </form>
+    {% else %}
+    <a class="btn-ghost" href="{{ url_for('billing.account') }}">Account billing</a>
+    {% endif %}
+  </div>
+  <p class="home-micro">
+    Cancellation is handled in Stripe’s customer portal. Cancel before the trial
+    ends and you will not be charged.
+  </p>
+</section>
+{% endblock %}

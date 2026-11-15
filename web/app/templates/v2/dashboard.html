@@ -20,10 +20,10 @@
 {% if access.tier != 'pro' %}
 <div class="v2-subscribe-banner">
   <div class="v2-subscribe-banner-copy">
-    <strong>Subscribe anytime</strong>
-    <span>{% if access.tier == 'trial' and access.trial_days_remaining is not none %}Trial · {{ access.trial_days_remaining }}d left — Pro is £{{ access.price_monthly }}/month.{% else %}Pro is £{{ access.price_monthly }}/month.{% endif %}</span>
+    <strong>{% if access.tier == 'trial' %}Trial active{% else %}Start your 14-day free trial{% endif %}</strong>
+    <span>{% if access.tier == 'trial' and access.trial_days_remaining is not none %}{{ access.trial_days_remaining }}d left — £{{ access.price_monthly }}/month after the trial. Cancel before then and pay nothing.{% else %}14 days free, then £{{ access.price_monthly }}/month. Cancel before the trial ends and pay nothing.{% endif %}</span>
   </div>
-  <a class="v2-subscribe-banner-btn" href="{{ url_for('billing.subscribe') }}">Subscribe</a>
+  <a class="v2-subscribe-banner-btn" href="{{ url_for('billing.account') if access.tier == 'trial' else url_for('billing.subscribe', checkout=1, plan='monthly') }}">{% if access.tier == 'trial' %}Manage billing{% else %}Start trial{% endif %}</a>
 </div>
 {% endif %}
 

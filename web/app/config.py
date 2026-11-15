@@ -138,8 +138,8 @@ class Config:
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
     STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
     STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-    # Price ID for the monthly full-suite plan (price_…). Optional if you
-    # run `flask ensure-stripe-product` once to create product + price.
+    # Price ID for the monthly full-suite plan (price_…) — existing live
+    # £4.50/month recurring Price. Required for Checkout; never auto-created.
     STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
     # Price ID for the annual full-suite plan (£39.50/year).
     STRIPE_PRICE_ID_ANNUAL = os.environ.get(

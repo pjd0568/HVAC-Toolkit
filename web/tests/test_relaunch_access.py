@@ -123,9 +123,11 @@ def test_registration_closed_has_no_trial_cta():
     application = create_app()
     application.config.update(TESTING=True, REGISTRATION_OPEN=False, STRIPE_SECRET_KEY="")
     page = application.test_client().get("/subscribe").get_data(as_text=True)
-    assert "Start free trial" not in page
     assert "Try Pro free" not in page
+    assert "Checkout unavailable" in page
     assert "Online checkout is temporarily unavailable" in page
+    # No live Checkout start control when Stripe is unset.
+    assert 'action="/create-checkout-session"' not in page
 
 
 def test_legacy_tool_paths_still_resolve(client):
