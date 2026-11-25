@@ -3,6 +3,13 @@
   "use strict";
 
   var PREFIX = "hvac.v2.draft.";
+  var UNITS_KEY = "_units";
+
+  function currentUnits() {
+    var body = document.body;
+    var raw = body && body.getAttribute("data-units");
+    return raw === "IP" ? "IP" : "SI";
+  }
 
   function paramsToObject(params) {
     var obj = {};
@@ -25,6 +32,7 @@
   function save(key, params) {
     try {
       var obj = paramsToObject(params);
+      obj[UNITS_KEY] = currentUnits();
       sessionStorage.setItem(PREFIX + key, JSON.stringify(obj));
     } catch (e) { /* private mode / quota */ }
   }
@@ -35,6 +43,8 @@
       if (!raw) return null;
       var obj = JSON.parse(raw);
       if (!obj || typeof obj !== "object") return null;
+      // Drafts store display values for one unit system. Never restore across SI/IP.
+      if (obj[UNITS_KEY] && obj[UNITS_KEY] !== currentUnits()) return null;
       return obj;
     } catch (e) {
       return null;
@@ -51,6 +61,7 @@
     var p = new URLSearchParams();
     if (!obj) return p;
     Object.keys(obj).forEach(function (k) {
+      if (k === UNITS_KEY) return;
       if (obj[k] === null || obj[k] === undefined) return;
       p.set(k, String(obj[k]));
     });
