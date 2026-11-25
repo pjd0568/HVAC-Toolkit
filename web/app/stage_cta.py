@@ -11,7 +11,7 @@ from flask import has_request_context, session
 
 from app.access import get_entitlement
 
-STAGE_THRESHOLD = 3
+STAGE_THRESHOLD = 1
 STAGE_TOOLS = frozenset({"psychrometric_single", "duct_sizing", "pipe_sizing"})
 
 # Legacy psychro-only keys — still read so existing sessions keep their count.

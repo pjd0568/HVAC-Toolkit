@@ -1,4 +1,4 @@
-"""Free→Pro stage CTA after three successful free calculations."""
+"""Free→Pro stage CTA after the first successful free calculation."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def _session_count(client, tool: str) -> int:
         return int(sess.get(_count_key(tool), 0) or 0)
 
 
-def test_psychro_third_calc_shows_top_stage_cta(client, app):
+def test_psychro_first_calc_shows_top_stage_cta(client, app):
     app.config["REGISTRATION_OPEN"] = True
     _clear_stage(client, "psychrometric_single")
     for _ in range(STAGE_THRESHOLD - 1):
@@ -71,7 +71,7 @@ def test_psychro_third_calc_shows_top_stage_cta(client, app):
     assert html.index('data-cta-placement="stage"') < html.index("public-calc-surface")
 
 
-def test_pipe_third_calc_promotes_circuit_calculator(client):
+def test_pipe_first_calc_promotes_circuit_calculator(client):
     _clear_stage(client, "pipe_sizing")
     for n in range(1, STAGE_THRESHOLD):
         page = client.get(f"{PUBLIC_PIPE}?{PIPE_QS}")
@@ -87,7 +87,7 @@ def test_pipe_third_calc_promotes_circuit_calculator(client):
     assert html.index('data-cta-placement="stage"') < html.index("public-calc-surface")
 
 
-def test_duct_third_calc_promotes_index_leg(client):
+def test_duct_first_calc_promotes_index_leg(client):
     _clear_stage(client, "duct_sizing")
     for _ in range(STAGE_THRESHOLD - 1):
         page = client.get(f"{PUBLIC_DUCT}?{DUCT_QS}")
