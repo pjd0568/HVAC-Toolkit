@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=analytics-1">
 {% block extra_head %}{% endblock %}
 </head>
-<body class="marketing-body {% block body_class %}{% endblock %}">
+<body class="marketing-body {% block body_class %}{% endblock %}" data-units="{{ units }}">
   <header class="marketing-header">
     <a class="marketing-brand" href="{{ url_for('main.coming_soon') }}">
       {% include "_brand_lockup.html" %}
