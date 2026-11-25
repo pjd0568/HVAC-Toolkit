@@ -3331,8 +3331,16 @@ a.tool-card.tool-access-free:hover { border-color: var(--green-ink); }
 .psychro-stage-cta-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
+  margin-top: 6px;
+  padding: 4px 0 2px;
+}
+.stage-cta-actions .btn-accent,
+.stage-cta-actions .btn-ghost,
+.psychro-stage-cta-actions .btn-accent,
+.psychro-stage-cta-actions .btn-ghost {
+  padding: 10px 18px;
 }
 .stage-cta-dismiss,
 .psychro-stage-cta-dismiss { margin: 0; }
