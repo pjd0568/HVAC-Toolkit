@@ -128,7 +128,17 @@ def _to_si_or_default(get, field: str, quantity: str, U, default_si: float) -> f
 def _compute_state(args, U):
     """Parse query args and return template context pieces for Stage 1."""
     mode = _choice(args.get("mode", ""), {"from_load", "flow_known"}, "from_load")
-    application = _choice(args.get("application", ""), set(eng.CIBSE_LIMITS), "lthw")
+    # Public chilled-water landing should not silently keep LTHW limits.
+    default_app = "lthw"
+    try:
+        from flask import g
+
+        landing = getattr(g, "public_landing", None)
+        if landing is not None and getattr(landing, "slug", "") == "chilled-water-pipe-sizing":
+            default_app = "chw"
+    except Exception:
+        pass
+    application = _choice(args.get("application", ""), set(eng.CIBSE_LIMITS), default_app)
     fluid = _choice(args.get("fluid", ""), set(eng.FLUID_LABELS), "water")
     material = _choice(args.get("material", ""), set(eng.MATERIAL_LABELS), "carbon_steel")
 

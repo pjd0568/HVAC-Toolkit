@@ -20,6 +20,13 @@ from app.units import current_view
 bp = Blueprint("v2", __name__, url_prefix="/v2")
 
 
+@bp.before_request
+def _canonical_tools_redirect():
+    from app.canonical_urls import maybe_redirect_v2_to_tools
+
+    return maybe_redirect_v2_to_tools()
+
+
 def _safe_next(raw: str | None) -> str:
     if not raw or not raw.startswith("/") or raw.startswith("//"):
         return url_for("v2.dashboard")
@@ -92,9 +99,9 @@ def converter():
             for g in cv.GROUP_ORDER
         ]
         grouped = [row for row in grouped if row[2]]
-    if request.args.get("value") and result is not None and not error:
-        from app.analytics import note_calculator_complete
+    from app.analytics import is_intentional_get_calc, note_calculator_complete
 
+    if is_intentional_get_calc() and result is not None and not error:
         note_calculator_complete("unit_converter")
     unit_groups = [
         (
@@ -138,9 +145,9 @@ def refrig_picker():
 @require_module("refrig.pt_table")
 def refrig_pt_table():
     state = refrig_mod._compute_pt(request.args)
-    if request.args and state.get("result") and not state.get("error"):
-        from app.analytics import note_calculator_complete
+    from app.analytics import is_intentional_get_calc, note_calculator_complete
 
+    if is_intentional_get_calc() and state.get("result") and not state.get("error"):
         note_calculator_complete("refrigerant_pt")
     return render_template(
         "v2/refrig_pt_table.html",
@@ -170,9 +177,9 @@ def refrig_pipe_sizer():
 @require_module("refrig.diagnostics")
 def refrig_diagnostics():
     state = refrig_mod._compute_diagnostics(request.args)
-    if request.args and state.get("result") and not state.get("error"):
-        from app.analytics import note_calculator_complete
+    from app.analytics import is_intentional_get_calc, note_calculator_complete
 
+    if is_intentional_get_calc() and state.get("result") and not state.get("error"):
         note_calculator_complete("superheat_subcooling")
     return render_template(
         "v2/refrig_diagnostics.html",
@@ -240,12 +247,8 @@ def duct():
     shape = request.args.get("shape", "circular")
     if shape not in ("circular", "rectangular", "flat_oval"):
         shape = "circular"
-    if request.args and not error:
-        from app.analytics import note_calculator_complete
-        from app.stage_cta import increment_stage_calc
-
-        note_calculator_complete("duct_sizing")
-        increment_stage_calc("duct_sizing")
+    # Completions are recorded from the duct AJAX calculate API (intent=calculate),
+    # not on bare GET / draft-restore URLs that only re-paint a demo-like result.
     return render_template(
         "v2/duct.html",
         active="duct",
@@ -284,11 +287,14 @@ def duct_index_leg():
 def pipe():
     U = current_view()
     state = pipe_mod._compute_state(request.args, U)
-    if request.args and not state.get("error"):
-        from app.analytics import note_calculator_complete
-        from app.stage_cta import increment_stage_calc
+    from app.analytics import is_intentional_get_calc, note_calculator_complete
+    from app.stage_cta import increment_stage_calc, stage_calc_count
 
-        note_calculator_complete("pipe_sizing")
+    if not state.get("error") and is_intentional_get_calc():
+        note_calculator_complete(
+            "pipe_sizing",
+            calc_count=stage_calc_count("pipe_sizing") + 1,
+        )
         increment_stage_calc("pipe_sizing")
     report_fields = pipe_mod._report_fields_for_sizer(state["fields"]) if not state["error"] else None
     return render_template(

@@ -19,10 +19,11 @@ PSY_VALID = {
     "altitude": "0",
 }
 PIPE_QS = (
-    "mode=from_load&application=lthw&fluid=water&material=carbon_steel"
+    "calc=1&mode=from_load&application=lthw&fluid=water&material=carbon_steel"
     "&glycol_pct=0&load=100&delta_t=20&lwt=50&selected_dn=50"
 )
 DUCT_QS = "volume=0.5&basis=velocity&target_value=6&shape=circular"
+DUCT_CALC = f"{DUCT_QS}&intent=calculate"
 
 
 @pytest.fixture
@@ -90,10 +91,13 @@ def test_pipe_first_calc_promotes_circuit_calculator(client):
 def test_duct_first_calc_promotes_index_leg(client):
     _clear_stage(client, "duct_sizing")
     for _ in range(STAGE_THRESHOLD - 1):
-        page = client.get(f"{PUBLIC_DUCT}?{DUCT_QS}")
-        assert 'data-cta-placement="stage"' not in page.get_data(as_text=True)
+        res = client.get(f"/duct-sizing/api/state?{DUCT_CALC}")
+        assert res.status_code == 200
+        assert res.get_json().get("show_stage_cta") is False
 
-    page = client.get(f"{PUBLIC_DUCT}?{DUCT_QS}")
+    res = client.get(f"/duct-sizing/api/state?{DUCT_CALC}")
+    assert res.get_json().get("show_stage_cta") is True
+    page = client.get(PUBLIC_DUCT)
     html = page.get_data(as_text=True)
     assert 'data-cta-placement="stage"' in html
     assert "index leg" in html.lower()
@@ -104,11 +108,11 @@ def test_duct_first_calc_promotes_index_leg(client):
 def test_duct_api_calculate_signals_stage_cta(client):
     _clear_stage(client, "duct_sizing")
     for _ in range(STAGE_THRESHOLD - 1):
-        res = client.get(f"/duct-sizing/api/state?{DUCT_QS}&intent=calculate")
+        res = client.get(f"/duct-sizing/api/state?{DUCT_CALC}")
         assert res.status_code == 200
         assert res.get_json().get("show_stage_cta") is False
 
-    res = client.get(f"/duct-sizing/api/state?{DUCT_QS}&intent=calculate")
+    res = client.get(f"/duct-sizing/api/state?{DUCT_CALC}")
     assert res.get_json().get("show_stage_cta") is True
 
 
@@ -149,11 +153,17 @@ def test_v2_psychro_shows_stage_cta_at_top(client, app):
     app.config["REGISTRATION_OPEN"] = True
     _clear_stage(client, "psychrometric_single")
     for _ in range(STAGE_THRESHOLD):
-        _psy(client, V2_PSY)
-    html = client.get(V2_PSY).get_data(as_text=True)
+        _psy(client, PUBLIC_PSY)
+    html = client.get(PUBLIC_PSY).get_data(as_text=True)
     assert 'data-cta-placement="stage"' in html
     assert "full psychrometric suite" in html.lower()
     assert html.index('data-cta-placement="stage"') < html.index("psychro-layout")
+
+
+def test_anonymous_v2_psychro_redirects_to_tools(client):
+    res = client.get(V2_PSY, follow_redirects=False)
+    assert res.status_code == 301
+    assert "/tools/psychrometric-calculator" in (res.headers.get("Location") or "")
 
 
 def test_bare_duct_page_has_no_immediate_pro_card(client):
@@ -163,3 +173,16 @@ def test_bare_duct_page_has_no_immediate_pro_card(client):
     assert page.status_code == 200
     assert 'data-cta-placement="stage"' not in html
     assert 'data-cta-placement="result"' not in html
+
+
+def test_pipe_demo_url_without_calc_does_not_stage(client, app):
+    """Shared/demo query strings must not count as a real calculation."""
+    _clear_stage(client, "pipe_sizing")
+    demo = (
+        "mode=from_load&application=lthw&fluid=water&material=carbon_steel"
+        "&glycol_pct=0&load=100&delta_t=20&lwt=50&selected_dn=50"
+    )
+    page = client.get(f"{PUBLIC_PIPE}?{demo}")
+    assert page.status_code == 200
+    assert 'data-cta-placement="stage"' not in page.get_data(as_text=True)
+    assert _session_count(client, "pipe_sizing") == 0

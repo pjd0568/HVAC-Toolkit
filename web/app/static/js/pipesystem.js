@@ -765,8 +765,8 @@
           }
         },
         {
-          title: "PD (" + pdSym() + ")", field: "pd", minWidth: 70,
-          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: false,
+          title: "PD (" + pdSym() + ")", field: "pd", minWidth: 110, widthGrow: 1,
+          hozAlign: "center", headerHozAlign: "center", headerSort: false, resizable: true,
           editor: "input", editable: isEditable,
           formatter: function (cell) {
             var d = cell.getRow().getData();

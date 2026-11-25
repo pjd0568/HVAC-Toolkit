@@ -65,9 +65,17 @@ def test_anonymous_free_calculators(client):
 
 def test_anonymous_pro_workflows_are_gated(client):
     for path in PRO_TOOLS:
-        res = client.get(path)
-        assert res.status_code == 200, path
-        assert b"access-gate-panel" in res.data
+        res = client.get(path, follow_redirects=False)
+        if res.status_code in {301, 302}:
+            # Canonical public landing for anonymous visitors.
+            loc = res.headers.get("Location") or ""
+            assert loc.startswith("/tools/"), path
+            landed = client.get(loc)
+            assert landed.status_code == 200, path
+            assert b"access-gate-panel" not in landed.data or b"Pro" in landed.data
+        else:
+            assert res.status_code == 200, path
+            assert b"access-gate-panel" in res.data
 
 
 def test_anonymous_dashboard_still_requires_login(client):
@@ -109,7 +117,7 @@ def test_sitemap_and_robots(client):
     assert "/tools/superheat-subcooling" in sitemap
     assert "/tools/unit-converter" in sitemap
     assert "/methods" in sitemap
-    assert "/methodology" in sitemap
+    assert "/methodology/" in sitemap
     assert "/reference/add-to-mobile-homescreen" in sitemap
     assert "/v2/" not in sitemap
     robots = client.get("/robots.txt").get_data(as_text=True)

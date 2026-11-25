@@ -255,11 +255,14 @@ def create_app(config_class: type = Config) -> Flask:
             prompt_for_free_tool,
             should_show_pro_promotion,
         )
-        from app.stage_cta import should_show_stage_cta
+        from app.stage_cta import should_show_stage_cta, stage_calc_count
+        from flask import session as flask_session
 
         page_tool = tool_for_endpoint(request.endpoint)
         landing_tool = analytics_tool(landing.slug) if landing else ""
         stage_tool = page_tool or landing_tool or ""
+        journey = flask_session.get("aid")
+        journey_id = journey if isinstance(journey, str) else ""
 
         return {
             "public_embed": bool(getattr(g, "public_embed", False)),
@@ -275,6 +278,8 @@ def create_app(config_class: type = Config) -> Flask:
             "stage_tool": stage_tool,
             "show_stage_cta": should_show_stage_cta(stage_tool),
             "stage_prompt": prompt_for_free_tool(stage_tool),
+            "stage_calc_count": stage_calc_count(stage_tool) if stage_tool else 0,
+            "analytics_journey_id": journey_id,
         }
 
     @app.context_processor

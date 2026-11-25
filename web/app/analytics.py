@@ -20,6 +20,7 @@ from app.analytics_channels import (
     normalise_utm,
     parse_referrer,
 )
+from app.canonical_urls import canonical_tools_path
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,10 @@ ALLOWED_EVENTS = frozenset({
     "pro_cta_view",
     "pro_cta_click",
     "registration_start",
+    "register_page_view",
+    "register_submit",
     "registration_complete",
+    "registration_success",
     "login",
     "pro_tool_use",
     "checkout_start",
@@ -47,6 +51,8 @@ CLIENT_EVENTS = frozenset({
     "pro_cta_view",
     "pro_cta_click",
     "registration_start",
+    "register_page_view",
+    "register_submit",
 })
 
 # Canonical tools that exist in this codebase.
@@ -196,7 +202,7 @@ def capture_campaign() -> None:
         return
     try:
         incoming, unusable = _incoming_touch()
-        path = normalise_path(request.path or "")
+        path = canonical_tools_path(request.path or "") or normalise_path(request.path or "")
         host, _safe_path = parse_referrer(request.referrer, _own_hosts())
         now = datetime.now(timezone.utc).isoformat()
         current = session.get(_ATTR_KEY)
@@ -252,6 +258,7 @@ def record_analytics_event(
     utm_content: str | None = None,
     utm_term: str | None = None,
     cta_placement: str | None = None,
+    calc_count: int | None = None,
     user_id: int | None = None,
 ) -> None:
     """Validate and store one product event. Never raises."""
@@ -271,6 +278,7 @@ def record_analytics_event(
             utm_content=utm_content,
             utm_term=utm_term,
             cta_placement=cta_placement,
+            calc_count=calc_count,
             user_id=user_id,
         )
     except Exception:
@@ -283,10 +291,31 @@ def record_analytics_event(
             logger.exception("analytics rollback failed")
 
 
-def note_calculator_complete(tool: str) -> None:
+def is_intentional_get_calc() -> bool:
+    """True when a GET calculator run came from Calculate (not draft/demo URL)."""
+    if not has_request_context():
+        return False
+    if request.args.get("calc") == "1":
+        return True
+    if (request.args.get("intent") or "").strip().lower() == "calculate":
+        return True
+    return False
+
+
+def note_calculator_complete(tool: str, *, calc_count: int | None = None) -> None:
+    """Record a real user calculation. Also backfills calculator_start if missing."""
+    resolved = resolve_tool(tool)
+    if not resolved:
+        return
     if has_request_context():
-        g.analytics_calc_complete = resolve_tool(tool) or ""
-    record_analytics_event("calculator_complete", tool=tool)
+        g.analytics_calc_complete = resolved
+    # Starts are often missed when users click Calculate without focusing an input.
+    record_analytics_event("calculator_start", tool=resolved, calc_count=calc_count)
+    record_analytics_event(
+        "calculator_complete",
+        tool=resolved,
+        calc_count=calc_count,
+    )
 
 
 def _note_user_event_once(event_name: str, user_id: int) -> None:
@@ -398,16 +427,19 @@ def record_client_event(event_name: object, props: object) -> None:
     if not isinstance(event_name, str) or event_name not in CLIENT_EVENTS:
         return
     data = props if isinstance(props, dict) else {}
+    _apply_client_attribution(data)
     tool = resolve_tool(data.get("tool") or data.get("calculator"))
     source = _clean_source(data.get("source") or data.get("calculator"))
     target = resolve_tool(data.get("target"))
     placement = _clean_placement(data.get("placement") or data.get("cta_id"))
+    calc_count = _clean_calc_count(data.get("calc_count"))
     record_analytics_event(
         event_name,
         tool=tool,
         source=source,
         target=target,
         cta_placement=placement,
+        calc_count=calc_count,
     )
 
 
@@ -463,6 +495,7 @@ def _record(
     utm_content: str | None,
     utm_term: str | None,
     cta_placement: str | None,
+    calc_count: int | None,
     user_id: int | None,
 ) -> None:
     if event_name not in ALLOWED_EVENTS:
@@ -480,7 +513,15 @@ def _record(
         target_name = None
 
     placement = _clean_placement(cta_placement)
-    if event_name in {"registration_start", "registration_complete", "login"} and has_request_context():
+    reg_events = {
+        "registration_start",
+        "register_page_view",
+        "register_submit",
+        "registration_complete",
+        "registration_success",
+        "login",
+    }
+    if event_name in reg_events and has_request_context():
         source_name = source_name or _clean_source(session.get(_CTA_SOURCE))
         target_name = target_name or resolve_tool(session.get(_CTA_TARGET))
         placement = placement or _clean_placement(session.get(_CTA_PLACEMENT))
@@ -498,6 +539,7 @@ def _record(
     sid = _anonymous_id()
     touches = _event_touches(utm_source, utm_medium, utm_campaign, utm_content, utm_term, uid)
     excluded = _is_excluded(uid)
+    count = _clean_calc_count(calc_count)
 
     if event_name == "pro_cta_click" and has_request_context():
         session[_CTA_SOURCE] = source_name or ""
@@ -525,6 +567,7 @@ def _record(
         access_state=access,
         unit_system=units,
         cta_placement=placement,
+        calc_count=count,
         excluded=excluded,
         **touches,
     )
@@ -592,12 +635,66 @@ def _request_user_id(explicit: int | None) -> int | None:
 
 
 def _request_route(explicit: str | None) -> str | None:
+    raw = None
     if has_request_context():
-        path = request.path or ""
-        return path[:200] or None
-    if isinstance(explicit, str) and explicit.startswith("/") and "@" not in explicit:
-        return explicit[:200]
-    return None
+        raw = request.path or ""
+    elif isinstance(explicit, str) and explicit.startswith("/") and "@" not in explicit:
+        raw = explicit
+    if not raw:
+        return None
+    canonical = canonical_tools_path(raw) or normalise_path(raw) or raw
+    return str(canonical)[:200]
+
+
+def _clean_calc_count(raw: object) -> int | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if value < 0 or value > 10_000:
+        return None
+    return value
+
+
+def _apply_client_attribution(data: dict) -> None:
+    """Merge document.referrer / landing from the first client beacon into session."""
+    if not has_request_context():
+        return
+    try:
+        ref_raw = data.get("referrer")
+        land_raw = data.get("landing")
+        host, _path = parse_referrer(ref_raw, _own_hosts()) if isinstance(ref_raw, str) else (None, None)
+        path = normalise_path(land_raw) if isinstance(land_raw, str) else None
+        if path:
+            path = canonical_tools_path(path) or path
+        if not host and not path:
+            return
+        current = session.get(_ATTR_KEY)
+        now = datetime.now(timezone.utc).isoformat()
+        if not isinstance(current, dict) or "first" not in current:
+            snap = _touch({}, path, host, captured=True, unusable=False, seen_at=now)
+            session[_ATTR_KEY] = {"first": dict(snap), "latest": dict(snap)}
+            session.modified = True
+            return
+        first = current.get("first") if isinstance(current.get("first"), dict) else {}
+        # Only fill blanks on first-touch — never overwrite a campaign capture.
+        changed = False
+        if host and not first.get("referrer_host"):
+            first["referrer_host"] = host
+            first["captured"] = True
+            changed = True
+        if path and not first.get("landing_path"):
+            first["landing_path"] = path
+            first["captured"] = True
+            changed = True
+        if changed:
+            current["first"] = first
+            session[_ATTR_KEY] = current
+            session.modified = True
+    except Exception:
+        logger.exception("client attribution merge failed")
 
 
 def _request_access(explicit: str | None) -> str | None:

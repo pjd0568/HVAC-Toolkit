@@ -120,6 +120,7 @@ _PERMITTED_EVENT_COLUMNS = {
     "utm_content",
     "utm_term",
     "cta_placement",
+    "calc_count",
     "excluded",
     "first_captured",
     "latest_captured",
