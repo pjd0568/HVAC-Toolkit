@@ -9,6 +9,8 @@
   data-cta-placement="stage"
   data-cta-source="{{ prompt.source_tool }}"
   data-cta-target="{{ prompt.target_tool }}"
+  data-calc-count="{{ stage_calc_count | default('', true) }}"
+  data-journey-id="{{ analytics_journey_id | default('', true) }}"
 >
   <p class="stage-cta-title">{{ prompt.heading }}</p>
   <p class="stage-cta-body">{{ prompt.body }}</p>

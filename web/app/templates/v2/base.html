@@ -8,10 +8,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <title>{% block title %}{{ brand_name }}{% endblock %}</title>
+{% if public_landing and public_landing.slug %}
+<link rel="canonical" href="{{ public_base_url }}/tools/{{ public_landing.slug }}">
+{% elif page_tool %}
+{# Free tools also exist at /tools/... — prefer that public URL for search. #}
+{% endif %}
 <link rel="icon" href="{{ brand_favicon_url }}" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="{{ brand_apple_touch_url }}" sizes="180x180">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-52">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-53">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-35">
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=3"></script>
 {% block extra_head %}{% endblock %}
@@ -244,6 +249,6 @@ if ('serviceWorker' in navigator) {
 </script>
 {% block extra_scripts %}{% endblock %}
 <script src="{{ url_for('static', filename='js/pro_upgrade_dialog.js') }}?v=1" defer></script>
-<script src="{{ url_for('static', filename='js/analytics.js') }}?v=2" defer></script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}?v=3" defer></script>
 </body>
 </html>

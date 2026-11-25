@@ -4,8 +4,10 @@
 
 {% macro pipe_system_panel(
      system, U, fluids, materials, glycol_options_by_fluid,
-     report_action=None, report_fields=None, panel_style='', fluid_groups=None) %}
+     report_action=None, report_fields=None, panel_style='', fluid_groups=None,
+     applications=None) %}
 {% set fluid_groups = fluid_groups if fluid_groups is not none else [('', fluids.items()|list)] %}
+{% set applications = applications if applications is not none else {} %}
 {% set head = system.head %}
 {% set duty = system.duty_fields or {} %}
 <div class="panel pipe-system-panel tile-water-border" id="sys-panel" style="{{ panel_style }}">
@@ -29,6 +31,14 @@
     <form method="get" id="pipe-form" class="pipe-sys-duty" autocomplete="off">
       <div class="pipe-sys-section-label">System — fluid &amp; pipe</div>
       <div class="pipe-inline-grid">
+        <label class="pipe-inline-field" for="application">
+          <span>Application</span>
+          <select id="application" name="application">
+            {% for key, label in applications.items() %}
+            <option value="{{ key }}" {{ 'selected' if duty.application == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
         <label class="pipe-inline-field" for="fluid">
           <span>Fluid</span>
           <select id="fluid" name="fluid">
@@ -74,7 +84,6 @@
         </label>
       </div>
       <input type="hidden" name="mode" value="flow_known">
-      <input type="hidden" name="application" value="{{ duty.application or 'lthw' }}">
       <p class="suffix pipe-sys-fluid-note" id="sys-fluid-label">{{ head.fluid_label or '—' }}</p>
     </form>
 

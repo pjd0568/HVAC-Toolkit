@@ -232,6 +232,7 @@ def robots_txt():
         "Allow: /tools/",
         "Allow: /methods",
         "Allow: /methodology",
+        "Allow: /methodology/",
         "Allow: /about",
         "Allow: /reference",
         "Allow: /reference/",
@@ -280,11 +281,12 @@ def sitemap_xml():
     base = current_app.config["PUBLIC_BASE_URL"].rstrip("/")
     # Public marketing URLs only — logged-in calculators stay out of the sitemap.
     lastmod = date.today().isoformat()
+    # Only final 200 URLs — no /v2, no http, no slash variants that 301.
     paths = [
         ("/", "weekly", "1.0"),
         ("/tools/", "weekly", "0.9"),
         ("/methods", "monthly", "0.7"),
-        ("/methodology", "monthly", "0.7"),
+        ("/methodology/", "monthly", "0.7"),
         ("/about", "monthly", "0.5"),
         ("/reference/", "monthly", "0.6"),
         ("/subscribe", "weekly", "0.8"),

@@ -32,6 +32,8 @@ class AnalyticsEvent(db.Model):
     utm_content = db.Column(db.String(80), nullable=True)
     utm_term = db.Column(db.String(80), nullable=True)
     cta_placement = db.Column(db.String(40), nullable=True)
+    # Free-tool successful calc count at CTA time (null on older rows).
+    calc_count = db.Column(db.Integer, nullable=True)
     # Null on historical rows. False is a normal visitor. True is an explicit
     # internal or test session and is left out of product reports.
     excluded = db.Column(db.Boolean, nullable=True)

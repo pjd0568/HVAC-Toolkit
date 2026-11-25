@@ -147,6 +147,7 @@ def register_post():
 
     link_session_to_user(user.id)
     track("registration_complete", route="/register")
+    track("registration_success", route="/register")
     flash(
         "Account created. Start your 14-day Pro trial to unlock the full suite — "
         "add payment details today and pay nothing until the trial ends.",

@@ -1650,7 +1650,9 @@ details.notes .notes-body p:last-child { margin-bottom: 0; }
 #sys-grid .tabulator-cell[tabulator-field="pam"],
 #sys-grid .tabulator-col[tabulator-field="pd"],
 #sys-grid .tabulator-cell[tabulator-field="pd"] {
-  flex: 0.95 1 0 !important;
+  /* Keep coil / device ΔP readable around 1280px desktop widths. */
+  flex: 1.35 1 110px !important;
+  min-width: 110px !important;
 }
 #leg-grid .tabulator-col[tabulator-field="detail"],
 #leg-grid .tabulator-cell[tabulator-field="detail"],

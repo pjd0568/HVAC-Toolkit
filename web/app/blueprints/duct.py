@@ -967,9 +967,16 @@ def api_state():
     show_stage = False
     if request.args.get("intent") == "calculate" and not error:
         from app.analytics import note_calculator_complete
-        from app.stage_cta import increment_stage_calc, should_show_stage_cta
+        from app.stage_cta import (
+            increment_stage_calc,
+            should_show_stage_cta,
+            stage_calc_count,
+        )
 
-        note_calculator_complete("duct_sizing")
+        note_calculator_complete(
+            "duct_sizing",
+            calc_count=stage_calc_count("duct_sizing") + 1,
+        )
         increment_stage_calc("duct_sizing")
         show_stage = should_show_stage_cta("duct_sizing")
     return jsonify({

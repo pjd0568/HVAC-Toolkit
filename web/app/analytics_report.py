@@ -111,7 +111,10 @@ _DIAGNOSTIC_EVENTS = (
     "pro_cta_view",
     "pro_cta_click",
     "registration_start",
+    "register_page_view",
+    "register_submit",
     "registration_complete",
+    "registration_success",
     "login",
     "pro_tool_use",
     "checkout_start",
@@ -302,6 +305,13 @@ class Report:
     unmapped_views: int = 0
     unmapped_clicks: int = 0
     reconciled: bool = True
+    # Explicit tracking-health counters for the weekly email.
+    starts_total: int = 0
+    cta_views_with_result: int = 0
+    cta_views_without_result: int = 0
+    register_page_views: int = 0
+    register_submits: int = 0
+    registration_successes: int = 0
 
 
 def completion_rate_text(matched: int, starts: int) -> str:
@@ -468,6 +478,25 @@ def render_markdown(report: Report) -> str:
     else:
         lines.append("- Headline CTA totals match the pathway table.")
     lines.append(f"- Excluded internal or test events in this period: {report.excluded_events}")
+    lines.extend([
+        f"- calculator_start: {report.starts_total}",
+        f"- calculator_complete: {report.completions}",
+        (
+            f"- start/complete ratio: {report.starts_total / report.completions:.2f}"
+            if report.completions
+            else "- start/complete ratio: n/a"
+        ),
+        f"- CTA views with a result (stage/calc_count): {report.cta_views_with_result}",
+        f"- CTA views without a result: {report.cta_views_without_result}",
+        f"- Funnel — pro_cta_click: {report.cta_clicks}",
+        f"- Funnel — register_page_view: {report.register_page_views}",
+        f"- Funnel — register_submit: {report.register_submits}",
+        f"- Funnel — registration_success: {report.registration_successes}",
+        f"- Funnel — registration_complete (legacy): {report.registrations}",
+        f"- Funnel — checkout_start: {report.checkouts}",
+        f"- Funnel — trial_started: {report.trials_started}",
+        f"- Funnel — subscription_active: {report.subscriptions}",
+    ])
     lines.extend([
         "",
         "## 3. Acquisition summary",
@@ -1315,9 +1344,16 @@ def _fill(report: Report, rows: list[AnalyticsEvent]) -> None:
             if row.unit_system in {"SI", "IP"}:
                 report.units[row.unit_system] += 1
         elif name == "calculator_start" and row.tool in FREE_TOOLS and key:
+            report.starts_total += 1
             starts[row.tool][key].append(_aware(row.occurred_at))
         elif name == "pro_cta_view":
             report.cta_views += 1
+            if getattr(row, "calc_count", None) is not None and int(row.calc_count or 0) > 0:
+                report.cta_views_with_result += 1
+            elif row.cta_placement == "stage":
+                report.cta_views_with_result += 1
+            else:
+                report.cta_views_without_result += 1
             bucket = _path_bucket(row)
             _path_row(paths, bucket).views += 1
             if row.source in FREE_TOOLS:
@@ -1332,8 +1368,16 @@ def _fill(report: Report, rows: list[AnalyticsEvent]) -> None:
                 calc[row.source].cta_clicks += 1
             if bucket[0] != row.source:
                 report.unmapped_clicks += 1
-        elif name == "registration_start":
+        elif name == "register_page_view":
+            report.register_page_views += 1
             report.registration_starts += 1
+        elif name == "registration_start":
+            # Legacy page-view signal; prefer register_page_view when both exist.
+            report.registration_starts += 1
+        elif name == "register_submit":
+            report.register_submits += 1
+        elif name == "registration_success":
+            report.registration_successes += 1
         elif name == "registration_complete":
             report.registrations += 1
             point.registrations += 1
