@@ -52,6 +52,15 @@ def set_flow_unit_pref():
     return redirect(_safe_redirect_target(request.form.get("next", "")))
 
 
+@bp.post("/preferences/dismiss-stage-cta")
+def dismiss_stage_cta():
+    """Dismiss the Free→Pro stage CTA for one free tool for the rest of the session."""
+    from app.stage_cta import dismiss_stage_cta as dismiss
+
+    dismiss(request.form.get("tool", ""))
+    return redirect(_safe_redirect_target(request.form.get("next", "")))
+
+
 @bp.post("/api/psychro/teaser")
 def psychro_teaser_calculate():
     """Public single-point psychrometric calculate for the homepage teaser."""

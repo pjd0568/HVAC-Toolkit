@@ -30,6 +30,9 @@ class ProPrompt:
     target_tool: str
     next_endpoint: str | None = None
     processes: tuple[str, ...] = ()
+    # Static sample under /static — shown on the stage CTA for export proof.
+    example_export_path: str = "examples/sample-pro-report.pdf"
+    example_export_label: str = "See a sample Pro PDF report"
 
 
 # Compact matrix shown in the dialog and on the access gate. No project storage.
@@ -60,15 +63,16 @@ _PSYCHRO_PROCESSES = (
 _FREE_PROMPTS: dict[str, ProPrompt] = {
     "psychrometric_single": ProPrompt(
         key="psychrometric_single",
-        heading="Take the calculation onto the psychrometric chart",
+        heading="Unlock the full psychrometric suite in Pro",
         body=(
-            "Free resolves a single air state. Pro adds the interactive multi-point "
-            "chart and HVAC process workflows so you can carry the state through the job."
+            "Free resolves a single air state. Pro opens the interactive multi-point "
+            "chart and the full psychrometric workflow set — mixed air, coils, "
+            "humidification, adiabatic cooling, desiccant and AHU design — plus PDF, "
+            "CSV and chart exports for the job file."
         ),
         card_blurb=(
-            "Need to model what happens next? Plot the state and continue through "
-            "mixed-air, cooling, heating, humidification and other psychrometric "
-            "processes with Pro."
+            "Continue into the full Pro psychrometric suite: interactive chart, "
+            "process tools and exportable reports."
         ),
         source_tool="psychrometric_single",
         target_tool="interactive_chart",
@@ -77,14 +81,15 @@ _FREE_PROMPTS: dict[str, ProPrompt] = {
     ),
     "duct_sizing": ProPrompt(
         key="duct_sizing",
-        heading="Go from one duct section to the complete index leg",
+        heading="Unlock the full duct index-leg calculator in Pro",
         body=(
-            "The free calculator sizes an individual duct section. Pro provides the "
-            "wider duct index-leg workflow — build the run, evaluate each section and "
-            "find the index leg in one place."
+            "Free sizes one duct section. Pro builds the complete index leg — "
+            "straight runs, fittings and equipment pressure drops in one schedule — "
+            "and unlocks PDF, CSV and chart exports."
         ),
         card_blurb=(
-            "Sizing a complete duct system? Continue with the Pro index-leg workflow."
+            "Continue into the Pro duct index-leg calculator for the full run and "
+            "exportable reports."
         ),
         source_tool="duct_sizing",
         target_tool="duct_index_leg",
@@ -92,14 +97,15 @@ _FREE_PROMPTS: dict[str, ProPrompt] = {
     ),
     "pipe_sizing": ProPrompt(
         key="pipe_sizing",
-        heading="Go from one pipe section to the complete system",
+        heading="Unlock the full pipe circuit calculator in Pro",
         body=(
-            "The free calculator sizes an individual pipe section. Pro supports the "
-            "complete hydronic system / index circuit and pump-head workflow."
+            "Free sizes one pipe section. Pro builds the complete hydronic circuit — "
+            "pipe runs, fittings, devices and required pump head — and unlocks PDF, "
+            "CSV and chart exports."
         ),
         card_blurb=(
-            "Calculating the complete index circuit? Continue through the system and "
-            "calculate pump head with Pro."
+            "Continue into the Pro pipe-system calculator for the full circuit, pump "
+            "head and exportable reports."
         ),
         source_tool="pipe_sizing",
         target_tool="pipe_system",

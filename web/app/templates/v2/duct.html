@@ -7,6 +7,11 @@
 {% include "_air_tool_nav.html" %}
 {% endwith %}
 
+{% if not public_embed and show_stage_cta and stage_prompt %}
+{% set prompt = stage_prompt %}
+{% include "_stage_cta.html" %}
+{% endif %}
+
 <div id="duct-error">{% if error %}<div class="error">{{ error }}</div>{% endif %}</div>
 
 <div class="duct-sizer">
@@ -276,11 +281,6 @@
   </div>
 </div>
 
-{% if not error and not public_embed %}
-{% set prompt = prompt_for_free_module('duct.sizer') %}
-{% include "_pro_next_card.html" %}
-{% endif %}
-
 {% if report_fields and access.has_suite_access %}
 {{ report_form(url_for('duct.report'), report_fields) }}
 {% endif %}
@@ -390,7 +390,7 @@
 {% block extra_scripts %}
 <script>window.DUCT_API_BASE = {{ url_for('duct.index')|tojson }};</script>
 <script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=3"></script>
-<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=round25-step-1"></script>
+<script src="{{ url_for('static', filename='js/ductsizer.js') }}?v=stage-cta-1"></script>
 <script>
 (function(){
   var tabs=document.getElementById('v2-shape-tabs');

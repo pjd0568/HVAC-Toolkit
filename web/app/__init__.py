@@ -15,6 +15,7 @@ _PUBLIC_ENDPOINTS = frozenset(
         "main.track_event",
         "main.set_units",
         "main.set_flow_unit_pref",
+        "main.dismiss_stage_cta",
         "auth.login",
         "auth.login_post",
         "auth.register",
@@ -251,20 +252,29 @@ def create_app(config_class: type = Config) -> Flask:
             price_footer,
             prompt_for_landing_slug,
             prompt_for_free_module,
+            prompt_for_free_tool,
             should_show_pro_promotion,
         )
+        from app.stage_cta import should_show_stage_cta
+
+        page_tool = tool_for_endpoint(request.endpoint)
+        landing_tool = analytics_tool(landing.slug) if landing else ""
+        stage_tool = page_tool or landing_tool or ""
 
         return {
             "public_embed": bool(getattr(g, "public_embed", False)),
             "public_landing": landing,
             "pro_cta": pro_cta,
             "analytics_tool": analytics_tool,
-            "page_tool": tool_for_endpoint(request.endpoint),
+            "page_tool": page_tool,
             "compare_rows": COMPARE_ROWS,
             "pro_price_footer": price_footer(),
             "should_show_pro_promotion": should_show_pro_promotion(),
             "prompt_for_landing_slug": prompt_for_landing_slug,
             "prompt_for_free_module": prompt_for_free_module,
+            "stage_tool": stage_tool,
+            "show_stage_cta": should_show_stage_cta(stage_tool),
+            "stage_prompt": prompt_for_free_tool(stage_tool),
         }
 
     @app.context_processor
