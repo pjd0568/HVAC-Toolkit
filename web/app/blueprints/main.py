@@ -2,7 +2,8 @@ from flask import Blueprint, jsonify, redirect, render_template, request, url_fo
 from flask_login import login_required
 
 from app.teaser import P_ATM, resolve_teaser_state, teaser_payload
-from app.units import set_flow_unit, set_unit_system
+from app.unit_switch import rewrite_next_url
+from app.units import get_unit_system, set_flow_unit, set_unit_system
 
 bp = Blueprint("main", __name__)
 
@@ -11,7 +12,10 @@ def _safe_redirect_target(raw: str) -> str:
     """Only honour same-app relative paths, never an absolute/off-site URL."""
     if not raw.startswith("/") or raw.startswith("//"):
         return url_for("main.dashboard")
-    return raw
+    # Flask's request.full_path always appends '?'; strip a trailing empty query.
+    if raw.endswith("?"):
+        raw = raw[:-1]
+    return raw or url_for("main.dashboard")
 
 
 @bp.get("/")
@@ -27,9 +31,18 @@ def dashboard():
 
 @bp.post("/preferences/units")
 def set_units():
-    """Flip the active unit system (SI/IP) and return to the page in use."""
-    set_unit_system(request.form.get("system", ""))
-    return redirect(_safe_redirect_target(request.form.get("next", "")))
+    """Flip the active unit system (SI/IP) and return to the page in use.
+
+    GET-driven calculators keep inputs in the query string. Convert those
+    display values from the previous system into the new one so labels and
+    numbers stay consistent (50 kW becomes ~170607 Btu/h, not 50 Btu/h).
+    """
+    previous = get_unit_system()
+    requested = request.form.get("system", "")
+    set_unit_system(requested)
+    nxt = _safe_redirect_target(request.form.get("next", ""))
+    nxt = rewrite_next_url(nxt, from_system=previous, to_system=get_unit_system())
+    return redirect(nxt)
 
 
 @bp.post("/preferences/flow-unit")

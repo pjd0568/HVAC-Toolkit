@@ -13,10 +13,10 @@
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-50">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/v2.css') }}?v=bright-35">
-<script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/v2_draft.js') }}?v=3"></script>
 {% block extra_head %}{% endblock %}
 </head>
-<body class="v2-body{% if access.has_suite_access %} v2-suite-access{% endif %}">
+<body class="v2-body{% if access.has_suite_access %} v2-suite-access{% endif %}" data-units="{{ units }}">
 
 <header class="v2-topbar">
   <a class="v2-topbar-brand" href="{{ url_for('v2.dashboard') if current_user.is_authenticated else url_for('main.coming_soon') }}" title="{{ brand_public }}">
@@ -100,13 +100,13 @@
   {% set flow_unit_tools = ['psychro_mix', 'psychro_coil', 'psychro_desiccant', 'psychro_heat_humidify', 'psychro_adiabatic_cool', 'psychro_ahu'] %}
   <div class="v2-topbar-units" aria-label="Units">
     <form method="post" action="{{ url_for('main.set_units') }}" class="v2-unit-toggle" title="Unit system">
-      <input type="hidden" name="next" value="{{ request.path }}">
+      <input type="hidden" name="next" value="{{ request.full_path }}">
       <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}" aria-pressed="{{ 'true' if units == 'SI' else 'false' }}">SI</button>
       <button type="submit" name="system" value="IP" class="unit-pill {{ 'on' if units == 'IP' }}" aria-pressed="{{ 'true' if units == 'IP' else 'false' }}">IP</button>
     </form>
     {% if units == 'SI' and active in flow_unit_tools %}
     <form method="post" action="{{ url_for('main.set_flow_unit_pref') }}" class="v2-unit-toggle" title="Airflow units">
-      <input type="hidden" name="next" value="{{ request.path }}">
+      <input type="hidden" name="next" value="{{ request.full_path }}">
       <button type="submit" name="unit" value="m3h" class="unit-pill {{ 'on' if U.flow_unit == 'm3h' }}" aria-pressed="{{ 'true' if U.flow_unit == 'm3h' else 'false' }}">m³/h</button>
       <button type="submit" name="unit" value="m3s" class="unit-pill {{ 'on' if U.flow_unit == 'm3s' }}" aria-pressed="{{ 'true' if U.flow_unit == 'm3s' else 'false' }}">m³/s</button>
     </form>

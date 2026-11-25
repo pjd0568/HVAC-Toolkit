@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=steel-48">
 {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body data-units="{{ units }}">
 
 <aside class="sidebar">
   <div class="logo">
@@ -144,14 +144,14 @@
       {% endif %}
       <a class="help-btn" href="{{ url_for('billing.subscribe') }}" title="Pricing">Pricing</a>
       <form method="post" action="{{ url_for('main.set_units') }}" class="unit-toggle" title="Units — applies across every tool">
-        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
         <button type="submit" name="system" value="SI" class="unit-pill {{ 'on' if units == 'SI' }}">SI · Metric</button>
         <button type="submit" name="system" value="IP" class="unit-pill {{ 'on' if units == 'IP' }}">IP · Imperial</button>
       </form>
       {% set flow_unit_tools = ['psychro_mix', 'psychro_coil', 'psychro_desiccant', 'psychro_heat_humidify', 'psychro_adiabatic_cool', 'psychro_ahu'] %}
       {% if units == 'SI' and active in flow_unit_tools %}
       <form method="post" action="{{ url_for('main.set_flow_unit_pref') }}" class="unit-toggle" title="Airflow units — applies to every psychrometric tool">
-        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
         <button type="submit" name="unit" value="m3h" class="unit-pill {{ 'on' if U.flow_unit == 'm3h' }}">m³/h</button>
         <button type="submit" name="unit" value="m3s" class="unit-pill {{ 'on' if U.flow_unit == 'm3s' }}">m³/s</button>
       </form>
