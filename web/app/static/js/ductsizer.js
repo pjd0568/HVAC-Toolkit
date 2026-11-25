@@ -431,6 +431,20 @@
           try {
             document.dispatchEvent(new CustomEvent("hvac:calc-complete"));
           } catch (ignore) { /* analytics must not block the result */ }
+          // Full reload once so the top Free→Pro stage CTA can render.
+          if (data.show_stage_cta && !document.querySelector(".stage-cta")) {
+            if (window.history && window.history.replaceState) {
+              var keep = buildBaseParams();
+              var qsKeep = keep.toString();
+              window.history.replaceState(
+                null,
+                "",
+                window.location.pathname + (qsKeep ? "?" + qsKeep : "")
+              );
+            }
+            window.location.reload();
+            return data;
+          }
         }
         return data;
       })

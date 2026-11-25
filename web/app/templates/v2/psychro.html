@@ -9,6 +9,12 @@
 {% include "_psychro_tool_nav.html" %}
 {% endwith %}
 
+{% if not public_embed and show_stage_cta and stage_prompt %}
+{% set prompt = stage_prompt %}
+{% set stage_dismiss_action = request.path %}
+{% include "_stage_cta.html" %}
+{% endif %}
+
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="psychro-layout">
@@ -52,49 +58,6 @@
       </div>
     </div>
   </div>
-  {% endif %}
-
-  {% if show_psychro_stage_cta %}
-  {% set prompt = prompt_for_free_module('psychro.single_point') %}
-  <aside
-    class="pro-next psychro-stage-cta"
-    data-pro-cta
-    data-cta-placement="stage"
-    data-cta-source="{{ prompt.source_tool if prompt else 'psychrometric_single' }}"
-    data-cta-target="{{ prompt.target_tool if prompt else 'interactive_chart' }}"
-  >
-    <p class="psychro-stage-cta-title">{{ prompt.heading if prompt else 'Continue this job in Pro' }}</p>
-    <p>
-      {% if prompt %}{{ prompt.body }}
-      {% if prompt.processes %}
-      Processes in Pro:
-      {{ prompt.processes|join(', ') }}.
-      {% endif %}
-      {% else %}
-      You’ve resolved several air states. Free keeps giving you a full single-point
-      answer. Pro plots multiple states on the interactive chart and HVAC processes.
-      {% endif %}
-    </p>
-    <div class="psychro-stage-cta-actions">
-      {% if prompt %}
-      <button
-        type="button"
-        class="btn-accent"
-        data-pro-upgrade-open
-        data-pro-prompt-key="{{ prompt.key }}"
-      >Explore Pro →</button>
-      {% else %}
-      {% set cta = pro_cta(url_for('v2.interactive_chart')) %}
-      <a class="btn-accent" href="{{ cta.href }}">{{ cta.label }}</a>
-      {% endif %}
-      <form method="post" class="psychro-stage-cta-dismiss">
-        <button class="btn-ghost" type="submit" name="action" value="dismiss_stage_cta">Not now</button>
-      </form>
-    </div>
-  </aside>
-  {% if prompt %}
-  {% include "_pro_upgrade_dialog.html" %}
-  {% endif %}
   {% endif %}
 
   <div class="psychro-chart panel">

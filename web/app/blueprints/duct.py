@@ -964,16 +964,21 @@ def api_state():
     re-derives the leg."""
     U = current_view()
     fields, circular, rectangular, flat_oval, error = _compute_state(request.args, U)
+    show_stage = False
     if request.args.get("intent") == "calculate" and not error:
         from app.analytics import note_calculator_complete
+        from app.stage_cta import increment_stage_calc, should_show_stage_cta
 
         note_calculator_complete("duct_sizing")
+        increment_stage_calc("duct_sizing")
+        show_stage = should_show_stage_cta("duct_sizing")
     return jsonify({
         "fields": fields,
         "circular": circular,
         "rectangular": rectangular,
         "flat_oval": flat_oval,
         "error": error,
+        "show_stage_cta": show_stage,
     })
 
 

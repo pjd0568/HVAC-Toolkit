@@ -8,6 +8,11 @@
 {% include "_hydronics_tool_nav.html" %}
 {% endwith %}
 
+{% if not public_embed and show_stage_cta and stage_prompt %}
+{% set prompt = stage_prompt %}
+{% include "_stage_cta.html" %}
+{% endif %}
+
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
 <div class="pipe-page-stack">
@@ -137,11 +142,6 @@
   </div>
   {% endif %}
 </div>
-
-{% if not error and not public_embed %}
-{% set prompt = prompt_for_free_module('pipe.sizer') %}
-{% include "_pro_next_card.html" %}
-{% endif %}
 
 {% if report_fields and access.has_suite_access %}
 {{ report_form(url_for('pipe.report'), report_fields, panel_class='tile-water-border') }}

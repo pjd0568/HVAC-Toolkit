@@ -35,18 +35,16 @@
     <button type="submit" name="system" value="IP" class="unit-pill {{ 'on' if units == 'IP' }}">IP</button>
   </form>
 
+  {% if show_stage_cta and stage_prompt %}
+  {% set prompt = stage_prompt %}
+  {% include "_stage_cta.html" %}
+  {% endif %}
+
   <div class="public-calc-surface v2-main" data-calculator="{{ analytics_tool(public_landing.slug) }}">
     {% block tool_body %}{% endblock %}
   </div>
   {% if g.get('analytics_calc_complete') %}
   <div data-calc-complete="{{ g.analytics_calc_complete }}" hidden></div>
-  {% endif %}
-
-  {# Psychrometric public embed uses the stage CTA inside v2/psychro.html instead.
-     Card sits below the Free result surface; converter never promotes. #}
-  {% if public_landing.slug != 'psychrometric-calculator' and public_landing.slug != 'unit-converter' %}
-  {% set prompt = prompt_for_landing_slug(public_landing.slug) %}
-  {% include "_pro_next_card.html" %}
   {% endif %}
 
   <section class="coming-section">

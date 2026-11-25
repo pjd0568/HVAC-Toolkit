@@ -1,0 +1,53 @@
+{# Top-of-tool Free→Pro stage CTA after N successful free calculations.
+   Expects: prompt (ProPrompt). Optional: stage_dismiss_action for psychro POST. #}
+{% if prompt %}
+{% set next_path = url_for(prompt.next_endpoint) if prompt.next_endpoint else none %}
+{% set cta = pro_cta(next_path) %}
+<aside
+  class="pro-next stage-cta"
+  data-pro-cta
+  data-cta-placement="stage"
+  data-cta-source="{{ prompt.source_tool }}"
+  data-cta-target="{{ prompt.target_tool }}"
+>
+  <p class="stage-cta-title">{{ prompt.heading }}</p>
+  <p class="stage-cta-body">{{ prompt.body }}</p>
+  {% if prompt.processes %}
+  <p class="stage-cta-processes">
+    Pro psychrometric tools:
+    {{ prompt.processes|join(', ') }}.
+  </p>
+  {% endif %}
+  <p class="stage-cta-exports">
+    Pro also unlocks full PDF reports, CSV schedules and chart exports.
+    {% if prompt.example_export_path %}
+    <a
+      class="stage-cta-example"
+      href="{{ url_for('static', filename=prompt.example_export_path) }}"
+      target="_blank"
+      rel="noopener"
+    >{{ prompt.example_export_label }}</a>
+    {% endif %}
+  </p>
+  <div class="stage-cta-actions">
+    <button
+      type="button"
+      class="btn-accent"
+      data-pro-upgrade-open
+      data-pro-prompt-key="{{ prompt.key }}"
+    >{{ cta.label }} →</button>
+    {% if stage_dismiss_action %}
+    <form method="post" class="stage-cta-dismiss" action="{{ stage_dismiss_action }}">
+      <button class="btn-ghost" type="submit" name="action" value="dismiss_stage_cta">Not now</button>
+    </form>
+    {% else %}
+    <form method="post" class="stage-cta-dismiss" action="{{ url_for('main.dismiss_stage_cta') }}">
+      <input type="hidden" name="tool" value="{{ prompt.source_tool }}">
+      <input type="hidden" name="next" value="{{ request.full_path }}">
+      <button class="btn-ghost" type="submit">Not now</button>
+    </form>
+    {% endif %}
+  </div>
+</aside>
+{% include "_pro_upgrade_dialog.html" %}
+{% endif %}

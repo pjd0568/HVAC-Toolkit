@@ -242,8 +242,10 @@ def duct():
         shape = "circular"
     if request.args and not error:
         from app.analytics import note_calculator_complete
+        from app.stage_cta import increment_stage_calc
 
         note_calculator_complete("duct_sizing")
+        increment_stage_calc("duct_sizing")
     return render_template(
         "v2/duct.html",
         active="duct",
@@ -284,8 +286,10 @@ def pipe():
     state = pipe_mod._compute_state(request.args, U)
     if request.args and not state.get("error"):
         from app.analytics import note_calculator_complete
+        from app.stage_cta import increment_stage_calc
 
         note_calculator_complete("pipe_sizing")
+        increment_stage_calc("pipe_sizing")
     report_fields = pipe_mod._report_fields_for_sizer(state["fields"]) if not state["error"] else None
     return render_template(
         "v2/pipe.html",
@@ -389,6 +393,7 @@ def single_point():
             from app.analytics import note_calculator_complete
 
             note_calculator_complete("psychrometric_single")
+            # increment_psychro_single_calc already bumps the shared stage counter.
         except ValueError as exc:
             error = str(exc)
             try:

@@ -12,6 +12,12 @@
     {% endfor %}
   </ul>
   {% endif %}
+  {% if prompt.example_export_path %}
+  <p class="pro-upgrade-export-note">
+    Pro unlocks full PDF reports, CSV schedules and chart exports.
+    <a href="{{ url_for('static', filename=prompt.example_export_path) }}" target="_blank" rel="noopener">{{ prompt.example_export_label }}</a>
+  </p>
+  {% endif %}
 
   {% include "_pro_compare_table.html" %}
 
